@@ -1,0 +1,2 @@
+#colon {leave|replace}
+  if replace then TTcore non-shielded semicolon as CommandDelimiter 

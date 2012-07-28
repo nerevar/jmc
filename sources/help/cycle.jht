@@ -1,0 +1,21 @@
+#<num>[:<delay>] {command}
+  cycle for 1 to <num> executing <command>
+#loop {<num>[,<num2>][:<delay>]} 
+  if num2 defined then cycle for num to num2, else for num downto 0.
+
+if delay is nil then cycle would not use timer and runs at once.
+Else free timer will be searched and launched to execute cycle.
+there are 16 timers so if free timer not found then cycle won't be executed.
+
+#break {<tID>|all}
+  stops executing of defined timer. doesn't kill the timer if it is active, 
+  just stops it. second call will kill timer.
+#abort {<tID>|all}
+  kills the timer wherever it is active or not.
+  equal to double break.
+#resume {<tID>|all}
+  continues executing of broken timer if it was not killed
+#tmlist
+#llist
+  used to show all active timers
+    

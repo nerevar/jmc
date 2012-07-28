@@ -1,0 +1,8 @@
+#system <cmd>
+  execute <cmd> and redirect output flow to JMC main window
+#tslist
+#ps
+  lists all executed processes with their pIDs
+#tskill    {<pID>|all|last}
+#terminate {<pID>|all|last}
+  kills specified, last process or all processes

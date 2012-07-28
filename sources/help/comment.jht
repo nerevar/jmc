@@ -1,0 +1,4 @@
+command used to set character that will mark comment strings
+#comment {char}
+  char must be valid.
+  all strings that begin with this char will be skipped

@@ -1,0 +1,110 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: smc - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\ÇÀßÖ\LOCALS~1\Temp\RSP3C.tmp" with contents
+[
+/nologo /MD /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_AFXDLL" /Fr".\Release/" /Fp".\Release/smc.pch" /Yu"stdafx.h" /Fo".\Release/" /Fd".\Release/" /FD /c 
+"D:\EN\games\mud\_jmc\src\MainFrm.cpp"
+]
+Creating command line "cl.exe @"C:\DOCUME~1\ÇÀßÖ\LOCALS~1\Temp\RSP3C.tmp"" 
+Creating temporary file "C:\DOCUME~1\ÇÀßÖ\LOCALS~1\Temp\RSP3D.tmp" with contents
+[
+ttcoreex\Release\ttcoreex.lib wsock32.lib version.lib /nologo /subsystem:windows /incremental:no /pdb:".\Release/jmc.pdb" /machine:I386 /out:"./jmc.exe" 
+.\Release\AcceptKeyEdit.obj
+.\Release\AliasPage.obj
+.\Release\AnsiColorsDlg.obj
+.\Release\AnsiWnd.obj
+.\Release\CharSubstPage.obj
+.\Release\ColorButton.obj
+.\Release\ColorSettingsDlg.obj
+.\Release\CommonParamsPage.obj
+.\Release\CoolDialogBar.obj
+.\Release\EditBar.obj
+.\Release\GroupCombo.obj
+.\Release\HyperLink.obj
+.\Release\JMCActionsPage.obj
+.\Release\JmcGroupPage.obj
+.\Release\JmcHlightPage.obj
+.\Release\JmcHotkeyPage.obj
+.\Release\JmcObjectsDlg.obj
+.\Release\JmcScriptFilesPage.obj
+.\Release\JmcSubstPage.obj
+.\Release\KeyWordsDlg.obj
+.\Release\LogParamsPage.obj
+.\Release\MainFrm.obj
+.\Release\MudEmuDlg.obj
+.\Release\NewProfileDlg.obj
+.\Release\OneChar.obj
+.\Release\ProfileListDlg.obj
+.\Release\ProfilePage.obj
+.\Release\ScriptPage.obj
+.\Release\ScriptParseDlg.obj
+.\Release\ScrollOptionDlg.obj
+.\Release\smc.obj
+.\Release\smcDoc.obj
+.\Release\SmcPropertyDlg.obj
+.\Release\smcView.obj
+.\Release\StdAfx.obj
+.\Release\smc.res
+.\recore\Release\recore.lib
+.\ttcoreex\Release\ttcoreex.lib
+]
+Creating command line "link.exe @"C:\DOCUME~1\ÇÀßÖ\LOCALS~1\Temp\RSP3D.tmp""
+<h3>Output Window</h3>
+Compiling...
+MainFrm.cpp
+Linking...
+Creating temporary file "C:\DOCUME~1\ÇÀßÖ\LOCALS~1\Temp\RSP3F.tmp" with contents
+[
+/nologo /o".\Release/smc.bsc" 
+.\Release\StdAfx.sbr
+.\Release\AcceptKeyEdit.sbr
+.\Release\AliasPage.sbr
+.\Release\AnsiColorsDlg.sbr
+.\Release\AnsiWnd.sbr
+.\Release\CharSubstPage.sbr
+.\Release\ColorButton.sbr
+.\Release\ColorSettingsDlg.sbr
+.\Release\CommonParamsPage.sbr
+.\Release\CoolDialogBar.sbr
+.\Release\EditBar.sbr
+.\Release\GroupCombo.sbr
+.\Release\HyperLink.sbr
+.\Release\JMCActionsPage.sbr
+.\Release\JmcGroupPage.sbr
+.\Release\JmcHlightPage.sbr
+.\Release\JmcHotkeyPage.sbr
+.\Release\JmcObjectsDlg.sbr
+.\Release\JmcScriptFilesPage.sbr
+.\Release\JmcSubstPage.sbr
+.\Release\KeyWordsDlg.sbr
+.\Release\LogParamsPage.sbr
+.\Release\MainFrm.sbr
+.\Release\MudEmuDlg.sbr
+.\Release\NewProfileDlg.sbr
+.\Release\OneChar.sbr
+.\Release\ProfileListDlg.sbr
+.\Release\ProfilePage.sbr
+.\Release\ScriptPage.sbr
+.\Release\ScriptParseDlg.sbr
+.\Release\ScrollOptionDlg.sbr
+.\Release\smc.sbr
+.\Release\smcDoc.sbr
+.\Release\SmcPropertyDlg.sbr
+.\Release\smcView.sbr]
+Creating command line "bscmake.exe @"C:\DOCUME~1\ÇÀßÖ\LOCALS~1\Temp\RSP3F.tmp""
+Creating browse info file...
+<h3>Output Window</h3>
+
+
+
+<h3>Results</h3>
+jmc.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

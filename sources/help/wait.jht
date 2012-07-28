@@ -1,0 +1,9 @@
+#wait <time in deciseconds>
+#wt <time in deciseconds>
+  command used to set a delay for all input. all commands for sending to MUD 
+  would be delayed for defined time. doesn't affect TTcommands and direct
+  output (e.g. jmc->send()).
+  if time is 0 then commands queue (if not empty) will be parsed immediately.
+#wait cancel
+#wt cancel
+  cancels delay and clears commands queue

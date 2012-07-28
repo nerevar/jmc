@@ -1,0 +1,6 @@
+#var [*|<varname>]
+  show values of matched vars
+#var <varname> <value>
+  sets varname to value
+#unvar <varname>
+  delete variable

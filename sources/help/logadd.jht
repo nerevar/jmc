@@ -1,0 +1,2 @@
+#logadd <string>
+  adds string to main log file

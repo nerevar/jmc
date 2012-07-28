@@ -1,0 +1,26 @@
+HKCR
+{
+	Ttcoreex.JmcSite.1 = s 'JmcSite Class'
+	{
+		CLSID = s '{B41BA790-8ED5-11D4-92AE-0001027ED904}'
+	}
+	Ttcoreex.JmcSite = s 'JmcSite Class'
+	{
+		CLSID = s '{B41BA790-8ED5-11D4-92AE-0001027ED904}'
+		CurVer = s 'Ttcoreex.JmcSite.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {B41BA790-8ED5-11D4-92AE-0001027ED904} = s 'JmcSite Class'
+		{
+			ProgID = s 'Ttcoreex.JmcSite.1'
+			VersionIndependentProgID = s 'Ttcoreex.JmcSite'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Free'
+			}
+			'TypeLib' = s '{B41BA781-8ED5-11D4-92AE-0001027ED904}'
+		}
+	}
+}

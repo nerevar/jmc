@@ -1,0 +1,7 @@
+#race format <string> 
+  loads run format (e.g. run %0  or %0)
+#race move [<speedwalk>] 
+  licks format with speedwalk replacing %0. saves speedwalk. if it was empty 
+  then gets last stored instead
+#race reverse 
+  gets stored speedwalk, reverses and calls race move

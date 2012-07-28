@@ -1,0 +1,2 @@
+#wname {wnd} {caption}
+  sets new name to specified output window

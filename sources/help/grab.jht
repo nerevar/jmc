@@ -1,0 +1,5 @@
+#grab [num] {filename} [format]
+ gets a line number <num> from <filename> and sends format to MUD after
+ replacing %0 in format with line contains. default format is "%0"
+ if <num> is not defined then it is next line if last usage was for
+ this file too. else it is 1.

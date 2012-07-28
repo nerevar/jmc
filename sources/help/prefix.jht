@@ -1,0 +1,3 @@
+#prefix {string}
+  command used to add prefix to all strings you will send to MUD.
+  prefix is set BEFORE alias lookup. does not work on TTcommands.

@@ -1,0 +1,2 @@
+#woutput {wnd} [color] {text}
+ add [colored] text to output window and to log if logging this window

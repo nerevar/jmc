@@ -1,0 +1,111 @@
+// ttcoreex.idl : IDL source for ttcoreex.dll
+//
+
+// This file will be processed by the MIDL tool to
+// produce the type library (ttcoreex.tlb) and marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+	[
+		object,
+		uuid(B41BA78F-8ED5-11D4-92AE-0001027ED904),
+		dual,
+		helpstring("IJmcSite Interface"),
+		pointer_default(unique)
+	]
+	interface IJmcSite : IDispatch
+	{
+	};
+	[
+		object,
+		uuid(DDF78224-8F80-11D4-92AE-0001027ED904),
+		dual,
+		helpstring("IJmcObj Interface"),
+		pointer_default(unique)
+	]
+	interface IJmcObj : IDispatch
+	{
+		[id(1), helpstring("method ShowMe")] HRESULT ShowMe([in] BSTR varText, [in, optional] BSTR varColor);
+		[id(2), helpstring("method Send")] HRESULT Send([in] BSTR bstrLine);
+		[id(3), helpstring("method Beep")] HRESULT Beep();
+		[id(4), helpstring("method Parse")] HRESULT Parse([in] BSTR bstrCommand);
+		[id(5), helpstring("method Output")] HRESULT Output([in] BSTR bstrText, [in, optional] BSTR bstrColor);
+		[id(6), helpstring("method SetTimer")] HRESULT SetTimer([in] LONG ID, [in] LONG Interval, [in, optional] LONG preInterval);
+		[id(7), helpstring("method KillTimer")] HRESULT KillTimer([in] LONG ID);
+		[propget, id(8), helpstring("property IsConnected")] HRESULT IsConnected([out, retval] BOOL *pVal);
+		[id(9), helpstring("method Eval")] HRESULT Eval([in] BSTR bstrCommand);
+		[id(10), helpstring("method RegisterHandler")] HRESULT RegisterHandler([in] BSTR bstrEvent, [in] BSTR bstrCode);
+		[propget, id(11), helpstring("property Event")] HRESULT Event([in, optional] LONG nIndex, [out, retval] VARIANT *pVal);
+		[propput, id(11), helpstring("property Event")]	HRESULT Event([in, optional] LONG nIndex, [in] VARIANT newVal);
+		[id(12), helpstring("method Connect")] HRESULT Connect([in] BSTR bstrAddress, [in] BSTR bstrPort);
+		[id(13), helpstring("method DropEvent")] HRESULT DropEvent();
+		[id(14), helpstring("method Disconnect")] HRESULT Disconnect();
+		[propget, id(15), helpstring("property Profile")] HRESULT Profile([out, retval] BSTR *pVal);
+		[id(16), helpstring("method SetHotkey")] HRESULT SetHotkey([in] BSTR bstrKey, [in] BSTR bstrCommand);
+		[propget, id(17), helpstring("property CommandChar")] HRESULT CommandChar([out, retval] BSTR *pVal);
+		[id(18), helpstring("method SetStatus")] HRESULT SetStatus([in] LONG StatusNum, [in] BSTR bstrText, [in, optional] BSTR bstrColor);
+		[id(19), helpstring("method SetVar")] HRESULT SetVar([in] BSTR bstrVarName, [in] BSTR bstrValue, [in,optional] BOOL bGlobal);
+		[id(20), helpstring("method GetVar")] HRESULT GetVar([in] BSTR bstrVarName, [out,retval] BSTR* bstrRet);
+//vls-begin// #quit
+        [id(21), helpstring("method Quit")] HRESULT Quit();
+//vls-end//
+//vls-begin// #run
+        [id(22), helpstring("method Run")] HRESULT Run([in] BSTR bstrCmdLine, [in, optional] BSTR bstrParams);
+//vls-end//
+//vls-begin// #play
+		[id(23), helpstring("method Play")] HRESULT Play([in] BSTR bstrFileName);
+//vls-end//
+//* en
+		[id(24), helpstring("method wOutput")] HRESULT wOutput([in] LONG wndNum, [in] BSTR bstrText, [in, optional] BSTR bstrColor);
+//*/en		
+	};
+
+[
+	uuid(B41BA781-8ED5-11D4-92AE-0001027ED904),
+	version(1.0),
+	helpstring("ttcoreex 1.0 Type Library")
+]
+library TTCOREEXLib
+{
+	importlib("stdole32.tlb");
+	importlib("stdole2.tlb");
+
+	[
+		uuid(B41BA790-8ED5-11D4-92AE-0001027ED904),
+		helpstring("JmcSite Class")
+	]
+	coclass JmcSite
+	{
+		[default] interface IJmcSite;
+	};
+
+	[
+		uuid(DDF78226-8F80-11D4-92AE-0001027ED904),
+		helpstring("_IJmcObjEvents Interface")
+	]
+	dispinterface _IJmcObjEvents
+	{
+		properties:
+		methods:
+		[id(1), helpstring("method Connected")] HRESULT Connected();
+		[id(2), helpstring("method ConnectLost")] HRESULT ConnectLost();
+		[id(3), helpstring("method Incoming")] HRESULT Incoming([in] BSTR bstrLine);
+		[id(4), helpstring("method Input")] HRESULT Input([in]  BSTR strInput);
+		[id(5), helpstring("method Timer")] HRESULT Timer([in] LONG ID);
+		[id(6), helpstring("method PreTimer")] HRESULT PreTimer([in] LONG ID);
+		[id(7), helpstring("method Disconnected")] HRESULT Disconnected();
+		[id(8), helpstring("method Load")] HRESULT Load();
+		[id(9), helpstring("method Unload")] HRESULT Unload();
+		[id(10), helpstring("method MultiIncoming")] HRESULT MultiIncoming();
+	};
+
+	[
+		uuid(DDF78225-8F80-11D4-92AE-0001027ED904),
+		helpstring("JmcObj Class")
+	]
+	coclass JmcObj
+	{
+		[default] interface IJmcObj;
+		[default, source] dispinterface _IJmcObjEvents;
+	};
+};

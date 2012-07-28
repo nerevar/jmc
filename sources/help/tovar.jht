@@ -1,0 +1,4 @@
+#toupper <varname> <text>
+  sets varname as UPPER(text)
+#tolower <varname> <text>
+  sets varname as LOWER(text)

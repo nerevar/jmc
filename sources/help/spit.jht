@@ -1,0 +1,5 @@
+ #spit <filename> <format> <options>
+  opens filename and send each line replacing %0 in format. 
+  options can consist of:
+  'n' - no empty lines will be catched
+  's' - silent. no message on finish

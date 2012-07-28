@@ -1,0 +1,77 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "recore"=.\recore\recore.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    "$/smc/recore", VDAAAAAA
+    .\recore
+    end source code control
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "smc"=.\smc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    "$/smc", NAAAAAAA
+    .
+    end source code control
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ttcore
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name recore
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ttcoreex
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "ttcoreex"=.\ttcoreex\ttcoreex.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    "$/smc/ttcoreex", KEAAAAAA
+    .\ttcoreex
+    end source code control
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name recore
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

@@ -1,0 +1,8 @@
+#alias [name]
+  show all or specified alias
+#alias <name> <command> [group]
+  create alias name to command in group
+#unalias <name>
+  delete specified alias
+#verbatim [on|off]
+  toggles aliases processing

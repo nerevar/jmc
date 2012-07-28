@@ -1,0 +1,8 @@
+#action [<pattern>]
+  show all action containing pattern 
+#action <pattern> <reaction> [priority] [group]
+  set reaction on pattern with priority in group
+#unaction <pattern>
+  delete action
+  
+see also: substitute

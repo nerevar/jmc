@@ -1,0 +1,3 @@
+#daa <string>
+  sends string to MUD. if logging and|or showing sent commands would not
+  show real text here.  

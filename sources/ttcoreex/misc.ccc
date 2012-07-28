@@ -1,0 +1,205 @@
+       if(command[0] == 'v' && is_abrev(command, "variable"))
+		strcpy(file,"variable");
+  else if(command[0] == 'a' && is_abrev(command, "action"))
+		strcpy(file,"variable");
+  else if(command[0] == 'a' && is_abrev(command, "alias"))
+		strcpy(file,"variable");
+  else if(command[0] == 'r' && is_abrev(command, "read"))
+		strcpy(file,"variable");
+  else if(command[0] == 'i' && is_abrev(command, "if")) 
+		strcpy(file,"variable");
+  else if(command[0] == 'l' && is_abrev(command, "loop"))
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "tolower"))
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "toupper"))
+		strcpy(file,"variable");
+  else if(command[0] == 'a' && is_abrev(command, "antisubstitute"))
+		strcpy(file,"variable");
+  else if(command[0] == 'd' && is_abrev(command, "drop"))
+		strcpy(file,"variable");
+  else if(command[0] == 'c' && is_abrev(command, "cr"))
+		strcpy(file,"variable");
+  else if(command[0] == 'e' && is_abrev(command, "echo"))
+		strcpy(file,"variable");
+  else if(command[0] == 'h' && is_abrev(command, "highlight"))
+		strcpy(file,"variable");
+  else if(command[0] == 'i' && is_abrev(command, "ignore"))
+		strcpy(file,"variable");
+  else if(command[0] == 'i' && is_abrev(command, "info"))
+		strcpy(file,"variable");
+  else if(command[0] == 'k' && is_abrev(command, "killall"))
+		strcpy(file,"variable");
+  else if(command[0] == 'l' && is_abrev(command, "log")) 
+		strcpy(file,"variable");
+  else if(command[0] == 'm' && is_abrev(command, "map"))
+		strcpy(file,"variable");
+  else if(command[0] == 'm' && is_abrev(command, "math")) 
+		strcpy(file,"variable");
+  else if(command[0] == 'm' && is_abrev(command, "mark")) 
+		strcpy(file,"variable");
+  else if(command[0] == 'm' && is_abrev(command, "message"))
+		strcpy(file,"variable");
+  else if(command[0] == 'o' && is_abrev(command, "output"))
+		strcpy(file,"variable");
+  else if(command[0] == 'p' && is_abrev(command, "path")) 
+		strcpy(file,"variable");
+  else if(command[0] == 'p' && is_abrev(command, "pathdir")) 
+		strcpy(file,"variable");
+  else if(command[0] == 'p' && is_abrev(command, "presub"))
+		strcpy(file,"variable");
+  else if(command[0] == 'r' && is_abrev(command, "return"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "script"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "savepath"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "showme"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "speedwalk"))
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "textin"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "substitute"))
+		strcpy(file,"variable");
+  else if(command[0] == 'g' && is_abrev(command, "gag")) 
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "tick")) 
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "tickoff")) 
+		strcpy(file,"variable");
+  else if(command[0] == 'g' && is_abrev(command, "group")) 
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "tickon")) 
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "tickset"))
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "ticksize")) 
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "togglesubs"))
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "unaction"))
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "unalias"))
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "unantisubstitute"))
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "unhighlight"))
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "unsubstitute"))
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "ungag"))
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "unpath")) 
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "unvariable"))
+		strcpy(file,"variable");
+  else if(command[0] == 'w' && is_abrev(command, "write"))
+		strcpy(file,"variable");
+  else if(command[0] == 'z' && is_abrev(command, "zap"))
+		strcpy(file,"variable");
+  else if(command[0] == 'h' && is_abrev(command, "hotkey"))
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "unhotkey"))
+		strcpy(file,"variable");
+  else if(command[0] == 'c' && is_abrev(command, "connect"))
+		strcpy(file,"variable");
+  else if(command[0] == 'b' && is_abrev(command, "bell"))
+		strcpy(file,"variable");
+  else if(command[0] == 'c' && is_abrev(command, "char"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "status"))
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "tabadd"))
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "tabdel"))
+		strcpy(file,"variable");
+  else if(command[0] == 'm' && is_abrev(command, "multiaction"))
+		strcpy(file,"variable");
+  else if(command[0] == 'm' && is_abrev(command, "multisubstitute"))
+		strcpy(file,"variable");
+  else if(command[0] == 'm' && is_abrev(command, "multihighlight"))
+		strcpy(file,"variable");
+  else if(command[0] == 'v' && is_abrev(command, "verbatim"))
+		strcpy(file,"variable");
+  else if(command[0] == 'n' && is_abrev(command, "nop")) 
+		strcpy(file,"variable");
+  else if(command[0] == 'q' && is_abrev(command, "quit"))
+		strcpy(file,"variable");
+  else if(command[0] == 'r' && is_abrev(command, "reloadscripts"))
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "use"))
+		strcpy(file,"variable");
+  else if(command[0] == 'u' && is_abrev(command, "unuse"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "system"))
+		strcpy(file,"variable");
+  else if(command[0] == 'p' && is_abrev(command, "ps"))
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "tslist"))
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "terminate"))
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "tskill"))
+		strcpy(file,"variable");
+  else if(command[0] == 'r' && is_abrev(command, "run"))
+		strcpy(file,"variable");
+  else if(command[0] == 'p' && is_abrev(command, "play"))
+		strcpy(file,"variable");
+  else if(command[0] == 'w' && is_abrev(command, "woutput"))
+		strcpy(file,"variable");
+  else if(command[0] == 'w' && is_abrev(command, "wshow"))
+		strcpy(file,"variable");
+  else if(command[0] == 'w' && is_abrev(command, "wlog"))
+		strcpy(file,"variable");
+  else if(command[0] == 'w' && is_abrev(command, "wname"))
+		strcpy(file,"variable");
+  else if(command[0] == 'w' && is_abrev(command, "wdock"))
+		strcpy(file,"variable");
+  else if(command[0] == 'l' && is_abrev(command, "logadd"))
+		strcpy(file,"variable");
+  else if(command[0] == 'l' && is_abrev(command, "logpass"))
+		strcpy(file,"variable");
+  else if(command[0] == 'f' && is_abrev(command, "flash"))
+		strcpy(file,"variable");
+  else if(command[0] == 'n' && is_abrev(command, "next"))
+		strcpy(file,"variable");
+  else if(command[0] == 'd' && is_abrev(command, "daa"))
+		strcpy(file,"variable");
+  else if(command[0] == 'w' && is_abrev(command, "whisper"))
+		strcpy(file,"variable");
+  else if(command[0] == 'h' && is_abrev(command, "hide"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "spit"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "stick"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "feed"))
+		strcpy(file,"variable");
+  else if(command[0] == 'l' && is_abrev(command, "lick"))
+		strcpy(file,"variable");
+  else if(command[0] == 'c' && is_abrev(command, "colon"))
+		strcpy(file,"variable");
+  else if(command[0] == 'w' && is_abrev(command, "wait"))
+		strcpy(file,"variable");
+  else if(command[0] == 'w' && is_abrev(command, "wt"))
+		strcpy(file,"variable");
+  else if(command[0] == 'b' && is_abrev(command, "break"))
+		strcpy(file,"variable");
+  else if(command[0] == 'a' && is_abrev(command, "abort"))
+		strcpy(file,"variable");
+  else if(command[0] == 'p' && is_abrev(command, "pinch"))
+		strcpy(file,"variable");
+  else if(command[0] == 'r' && is_abrev(command, "resume"))
+		strcpy(file,"variable");
+  else if(command[0] == 't' && is_abrev(command, "tmlist"))
+		strcpy(file,"variable");
+  else if(command[0] == 'l' && is_abrev(command, "llist"))
+		strcpy(file,"variable");
+  else if(command[0] == 'c' && is_abrev(command, "comment"))
+		strcpy(file,"variable");
+  else if(command[0] == 'r' && is_abrev(command, "race"))
+		strcpy(file,"variable");
+  else if(command[0] == 's' && is_abrev(command, "sos"))
+		strcpy(file,"variable");
+  else 

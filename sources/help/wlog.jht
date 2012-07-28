@@ -1,0 +1,5 @@
+#wlog {wnd} {filename} [append|overwrite|html]
+  starts logging of output window.
+  append will not clear file if exists
+  overwrite will clear file if exists
+  html will clear file and write as HTML log

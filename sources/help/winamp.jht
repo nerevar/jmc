@@ -1,0 +1,24 @@
+WINAMP - command for controlling WinAMP media player from JMC itself.
+syntax: #winamp {command} 
+          #wamp {command} 
+command can be on of the following:
+ previous   - plays previous in list track
+ next       - plays next in list track
+ play       - starts playing
+ pause      - pause/unpause
+ stop       - stop playing
+ fadeout    - fadeout and stop
+ stopafter  - play current track and stop after
+ rewind     - fast-rewind, 5 sec back
+ forward    - fast-forward, 5 sec forward
+ start      - to the beginning of the playlist (not in shuffle mode)
+ end        - to the beginning of the playlist (not in shuffle mode)
+ elapsed    - set time showing to elapsed (positive number)
+ remaining  - set time showing to remaining (negative number)
+ ontop      - make WinAmp window 'always on top'
+ doublesize - make WinAmp window doublisized
+ volume+    - raise volume by 1%
+ volume-    - lower volume by 1%
+ repeat     - toggle repeat mode
+ shuffle    - toggle shuffle mode
+ close      - close WinAmp

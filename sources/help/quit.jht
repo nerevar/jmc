@@ -1,0 +1,3 @@
+#quit
+jmc->Quit()
+  closes JMC

@@ -1,0 +1,12 @@
+sos command used to save some variable stuff to custom file.
+#sos {group} {<name>|*} 
+  add pattern (group can be one of action, alias, variable, hotkey)
+#sos mode [exact]
+  toggle mode. exact mode should save only full matched strings
+#sos list 
+  show current pattern list
+#sos clear 
+  clear pattern list
+#sos save {file} 
+  main command. checks all actions, aliases, vars and hotkeys and
+  save to <file> all records that match corresponding pattern. 
