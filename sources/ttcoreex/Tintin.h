@@ -380,6 +380,20 @@ void nope_command(char *arg);
 void abort_timer_command(char*arg);
 void autoreconnect_command(char*arg);
 
+// VARIABLES:
+void variable_value_input(char *arg);
+void variable_value_date(char *arg);
+void variable_value_year(char *arg);
+void variable_value_month(char *arg);
+void variable_value_day(char *arg);
+void variable_value_time(char *arg);
+void variable_value_hour(char *arg);
+void variable_value_minute(char *arg);
+void variable_value_second(char *arg);
+void variable_value_millisecond(char *arg);
+void variable_value_timestamp(char *arg);
+void variable_value_color_default(char *arg);
+
 BOOL show_actions(char* left = NULL, CGROUP* pGroup = NULL);
 int do_one_antisub(char *line);
 extern int SocketFlags;
@@ -454,6 +468,13 @@ typedef struct jmc_cmd
 	char*hlpfile;
 	} jmc_cmdi;
 //*/en
+
+
+const JMC_SPECIAL_VARIABLES_NUM = 12;
+typedef struct jmc_special_variable_struct {
+	char *name;
+	void (*jmcfn)(char*);
+} jmc_special_variable;
 
 
 //vls-begin// bugfix
