@@ -51,7 +51,7 @@ void CCommonParamsPage::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_COMMAND_CHAR, m_strCommandChar);
 	DDX_Text(pDX, IDC_COMMAND_DELIMITER, m_strCommandDelimiter);
 	DDX_Text(pDX, IDC_HISTORY_SIZE, m_nHistorySize);
-	DDV_MinMaxUInt(pDX, m_nHistorySize, 1, 500);
+	DDV_MinMaxUInt(pDX, m_nHistorySize, 1, 10000);
 	DDX_Check(pDX, IDC_DISPLAY_INPUT, m_bDisplayInput);
 	DDX_Check(pDX, IDC_CLEAR_INPUT, m_bClearInput);
 	DDX_Check(pDX, IDC_TOKEN_INPUT, m_bTokenInput);
