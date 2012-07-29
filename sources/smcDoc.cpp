@@ -439,9 +439,9 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
     // Load keywords list 
 //vls-begin// base dir
 //    HANDLE hFile  = CreateFile("tabwords.txt", GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL );
-    CString strFile = szBASE_DIR;
-    strFile += "\\tabwords.txt";
-    HANDLE hFile  = CreateFile(strFile, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL );
+    CString strTabwordsFile = szBASE_DIR;
+    strTabwordsFile += "\\tabwords.txt";
+    HANDLE hFile  = CreateFile(strTabwordsFile, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL );
 //vls-end//
     if ( hFile!=INVALID_HANDLE_VALUE ) { 
 //vls-begin// bugfix
@@ -475,25 +475,31 @@ CSmcDoc::~CSmcDoc()
     CloseHandle(hInputDoneEvent);
     CloseHandle(hStateClosedEvent);
 
-    //save tabwords
-    CString str;
-    POSITION pos = m_lstTabWords.GetHeadPosition ();
-    while ( pos ) {
-        str += m_lstTabWords.GetNext (pos) + "\r\n";
-    }
+	CString strTabwordsFile = szBASE_DIR;
+	strTabwordsFile += "\\tabwords.txt";
 
-    HANDLE hFile;
-//vls-begin// base dir
-//    hFile = CreateFile("tabwords.txt", GENERIC_READ| GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, NULL, NULL );
-    CString strFile = szBASE_DIR;
-    strFile += "\\tabwords.txt";
-    hFile = CreateFile(strFile, GENERIC_READ| GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, NULL, NULL );
-//vls-end//
-    if ( hFile!=INVALID_HANDLE_VALUE ) { 
-        DWORD Written;
-        WriteFile(hFile , (LPCSTR)str, str.GetLength() , &Written, NULL );
-        CloseHandle(hFile);
-    }
+	if (m_lstTabWords.IsEmpty()) {
+		// delete keywords empty file
+		DeleteFile((LPCSTR)strTabwordsFile);
+	} else {
+		//save tabwords
+		CString strWords;
+		POSITION pos = m_lstTabWords.GetHeadPosition ();
+		while ( pos ) {
+			strWords += m_lstTabWords.GetNext (pos) + "\r\n";
+		}
+
+		HANDLE hFile;
+		//vls-begin// base dir
+		//    hFile = CreateFile("tabwords.txt", GENERIC_READ| GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, NULL, NULL );
+		hFile = CreateFile(strTabwordsFile, GENERIC_READ| GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, NULL, NULL );
+		//vls-end//
+		if ( hFile!=INVALID_HANDLE_VALUE ) { 
+			DWORD Written;
+			WriteFile(hFile , (LPCSTR)strWords, strWords.GetLength() , &Written, NULL );
+			CloseHandle(hFile);
+		}
+	}
 }
 
 BOOL CSmcDoc::OnNewDocument()
