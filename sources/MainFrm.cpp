@@ -533,12 +533,19 @@ void CMainFrame::OnOptionsOptions()
     pg3.m_strLangFile       = langfile;
     pg3.m_strLangSect       = langsect;
     
+
     // Log options
-    pg4.m_bLogANSI = bANSILog;
+	if (bANSILog) {
+		pg4.m_LogType = 2;
+	} else if (bHTML) {
+		pg4.m_LogType = 1;
+	} else {
+		pg4.m_LogType = 0;
+	}
+
     pg4.m_bRMASupport = bRMASupport;
     pg4.m_nAppendMode = bDefaultLogMode ? 1 : 0 ;
-    pg4.m_bHTML = bHTML ;
-
+	
     memcpy(&pg5.m_guidLang ,  &theApp.m_guidScriptLang, sizeof(GUID));
     pg5.m_bAllowDebug = bAllowDebug;
     pg5.m_nErrorOutput = nScripterrorOutput;
@@ -588,10 +595,10 @@ void CMainFrame::OnOptionsOptions()
 		strcpy(langsect, pg3.m_strLangSect);
 
         // Log settings save
-        bANSILog = pg4.m_bLogANSI;
-        bRMASupport = pg4.m_bRMASupport;
+		bANSILog = pg4.m_LogType == 2;
+        bHTML = pg4.m_LogType == 1; 
+        bRMASupport = bANSILog ? pg4.m_bRMASupport : FALSE;
         bDefaultLogMode = pg4.m_nAppendMode ;
-        bHTML = pg4.m_bHTML; 
 
         if ( memcmp(&theApp.m_guidScriptLang, &pg5.m_guidLang , sizeof(GUID) ) ) {
             memcpy(&theApp.m_guidScriptLang, &pg5.m_guidLang , sizeof(GUID) ) ;

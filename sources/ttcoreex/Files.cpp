@@ -169,15 +169,20 @@ BOOL StartLog(int wnd, char* left, char *right)
 //*/en	
 
     if ( *hLogFile) { // Close log file now opened 
-        if ( *bCurLogHTML ) {
+        if(mesvar[MSG_LOG]) {
+			char message[BUFFER_SIZE];
+			sprintf(message, rs::rs(1024), logName);
+			tintin_puts2(message);
+		}
+        
+		if ( *bCurLogHTML ) {
             DWORD Written;
             WriteFile(*hLogFile , epilog, strlen(epilog), &Written, NULL);
         }
         CloseHandle(*hLogFile);
         *hLogFile = NULL;
     	strcpy(logName,left);
-        if(mesvar[MSG_LOG])
-			tintin_puts2(rs::rs(1024));
+
         if ( !*left) 
             return FALSE;
     }

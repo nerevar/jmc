@@ -22,10 +22,18 @@ public:
 // Dialog Data
 	//{{AFX_DATA(CLogParamsPage)
 	enum { IDD = IDD_LOG_PARAMS_PAGE };
-	BOOL	m_bLogANSI;
+	CButton	m_LogTypeControl;
+	CButton	m_logTypeTextControl;
+	CButton	m_logTypeHtmlControl;
+	CButton	m_logTypeAnsiControl;
+	CButton	m_RmaSupportControl;
+	CButton	m_logTypeControl;
 	BOOL	m_bRMASupport;
 	int		m_nAppendMode;
-	BOOL	m_bHTML;
+	int		m_logTypeHtml;
+	int		m_logTypeText;
+	int		m_logTypeAnsi;
+	int		m_LogType;
 	//}}AFX_DATA
 
 
@@ -40,7 +48,8 @@ public:
 protected:
 	// Generated message map functions
 	//{{AFX_MSG(CLogParamsPage)
-		// NOTE: the ClassWizard will add member functions here
+	afx_msg void OnChangeLogType();
+	afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

@@ -144,6 +144,9 @@
 #define IDC_LANG_FILE                   1107
 #define IDC_WWW2                        1107
 #define IDC_LANG_SECT                   1108
+#define IDC_LOGTYPE_TEXT                1113
+#define IDC_LOGTYPE_HTML                1114
+#define IDC_LOGTYPE_ANSI                1115
 #define ID_OPTIONS_SCROLLBUFFER         32771
 #define ID_OPTIONS_FONT                 32772
 #define ID_OPTIONS_HOTKEYS              32774
@@ -212,7 +215,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        178
 #define _APS_NEXT_COMMAND_VALUE         32809
-#define _APS_NEXT_CONTROL_VALUE         1108
+#define _APS_NEXT_CONTROL_VALUE         1114
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif
