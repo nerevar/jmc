@@ -31,6 +31,7 @@ public:
 	CString	m_strCommandChar;
 	CString	m_strCommandDelimiter;
 	UINT	m_nHistorySize;
+	BOOL	m_bDisplayCommands;
 	BOOL	m_bDisplayInput;
 	BOOL	m_bClearInput;
 	BOOL	m_bTokenInput;

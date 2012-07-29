@@ -180,6 +180,8 @@ BEGIN
                     BS_AUTOCHECKBOX | WS_TABSTOP,98,88,87,10
     CONTROL         "Cursor in end",IDC_AUTO_END,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,197,88,93,10
+    CONTROL         "Display commands",IDC_DISPLAY_COMMANDS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,8,85,76,10
 END
 
 IDD_SUBST_PAGE DIALOG DISCARDABLE  0, 0, 269, 98

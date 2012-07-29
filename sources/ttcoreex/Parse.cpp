@@ -9,7 +9,7 @@
 #include "tintin.h"
 //#include "cmds.h"
 extern jmc_cmdi jmc_cmds[JMC_CMDS_NUM];
-void parse_tintin_command(char *command, char *arg);
+bool parse_tintin_command(char *command, char *arg);
 void do_speedwalk(char *cp) ;
 
 void all_command();
@@ -92,6 +92,22 @@ void parse_input(char *input)
 //*/en
         if(*command==cCommandChar) 
 		{
+			if (bDisplayCommands) {
+				// output command in square brackets
+				char strInputCommand[BUFFER_SIZE], strOutputBuffer[BUFFER_SIZE];
+				strcpy(strInputCommand, "\r[");
+				strcat(strInputCommand, command);
+				if (*arg != '\0') {
+					strcat(strInputCommand, " ");
+					strcat(strInputCommand, arg);
+				}
+				strcat(strInputCommand, "]");
+
+				add_codes(strInputCommand, strOutputBuffer, "brown", TRUE);
+
+				tintin_puts2(strOutputBuffer);
+			}
+
             parse_tintin_command(command+1, arg);
 		}
 //* en:comments
@@ -221,7 +237,7 @@ void do_speedwalk(char *cp)
 /*************************************/
 /* parse most of the tintin-commands */
 /*************************************/
-void parse_tintin_command(char *command, char *arg)
+bool parse_tintin_command(char *command, char *arg)
 {
   /*
    this lines almost totally rewrote to put all command functions
@@ -244,20 +260,21 @@ void parse_tintin_command(char *command, char *arg)
 
     do_cycle(      1,     a1,    1,         a2,  arg    );
  /* do_cycle( bound1, bound2, step,      delay,  command); */
-    return;
+    return false;
   }
-  if(*command == cCommandChar)return;
+
+  if(*command == cCommandChar) return false;
 
   for(int i=0;i<JMC_CMDS_NUM;i++)
 	  if((command[0]==jmc_cmds[i].alias[0])
 		  &&(is_abrev(command,jmc_cmds[i].alias)))
 	  {
 		  (*(jmc_cmds[i].jmcfn))(arg);
-		  return;
+		  return true;
 	  }
   
   tintin_puts2(rs::rs(1145));
-  return;
+  return false;
 }
 
 

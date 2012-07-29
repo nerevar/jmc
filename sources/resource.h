@@ -101,6 +101,7 @@
 #define IDC_DISPLAY_INPUT               1044
 #define IDC_PRODUCT_NAME                1045
 #define IDC_VERTION                     1046
+#define IDC_DISPLAY_COMMANDS            1046
 #define IDC_COPYRIGHT                   1047
 #define IDC_EMAIL                       1048
 #define IDC_WWW                         1049

@@ -295,6 +295,7 @@ CMainFrame::CMainFrame()
 	
     m_wndSplitter.m_nUpSize = ::GetPrivateProfileInt("Main" , "UpSize" , 300, szGLOBAL_PROFILE);
     m_wndSplitter.m_nDownSize = ::GetPrivateProfileInt("Main" , "DownSize" , 100, szGLOBAL_PROFILE);
+    bDisplayCommands  = ::GetPrivateProfileInt("Options" , "DisplayCommands" , 0, szGLOBAL_PROFILE);
     bDisplayInput  = ::GetPrivateProfileInt("Options" , "DisplayInput" , 1, szGLOBAL_PROFILE);
     MoreComingDelay  = ::GetPrivateProfileInt("Options" , "MoreComingDelay" , 100, szGLOBAL_PROFILE);
 }
@@ -303,6 +304,7 @@ CMainFrame::~CMainFrame()
 {
     ::WritePrivateProfileInt("Main" , "UpSize" , m_wndSplitter.m_nUpSize, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Main" , "DownSize" , m_wndSplitter.m_nDownSize, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt("Options" , "DisplayCommands" , bDisplayCommands, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "DisplayInput" , bDisplayInput , szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "MoreComingDelay" , MoreComingDelay , szGLOBAL_PROFILE);
 }
@@ -498,6 +500,7 @@ void CMainFrame::OnOptionsOptions()
     pg1.m_strCommandChar = pDoc->m_cCommandChar;
     pg1.m_strCommandDelimiter = cCommandDelimiter;
     pg1.m_nHistorySize = m_editBar.GetHistorySize();
+    pg1.m_bDisplayCommands = bDisplayCommands;
     pg1.m_bDisplayInput = bDisplayInput;
     pg1.m_bClearInput = m_editBar.m_bClearInput;
     pg1.m_bTokenInput = m_editBar.m_bTokenInput;
@@ -555,6 +558,7 @@ void CMainFrame::OnOptionsOptions()
         ASSERT(pg1.m_strCommandChar.GetLength());
         cCommandChar = pDoc->m_cCommandChar = pg1.m_strCommandChar[0];
         cCommandDelimiter = pg1.m_strCommandDelimiter[0];
+        bDisplayCommands = pg1.m_bDisplayCommands;
         bDisplayInput = pg1.m_bDisplayInput;
         m_editBar.m_bClearInput = pg1.m_bClearInput;
         m_editBar.m_bTokenInput = pg1.m_bTokenInput;

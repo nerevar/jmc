@@ -24,6 +24,7 @@ CCommonParamsPage::CCommonParamsPage() : CPropertyPage(CCommonParamsPage::IDD, I
 	m_strCommandChar = _T("");
 	m_strCommandDelimiter = _T("");
 	m_nHistorySize = 0;
+	m_bDisplayCommands = FALSE;
 	m_bDisplayInput = FALSE;
 	m_bClearInput = FALSE;
 	m_bTokenInput = FALSE;
@@ -52,6 +53,7 @@ void CCommonParamsPage::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_COMMAND_DELIMITER, m_strCommandDelimiter);
 	DDX_Text(pDX, IDC_HISTORY_SIZE, m_nHistorySize);
 	DDV_MinMaxUInt(pDX, m_nHistorySize, 1, 10000);
+	DDX_Check(pDX, IDC_DISPLAY_COMMANDS, m_bDisplayCommands);
 	DDX_Check(pDX, IDC_DISPLAY_INPUT, m_bDisplayInput);
 	DDX_Check(pDX, IDC_CLEAR_INPUT, m_bClearInput);
 	DDX_Check(pDX, IDC_TOKEN_INPUT, m_bTokenInput);

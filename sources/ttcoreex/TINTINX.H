@@ -59,6 +59,7 @@ extern BOOL DLLEXPORT bTickStatus;
 extern BOOL DLLEXPORT bPasswordEcho ;
 extern BOOL DLLEXPORT bConnectBeep;
 extern BOOL DLLEXPORT bAutoReconnect;
+extern BOOL DLLEXPORT bDisplayCommands;
 extern BOOL DLLEXPORT bDisplayInput;
 extern BOOL DLLEXPORT bHTML;
 extern BOOL DLLEXPORT bAllowDebug;
