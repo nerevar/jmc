@@ -1,0 +1,11 @@
+# exclude JMC
+sources\smc.aps
+sources\smc.clw
+sources\smc.ncb
+sources\smc.opt
+sources\smc.plg
+sources\ttcoreex\ttcoreex.aps
+sources\ttcoreex\ttcoreex.h
+sources\ttcoreex\ttcoreex.tlb
+sources\ttcoreex\ttcoreex_i.c
+sources\ttcoreex\ttcoreex_p.c
