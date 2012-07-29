@@ -140,7 +140,7 @@ BOOL CSmcApp::InitInstance()
 	ParseCommandLine(cmdInfo);
 
     char buff[4096] = "";
-    DWORD ret =  ::GetPrivateProfileString("Main", "LangFile", "jmc.ini", buff, 4096 , szGLOBAL_PROFILE);
+    DWORD ret =  ::GetPrivateProfileString("Main", "LangFile", "language.ini", buff, 4096 , szGLOBAL_PROFILE);
 	strcpy(langfile,buff);
     ret =  ::GetPrivateProfileString("Main", "LangSect", "English", buff, 4096 , szGLOBAL_PROFILE);
 	strcpy(langsect,buff);
