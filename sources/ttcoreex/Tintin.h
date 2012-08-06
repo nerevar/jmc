@@ -400,10 +400,8 @@ extern int SocketFlags;
 extern unsigned char State;
 int do_telnet_protecol(unsigned char* cpsource, char* cpdest, int size);
 //vls-begin// multiple output
-//void WriteToLog(char* str, int StrSize ); 
-//void WriteToLog2(char* str, int StrSize );
 void WriteToLog(int wnd, char* str, int StrSize ); 
-void WriteToLog2(int wnd, char* str, int StrSize );
+void WriteLineToLog(int wnd, char* str, int StrSize );
 void StopLogging();
 //vls-end//
 struct listnode *init_list(void);

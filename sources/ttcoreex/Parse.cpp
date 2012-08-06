@@ -455,10 +455,6 @@ void write_com_arg_mud(char* command, char* argument)
     i=strlen(outtext);
     outtext[i++]='\r';
     outtext[i++]='\n';
-/*    
-	if(hLogFile)
-        WriteToLog2(outtext, i); 
-*/
 }
 
 
