@@ -378,18 +378,18 @@ void write_line_mud(char *line)
 	{
 		if(bDaaMessage){
     	daaString[strlen(line)] = '\n';
-        WriteToLog2(-1, daaString, strlen(line)+1);
+        WriteLineToLog(-1, daaString, strlen(line)+1);
         
 		}
 		else{
 //* /en
 //vls-begin// multiple output + bugfix
-//        WriteToLog2(line, OriginalLen);
+//        WriteLineToLog(line, OriginalLen);
         char *line_n;
         line_n = (char *)malloc(strlen(line)+1);
         strcpy(line_n, line);
         strcat(line_n, "\n");
-        WriteToLog2(-1, line_n, strlen(line)+1);
+        WriteLineToLog(-1, line_n, strlen(line)+1);
         free(line_n);
 		}
 //vls-end//
