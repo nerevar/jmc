@@ -4,6 +4,8 @@
 #include <io.h>
 #include <string>
 #include "Logs.h"
+#include <fstream>
+#include <iostream>
 
 using namespace std;
 
@@ -23,7 +25,6 @@ static int new_tcolor = tcolor;
 static int new_bcolor = bcolor;
 
 string strCache = "";
-
 
 
 static void parse(const char* from, const char* to, int& attrib, int& tcolor, int& bcolor)
@@ -104,12 +105,34 @@ void DLLEXPORT InitOutputNameFunc(GET_OUTPUTNAME_FUNC OutputNameFunc)
 }
 //vls-end//
 
+
+void debug(string st)
+{
+	ofstream myfile;
+	myfile.open ("debug.txt", ios::out | ios::app);
+	
+	myfile << st << "\n";
+	
+	myfile.close();
+}
+
+void log(string st)
+{
+	if (logFile.is_open()) {
+		logFile << st;
+	}
+}
+
 //vls-begin// multiple output
 BOOL StartLog(int wnd, char* left, char *right)
 {
 
+	// TODO: wnd
+	if (wnd > 0)
+		return false;
+
 //vls-begin// multiple output
-    HANDLE *hLogFile = wnd < 0 ? &::hLogFile : &hOutputLogFile[wnd];
+    //HANDLE *hLogFile = wnd < 0 ? &::hLogFile : &hOutputLogFile[wnd];
     BOOL *bCurLogHTML = wnd < 0 ? &::bCurLogHTML : &bOutputCurLogHTML[wnd];
 //* en	
 	char *logName = wnd<0 ?sLogName : sOutputLogName[wnd];
@@ -127,7 +150,7 @@ BOOL StartLog(int wnd, char* left, char *right)
 		return FALSE;
 //*/en	
 
-    if ( *hLogFile) { // Close log file now opened 
+    if (logFile.is_open()) { // Close log file now opened 
         if(mesvar[MSG_LOG]) {
 			char message[BUFFER_SIZE];
 			sprintf(message, rs::rs(1024), logName);
@@ -135,11 +158,11 @@ BOOL StartLog(int wnd, char* left, char *right)
 		}
         
 		if ( *bCurLogHTML ) {
-            DWORD Written;
-            WriteFile(*hLogFile , html_footer.c_str(), html_footer.length(), &Written, NULL);
+			log(html_footer);
         }
-        CloseHandle(*hLogFile);
-        *hLogFile = NULL;
+
+		logFile.close();
+
     	strcpy(logName,left);
 
         if ( !*left) 
@@ -173,55 +196,83 @@ BOOL StartLog(int wnd, char* left, char *right)
     }
 
 
-    if ( bLogMode && !*bCurLogHTML ) {
-        *hLogFile = CreateFile(left , GENERIC_READ| GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, NULL, NULL );
-    }
-    else 
-        *hLogFile = CreateFile(left , GENERIC_READ| GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, NULL, NULL );
+	if ( bLogMode && !*bCurLogHTML ) {
+		logFile.open (left, ios::out | ios::app);
+	} else {
+		logFile.open (left);
+	}
 
-    if ( *hLogFile == INVALID_HANDLE_VALUE ) {
-        char buff[128];
-        *hLogFile = NULL;
-        sprintf(buff,rs::rs(1028),left);
-        tintin_puts2(buff);
-        return FALSE;
-    }
-    SetFilePointer(*hLogFile, 0, 0 , FILE_END );
+	if (!logFile) {
+		char buff[128];
+		sprintf(buff,rs::rs(1028), left);
+		tintin_puts2(buff);
+		return FALSE;		
+	}
 
     // Do HTML Log pereference
     if ( *bCurLogHTML ) {
-        DWORD Written;
-        WriteFile(*hLogFile , html_header.c_str() , html_header.length(), &Written, NULL);
+		log(html_header);
 
 	    attrib = 0;
 	    tcolor = 37;
 	    bcolor = 40;
 
-        const char* pspan = span(tcolor, bcolor, attrib);
-        WriteFile(*hLogFile , pspan, strlen(pspan), &Written, NULL);
+		log(span(tcolor, bcolor, attrib));
+
 		strCache = "";
     }
 
 	GetLocalTime(&stl);
-//    sprintf(Timerecord, rs::rs(1029) , stl.wDay, stl.wMonth , 
-//        stl.wYear , stl.wHour, stl.wMinute);
-//    WriteToLog(Timerecord , strlen(Timerecord) );
+
     if (wnd < 0)
         sprintf(Timerecord, rs::rs(1029) , stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
     else
         sprintf(Timerecord, rs::rs(1242) , wnd, stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
-    WriteToLog(wnd, Timerecord , strlen(Timerecord) );
+    
+	log(Timerecord);
+	
 	strcpy(logName,left);
     return TRUE;
 }
 //vls-end//
 
+string processHTML(string strInput)
+{
+	return strInput;
+}
 
+string processANSI(string strInput, int isRMA)
+{
+	return strInput;
+}
+
+string processTEXT(string strInput)
+{
+	return strInput;
+}
+
+
+string processLine(char *charInput, int StrSize)
+{
+	string strInput(charInput), strOutput;
+	
+
+	if (bCurLogHTML) {
+		// parse line to HTML
+		strOutput = processHTML(strInput);
+	} else if (bANSILog) {
+		strOutput = processANSI(strInput, bRMASupport);
+	} else {
+		strOutput = processTEXT(strInput);
+	}
+
+	return strOutput;
+}
 
 /**
  * Writing to log file without ESC characters
  */
-void WriteToLog(int wnd, char* str, int StrSize )
+void rez_WriteToLog(int wnd, char* str, int StrSize )
 {
     static DWORD LastTicker = 0;
     char *buff, *src, *out;
@@ -236,7 +287,6 @@ void WriteToLog(int wnd, char* str, int StrSize )
     if ( bCurLogHTML ) {
         bool lookup = true;
         bool new_line = true;
-        DWORD Written;
         char *ptr = str;
 
 
@@ -248,7 +298,7 @@ void WriteToLog(int wnd, char* str, int StrSize )
 			    break;
 
 		    case '\n':
-                WriteFile(hLogFile , BR.c_str(), BR.length(), &Written, NULL);
+				log(BR);
 			    new_line = true;
 			    break;
 
@@ -296,8 +346,10 @@ void WriteToLog(int wnd, char* str, int StrSize )
 				// flush cache to file
 			    if( strCache.length() > 0 )
 			    {
-				    if( attrib != new_attrib || tcolor != new_tcolor || bcolor != new_bcolor )
-					    WriteFile(hLogFile , strCache.c_str(), strCache.length(), &Written, NULL);
+					if( attrib != new_attrib || tcolor != new_tcolor || bcolor != new_bcolor ) {
+						log(strCache);
+					}
+					//    WriteFile(hLogFile , strCache.c_str(), strCache.length(), &Written, NULL);
 				    
 					//strcpy(strCache, "");
 					strCache = "";
@@ -307,7 +359,8 @@ void WriteToLog(int wnd, char* str, int StrSize )
 				    bcolor = new_bcolor;
 			    }
 
-			    WriteFile(hLogFile , ptr, 1, &Written, NULL);
+			    //WriteFile(hLogFile , ptr, 1, &Written, NULL);
+				log(ptr);
 			    new_line = false;
 			    break;
 		    }
@@ -356,10 +409,11 @@ void WriteToLog(int wnd, char* str, int StrSize )
             StrSize--;
         } while (StrSize >0);
 
-        if ( count ) {
-            DWORD Written;
-            WriteFile(hLogFile , buff , count , &Written, NULL);
-        }
+        //if ( count ) {
+        //    DWORD Written;
+        //    WriteFile(hLogFile , buff , count , &Written, NULL);
+        //}
+		log(buff);
         free(buff);
     }
 }
@@ -369,10 +423,11 @@ void WriteToLog(int wnd, char* str, int StrSize )
  */
 void WriteLineToLog(int wnd, char* str, int StrSize )
 {
-    HANDLE hLogFile = wnd < 0 ? ::hLogFile : hOutputLogFile[wnd];
+	// TODO: wnd
+	if (wnd > 0)
+		return;
 
-    DWORD Written;
-    WriteFile(hLogFile , str, StrSize, &Written, NULL);
+	log(str);
 }
 
 
@@ -381,20 +436,20 @@ void WriteLineToLog(int wnd, char* str, int StrSize )
  */
 void StopLogging()
 {
-    DWORD Written;
-
-    if (hLogFile) {
-        if ( bCurLogHTML )
-            WriteFile(hLogFile , html_footer.c_str(), html_footer.length(), &Written, NULL);
-        CloseHandle(hLogFile);
-		hLogFile = NULL;
+    if (logFile.is_open()) {
+        if ( bCurLogHTML ) {
+			log(html_footer);
+		}
+		logFile.close();
     }
 
+	// TODO: wnd
+	return;
     for (int i = 0; i < MAX_OUTPUT; i++) {
         if (hOutputLogFile[i]) {
 
-            if ( bOutputCurLogHTML[i] )
-                WriteFile(hOutputLogFile[i] , html_footer.c_str(), html_footer.length(), &Written, NULL);
+            if ( bOutputCurLogHTML[i] ) {}
+                //WriteFile(hOutputLogFile[i] , html_footer.c_str(), html_footer.length(), &Written, NULL);
 
             CloseHandle(hOutputLogFile[i]);
             hOutputLogFile[i] = NULL;
@@ -441,7 +496,7 @@ void logadd_command(char *arg)
     substitute_myvars(tmp,msg);
     strcat(msg, "\n");
 
-    WriteToLog(-1, msg, strlen(msg));
+	log(msg);
 }
 
 /************************/

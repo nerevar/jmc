@@ -25,10 +25,12 @@
 #include <string>
 #include <map>
 #include <list>
+#include <fstream>
 
 #include "tintinx.h"
 #include "ttobjects.h"
 
+using namespace std;
 
 // for the get_arg_in_braces
 //* en
@@ -187,6 +189,7 @@ extern struct listnode *common_subs;
 extern struct listnode *common_antisubs, *common_pathdirs, *common_path;
 extern char vars[10][BUFFER_SIZE]; /* the %0, %1, %2,....%9 variables */
 extern HANDLE hLogFile;
+extern ofstream logFile;
 //vls-begin// multiple output
 extern HANDLE hOutputLogFile[MAX_OUTPUT];
 //vls-end//
@@ -400,9 +403,12 @@ extern int SocketFlags;
 extern unsigned char State;
 int do_telnet_protecol(unsigned char* cpsource, char* cpdest, int size);
 //vls-begin// multiple output
-void WriteToLog(int wnd, char* str, int StrSize ); 
+//void WriteToLog(int wnd, char* str, int StrSize ); 
 void WriteLineToLog(int wnd, char* str, int StrSize );
 void StopLogging();
+
+void log(string st);
+string processLine(char *strInput, int StrSize);
 //vls-end//
 struct listnode *init_list(void);
 struct listnode *init_pathdir_list(void);

@@ -10,6 +10,8 @@
 //#include <initguid.h>
 #include "ttcoreex.h"
 
+#include <fstream>
+
 #include "ttcoreex_i.c"
 
 #include "winsock.h"
@@ -17,6 +19,8 @@
 #include "JmcSite.h"
 #include "JmcObj.h"
 #include "telnet.h"
+
+using namespace std;
 
 // #define _DEBUG_LOG
 
@@ -98,6 +102,7 @@ int path_length;
 int old_more_coming,more_coming;
 char last_line[BUFFER_SIZE];
 HANDLE hLogFile;
+ofstream logFile;
 //vls-begin// multiple output
 HANDLE hOutputLogFile[MAX_OUTPUT];
 //vls-end//
@@ -278,6 +283,7 @@ void tintin_puts2(char *cptr)
 
 //vls-begin// multiple output
 //void tintin_puts3(char *cptr)
+// TODO: wnd
 void tintin_puts3(char *cptr, int wnd)
 //vls-end
 {
@@ -288,9 +294,10 @@ void tintin_puts3(char *cptr, int wnd)
 
 //vls-begin// multiple output
 //    DirectOutputFunction(buff, 1); // out to output window
-    if ( hOutputLogFile[wnd] )
-        WriteToLog(wnd, cptr, strlen(cptr));
-        WriteToLog(wnd, "\r\n", 2);
+    if ( hOutputLogFile[wnd] ) {
+        //WriteToLog(wnd, cptr, strlen(cptr));
+        //WriteToLog(wnd, "\r\n", 2);
+	}
 
     DirectOutputFunction(buff, 1+wnd); // out to output window
 //vls-end//
@@ -374,12 +381,12 @@ void write_line_mud(char *line)
         tintin_puts2((char*)str.c_str());
     }
 //    if(hLogFile) {
-    if(hLogFile) 
+    if(logFile) 
 	{
 		if(bDaaMessage){
-    	daaString[strlen(line)] = '\n';
-        WriteLineToLog(-1, daaString, strlen(line)+1);
-        
+    		daaString[strlen(line)] = '\n';
+			WriteLineToLog(-1, daaString, strlen(line)+1);
+			log(daaString);
 		}
 		else{
 //* /en
@@ -389,7 +396,8 @@ void write_line_mud(char *line)
         line_n = (char *)malloc(strlen(line)+1);
         strcpy(line_n, line);
         strcat(line_n, "\n");
-        WriteLineToLog(-1, line_n, strlen(line)+1);
+        //WriteLineToLog(-1, line_n, strlen(line)+1);
+		log(line_n);
         free(line_n);
 		}
 //vls-end//
@@ -872,9 +880,11 @@ static void process_incoming(char* buffer)
 //            }
 //            if ( bProcess  ) 
 //                do_one_line(linebuffer);
-            if(hLogFile && !bLogPassedLine) {
-                WriteToLog(-1, linebuffer, strlen(linebuffer)); 
-                WriteToLog(-1, "\r\n", 2); 
+            if(logFile.is_open() && !bLogPassedLine) {
+				log(processLine(linebuffer, strlen(linebuffer)));
+				log("\r\n");
+//                WriteToLog(-1, linebuffer, strlen(linebuffer)); 
+//                WriteToLog(-1, "\r\n", 2); 
             }
             if ( bProcess  ) 
                 do_one_line(linebuffer);
@@ -917,8 +927,9 @@ static void process_incoming(char* buffer)
 //            do_one_line(linebuffer);
         if ( bProcess  ) 
             do_one_line(linebuffer);
-        if(hLogFile && !bLogPassedLine) {
-            WriteToLog(-1, linebuffer, strlen(linebuffer)); 
+        if(logFile.is_open() && !bLogPassedLine) {
+			log(processLine(linebuffer, strlen(linebuffer)));
+//            WriteToLog(-1, linebuffer, strlen(linebuffer)); 
         }
         bLogPassedLine = FALSE;
 //vls-end//
