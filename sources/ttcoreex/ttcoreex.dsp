@@ -80,8 +80,8 @@ LINK32=link.exe
 # SUBTRACT LINK32 /debug
 # Begin Custom Build - Performing registration
 OutDir=.\ReleaseMinDependency
-TargetPath=\games\mud\_jmc\src\ttcoreex.dll
-InputPath=\games\mud\_jmc\src\ttcoreex.dll
+TargetPath=\JMC\SOURCES\ttcoreex.dll
+InputPath=\JMC\SOURCES\ttcoreex.dll
 SOURCE="$(InputPath)"
 
 "$(OutDir)\regsvr32.trg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -174,6 +174,10 @@ SOURCE=.\JmcSite.cpp
 # Begin Source File
 
 SOURCE=.\Llist.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Logs.cpp
 # End Source File
 # Begin Source File
 
@@ -272,6 +276,10 @@ SOURCE=.\JmcObj.h
 # Begin Source File
 
 SOURCE=.\JmcSite.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\Logs.h
 # End Source File
 # Begin Source File
 
