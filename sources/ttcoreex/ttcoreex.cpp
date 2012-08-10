@@ -882,7 +882,7 @@ static void process_incoming(char* buffer)
 //                do_one_line(linebuffer);
             if(logFile.is_open() && !bLogPassedLine) {
 				log(processLine(linebuffer, strlen(linebuffer)));
-				log("\r\n");
+				log("\n");
 //                WriteToLog(-1, linebuffer, strlen(linebuffer)); 
 //                WriteToLog(-1, "\r\n", 2); 
             }

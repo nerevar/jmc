@@ -248,7 +248,19 @@ string processANSI(string strInput, int isRMA)
 
 string processTEXT(string strInput)
 {
-	return strInput;
+	// delete everything from 0x1B to 'm'
+	string strOutput = strInput;
+	int escPos = strOutput.find(0x1B),
+		endEscPos = strOutput.find('m', escPos);
+
+	while (escPos != string::npos) {
+		strOutput.erase(escPos, endEscPos - escPos + 1);
+		
+		escPos = strOutput.find(0x1B),
+		endEscPos = strOutput.find('m', escPos);
+	}
+
+	return strOutput;
 }
 
 
@@ -256,13 +268,18 @@ string processLine(char *charInput, int StrSize)
 {
 	string strInput(charInput), strOutput;
 	
-
 	if (bCurLogHTML) {
 		// parse line to HTML
 		strOutput = processHTML(strInput);
 	} else if (bANSILog) {
-		strOutput = processANSI(strInput, bRMASupport);
+		// keep ANSI codes
+		if (bRMASupport)
+			strOutput = processANSI(strInput, bRMASupport);
+		else
+			// add RMA tags
+			strOutput = strInput;	
 	} else {
+		// strip all Esc-sequences
 		strOutput = processTEXT(strInput);
 	}
 
