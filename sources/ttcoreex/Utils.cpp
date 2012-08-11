@@ -9,6 +9,7 @@
 #include "tintin.h"
 #include <vector>
 #include <string>
+#include <sstream>
 
 using namespace std;
 
@@ -70,4 +71,16 @@ string strprintf(char* pszFormat, ...)
     string str = StrPrintfV(pszFormat, marker);
     va_end(marker);
     return str;
+}
+
+
+std::vector<int> split(const string &s, char delim) {
+    vector<int> elems;
+    stringstream ss(s);
+    string item;
+
+    while(std::getline(ss, item, delim) && (item.length() > 0)) {
+         elems.push_back(atoi(item.c_str()));
+    }
+    return elems;
 }

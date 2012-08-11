@@ -26,77 +26,7 @@ static int new_attrib = attrib;
 static int new_tcolor = tcolor;
 static int new_bcolor = bcolor;
 
-string strCache = "";
 DWORD lastTicker = 0;
-
-static void parse(const char* from, const char* to, int& attrib, int& tcolor, int& bcolor)
-{
-	char* p = new char[to-from+1];
-
-	memcpy(p, from, to-from);
-	p[to-from] = '\0';
-
-	char * ptr = strtok(p, "p:;");
-	while( ptr != NULL )
-	{
-		int val = atoi(ptr);
-		switch( val )
-		{
-		case 0:
-		case 1:
-			attrib = val;
-			break;
-
-		case 30:
-		case 31:
-		case 32:
-		case 33:
-		case 34:
-		case 35:
-		case 36:
-		case 37:
-			tcolor = val;
-			break;
-
-		case 40:
-		case 41:
-		case 42:
-		case 43:
-		case 44:
-		case 45:
-		case 46:
-		case 47:
-			bcolor = val;
-			break;
-		}
-
-		ptr = strtok(NULL, "p:;");
-	}
-
-	delete [] p;
-}
-
-static const char* span(int tcolor, int bcolor, int attrib)
-{
-	static char buf[64];
-
-	switch( attrib )
-	{
-	case 0:
-		sprintf(buf, "<i class=\"%s\">", dtable[ tcolor-30 ]);
-		break;
-
-	case 1:
-		sprintf(buf, "<i class=\"%s\">", ltable[ tcolor-30 ]);
-		break;
-
-	default:
-		sprintf(buf, "<i class=\"%s\">", dtable[ tcolor-30 ]);
-		break;
-	}
-
-	return buf;
-}
 
 GET_OUTPUTNAME_FUNC GetOutputName;
 
@@ -106,7 +36,6 @@ void DLLEXPORT InitOutputNameFunc(GET_OUTPUTNAME_FUNC OutputNameFunc)
     GetOutputName = OutputNameFunc;
 }
 //vls-end//
-
 
 void debug(char *pszFormat, ...)
 {
@@ -135,9 +64,10 @@ void debug(string str)
 
 void log(string st)
 {
-	if (logFile.is_open()) {
-		logFile << st;
-	}
+	if (!logFile.is_open())
+		return;
+		
+	logFile << st;
 }
 
 //vls-begin// multiple output
@@ -228,15 +158,8 @@ BOOL StartLog(int wnd, char* left, char *right)
 
     // Do HTML Log pereference
     if ( *bCurLogHTML ) {
-		log(html_header);
-
-	    attrib = 0;
-	    tcolor = 37;
-	    bcolor = 40;
-
-		log(span(tcolor, bcolor, attrib));
-
-		strCache = "";
+		//log(html_header);
+		log(TAG_OPEN);
     }
 
 	GetLocalTime(&stl);
@@ -253,21 +176,119 @@ BOOL StartLog(int wnd, char* left, char *right)
 }
 //vls-end//
 
+std::vector<int> processParams(string params)
+{
+	vector<int> paramsList;
+
+	if (params == "" || params == "0") {
+		paramsList.push_back(0);
+	} else {
+		paramsList = split(params, ';');
+
+		// remove first 0 param - it's useless
+		if (paramsList.at(0) == 0 && paramsList.size() > 1) {
+			paramsList.erase(paramsList.begin());
+		}
+	}
+
+	return paramsList;
+}
+
+string getCSSClass(int param)
+{
+	// add css light color
+	if (param == 1) 
+		return CSS_LIGHT_COLOR;
+
+	// set text color
+	if (param >= 30 && param <= 37)
+		return css_colors[ param - 30 ];
+
+	// TODO: set background color
+	if (param >= 40 && param <= 47)
+		return css_bg_colors[ param - 40 ];
+
+	return "";
+}
+
+// remove \r symbols
+void stripCR(string &strInput) {
+	string::size_type pos = 0;
+    while ( ( pos = strInput.find("\r", pos) ) != string::npos ) {
+        strInput.erase ( pos, 1 );
+    }
+}
+
+// remove RMA tags
+void stripRMA(string &strInput) {
+	string::size_type pos = 0;
+    while ( ( pos = strInput.find("\x1Bp", pos) ) != string::npos ) {
+		strInput.erase(pos, strInput.find('m', pos) - pos + 1);
+    }
+}
+
+// remove [0m duplicates
+void stripDefaultColorDuplicates(string &strInput) {
+	string::size_type pos = 0;
+    while ( ( pos = strInput.find("\x1B[0m\x1B[0m", pos) ) != string::npos ) {
+		strInput.erase(pos, 4);
+    }
+}
+
 
 string processHTML(string strInput)
 {
 	string strOutput = strInput;
 
-	// remove \r symbols
-	string::size_type pos = 0;
-    while ( ( pos = strOutput.find("\r",pos) ) != string::npos ) {
-        strOutput.erase ( pos, 1 );
-    }
+	stripCR(strOutput);
 
-	// remove RMA tags
-	pos = 0;
-    while ( ( pos = strOutput.find(STR_RMA,pos) ) != string::npos ) {
-		strOutput.erase(pos, strOutput.find('m', pos) - pos + 1);
+	stripRMA(strOutput);
+
+	stripDefaultColorDuplicates(strOutput);
+
+	string::size_type pos = 0;
+    while ( ( pos = strOutput.find("\x1B[", pos) ) != string::npos ) {
+		string::size_type 
+			posEscEnd = strOutput.find("m", pos),
+			posSpace = 0;
+
+		string params = strOutput.substr(pos + 2, posEscEnd - pos - 2);
+
+		// replace spaces to ";"
+		while ( ( posSpace = params.find(" ", posSpace) ) != string::npos ) {
+			params.replace(posSpace, 1, ";");
+		}
+
+		// parse params string to vector
+		vector<int> paramsList = processParams(params);
+
+		string 
+			css_class = "",
+			html_tags = "";
+
+		// for each parameter add css class
+		vector<int>::iterator itr;
+		for(itr = paramsList.begin(); itr != paramsList.end(); itr++) {
+			string newCSS = getCSSClass(*itr);
+
+			if (newCSS.length() > 0) {
+				if (css_class.length() > 0) (css_class += " ");
+				css_class += newCSS;
+			}
+		}
+		
+		html_tags += TAG_CLOSE;
+
+		// create html entity
+		if (css_class.length() > 0)
+			html_tags += string("<") + HTML_TAG + string(" class=\"") + css_class + string("\"") + string(">");
+		else 
+			html_tags += TAG_OPEN;
+
+		// replace source escape sequence to html entity
+		strOutput.replace(pos, posEscEnd - pos + 1, html_tags);
+
+		pos = strOutput.find("\x1B[", pos);
     }
 
 	return strOutput;
@@ -312,7 +333,7 @@ string processTEXT(string strInput)
 }
 
 
-string processLine(char *charInput, int StrSize)
+string processLine(char *charInput)
 {
 	string strInput(charInput), strOutput;
 	
@@ -330,155 +351,6 @@ string processLine(char *charInput, int StrSize)
 	}
 
 	return strOutput;
-}
-
-/**
- * Writing to log file without ESC characters
- */
-void rez_WriteToLog(int wnd, char* str, int StrSize )
-{
-    static DWORD LastTicker = 0;
-    char *buff, *src, *out;
-    int count;
-
-//vls-begin// multiple output
-    HANDLE hLogFile = wnd < 0 ? ::hLogFile : hOutputLogFile[wnd];
-    BOOL bCurLogHTML = wnd < 0 ? ::bCurLogHTML : bOutputCurLogHTML[wnd];
-//vls-end//
-
-
-    if ( bCurLogHTML ) {
-        bool lookup = true;
-        bool new_line = true;
-        char *ptr = str;
-
-
-	    while( lookup )
-	    {
-		    switch( *ptr )
-		    {
-		    case '\r':
-			    break;
-
-		    case '\n':
-				log(BR);
-			    new_line = true;
-			    break;
-
-		    case 0x1b:
-			    if( *(ptr+1) == '[' )
-			    {
-				    char* p = ptr+2;
-				    while( *p && *p != 'm' )
-					    p++;
-
-				    if( p == '\0' )
-				    {
-					    lookup = false;
-					    break;
-				    }
-
-				    parse((char*)ptr+2, (char*)p, new_attrib, new_tcolor, new_bcolor);
-
-				    ptr = p;
-
-				    if( attrib != new_attrib || tcolor != new_tcolor || bcolor != new_bcolor )
-				    {
-
-						strCache = TAG_CLOSE;
-						strCache += span(new_tcolor, new_bcolor, new_attrib);
-
-    //					attrib = new_attrib;
-    //					tcolor = new_tcolor;
-    //					bcolor = new_bcolor;
-				    }
-				} else if( *(ptr+1) == 'p' ) {
-				    char *p = ptr+2;
-				    while( *p && *p != 'm' )
-					    p++;
-				    ptr = p;
-			    }
-
-			    break;
-
-		    case '\0':
-			    lookup = false;
-			    break;
-
-		    default:
-				// flush cache to file
-			    if( strCache.length() > 0 )
-			    {
-					if( attrib != new_attrib || tcolor != new_tcolor || bcolor != new_bcolor ) {
-						log(strCache);
-					}
-					//    WriteFile(hLogFile , strCache.c_str(), strCache.length(), &Written, NULL);
-				    
-					//strcpy(strCache, "");
-					strCache = "";
-
-				    attrib = new_attrib;
-				    tcolor = new_tcolor;
-				    bcolor = new_bcolor;
-			    }
-
-			    //WriteFile(hLogFile , ptr, 1, &Written, NULL);
-				log(ptr);
-			    new_line = false;
-			    break;
-		    }
-
-		    ptr++;
-	    }
-        
-
-    } else {
-        if ( LastTicker == 0 ) 
-            LastTicker = GetTickCount();
-
-        if ( hLogFile == NULL || StrSize <= 0 ) 
-            return;
-          // fwrite(temp, count, 1, ses->logfile);
-        /* removing ESC CHARS */
-        buff = (char*)malloc(StrSize*2+18);
-        buff[0] = 0;
-    
-        // Add RMA ANSI command
-        if ( bRMASupport ) {
-            DWORD Currticker = GetTickCount();
-            if ( Currticker - LastTicker ) {
-                buff[0] = 0x1B;
-                sprintf(buff+1 , "p:%dm" , Currticker - LastTicker);
-            }
-            LastTicker = Currticker;
-        }
-
-        src = str;
-        count = strlen(buff);
-        out = buff + count;
-        do {
-            if ( !bANSILog && *src == 0x1B ) {
-                // Skip ESC
-                do {
-                    src++;
-                    StrSize--;
-                }while ( StrSize && *src != 'm' ) ;
-                src++;
-                StrSize--;
-                continue;
-            }
-            *out++ = *src++;
-            count++;
-            StrSize--;
-        } while (StrSize >0);
-
-        //if ( count ) {
-        //    DWORD Written;
-        //    WriteFile(hLogFile , buff , count , &Written, NULL);
-        //}
-		log(buff);
-        free(buff);
-    }
 }
 
 /**

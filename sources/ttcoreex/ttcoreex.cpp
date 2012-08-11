@@ -380,8 +380,8 @@ void write_line_mud(char *line)
     }
 
     if(logFile) {
-		log(processLine(bDaaMessage ? daaString : line, strlen(line)));
-		log(processLine("\n", 1));
+		log(processLine(bDaaMessage ? daaString : line));
+		log(processLine("\n"));
     }
 
 //* en
@@ -854,21 +854,20 @@ static void process_incoming(char* buffer)
 
         if(*cpsource=='\n' /*|| *cpsource=='\r'*/ || *cpsource==0x1) {
             *cpdest='\0';
-//vls-begin// #logadd + #logpass // multiple output
-//            if(hLogFile) {
-//                WriteToLog(linebuffer, strlen(linebuffer)); 
-//                WriteToLog("\r\n", 2); 
-//            }
-//            if ( bProcess  ) 
-//                do_one_line(linebuffer);
+			
+			//vls-begin// #logadd + #logpass // multiple output
             if(logFile.is_open() && !bLogPassedLine) {
-				log(processLine(linebuffer, strlen(linebuffer)));
-				log(processLine("\n", 1));
+				log(processLine(linebuffer));
+				log(processLine("\n"));
             }
-            if ( bProcess  ) 
+
+            if ( bProcess ) { 
                 do_one_line(linebuffer);
+			}
+
             bLogPassedLine = FALSE;
-//vls-end//
+			//vls-end//
+
             if( /**linebuffer != 0x1 &&  */ !(*linebuffer=='.' && !*(linebuffer+1)) ) {
                 n=strlen(linebuffer);
                 memcpy(pIncomigResultPos, linebuffer, n);
@@ -889,35 +888,34 @@ static void process_incoming(char* buffer)
             }
 
             cpdest=linebuffer;
-        }
-        else
+        } else {
             *cpdest++= *cpsource++;
+		}
     }
     *cpdest='\0';
-    if (more_coming==1) {
+    
+	if (more_coming==1) {
         strcpy(last_line , linebuffer);
-    }
-    else { 
-//vls-begin// #logadd + #logpass // multiple output
-//        if(hLogFile) {
-//            WriteToLog(linebuffer, strlen(linebuffer)); 
-//        }
-//        if ( bProcess  ) 
-//            do_one_line(linebuffer);
-        if ( bProcess  ) 
+    } else { 
+		//vls-begin// #logadd + #logpass // multiple output
+        if ( bProcess ) { 
             do_one_line(linebuffer);
+		}
+
         if(logFile.is_open() && !bLogPassedLine) {
-			log(processLine(linebuffer, strlen(linebuffer)));
-//            WriteToLog(-1, linebuffer, strlen(linebuffer)); 
+			log(processLine(linebuffer));
         }
+
         bLogPassedLine = FALSE;
-//vls-end//
+		//vls-end//
+
         if( !(*linebuffer=='.' && !*(linebuffer+1)) ) {
             n=strlen(linebuffer);
             memcpy(pIncomigResultPos, linebuffer, n);
             pIncomigResultPos+=n;
         }
     }
+
     *pIncomigResultPos='\0';
 
     if ( bProcess  ) 

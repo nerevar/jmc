@@ -408,7 +408,7 @@ void WriteLineToLog(int wnd, char* str, int StrSize );
 void StopLogging();
 
 void log(string st);
-string processLine(char *strInput, int StrSize);
+string processLine(char *strInput);
 //vls-end//
 struct listnode *init_list(void);
 struct listnode *init_pathdir_list(void);
