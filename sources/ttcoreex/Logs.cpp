@@ -11,8 +11,6 @@
 #include <iostream>
 #include <vector>
 
-using namespace std;
-
 //vls-begin// #logadd + #logpass
 BOOL bLogPassedLine = FALSE;
 //vls-end//
@@ -110,12 +108,27 @@ void DLLEXPORT InitOutputNameFunc(GET_OUTPUTNAME_FUNC OutputNameFunc)
 //vls-end//
 
 
-void debug(string st)
+void debug(char *pszFormat, ...)
+{
+    va_list marker;
+    va_start(marker, pszFormat);
+    string str = StrPrintfV(pszFormat, marker);
+    va_end(marker);
+
+	ofstream myfile;
+	myfile.open ("debug.txt", ios::out | ios::app);
+	
+	myfile << str << "\n";
+	
+	myfile.close();
+}
+
+void debug(string str)
 {
 	ofstream myfile;
 	myfile.open ("debug.txt", ios::out | ios::app);
 	
-	myfile << st << "\n";
+	myfile << str << "\n";
 	
 	myfile.close();
 }
@@ -243,12 +256,26 @@ BOOL StartLog(int wnd, char* left, char *right)
 
 string processHTML(string strInput)
 {
-	return strInput;
+	string strOutput = strInput;
+
+	// remove \r symbols
+	string::size_type pos = 0;
+    while ( ( pos = strOutput.find("\r",pos) ) != string::npos ) {
+        strOutput.erase ( pos, 1 );
+    }
+
+	// remove RMA tags
+	pos = 0;
+    while ( ( pos = strOutput.find(STR_RMA,pos) ) != string::npos ) {
+		strOutput.erase(pos, strOutput.find('m', pos) - pos + 1);
+    }
+
+	return strOutput;
 }
 
 string processRMA(string strInput)
 {
-	string strOutput = strInput;
+	string strOutput;
 	DWORD currTicker = 0;
 
     if ( lastTicker == 0 ) 
@@ -259,7 +286,9 @@ string processRMA(string strInput)
     if ( currTicker - lastTicker ) {
 		strOutput = strprintf("%cp:%dm", 0x1B, currTicker - lastTicker);
 		strOutput += strInput;
-    }
+    } else {
+		strOutput = strInput;
+	}
 
 	lastTicker = currTicker;
 
@@ -270,14 +299,13 @@ string processTEXT(string strInput)
 {
 	// delete everything from 0x1B to 'm'
 	string strOutput = strInput;
-	int escPos = strOutput.find(0x1B),
+	int escPos = 0,
+		endEscPos = 0;
+
+	while ( (escPos = strOutput.find(0x1B, escPos)) != string::npos) {
 		endEscPos = strOutput.find('m', escPos);
 
-	while (escPos != string::npos) {
 		strOutput.erase(escPos, endEscPos - escPos + 1);
-		
-		escPos = strOutput.find(0x1B),
-		endEscPos = strOutput.find('m', escPos);
 	}
 
 	return strOutput;

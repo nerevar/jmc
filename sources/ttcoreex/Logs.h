@@ -2,11 +2,12 @@
 #include "tintin.h"
 #include <string>
 
-using namespace std;
-
-string TAG_OPEN = "<i>";
-string TAG_CLOSE = "</i>";
-string BR = "\r\n";
+const string 
+	ESC = "\x1B",
+	STR_RMA = "\x1Bp",
+	TAG_OPEN = "<i>",
+	TAG_CLOSE = "</i>",
+	BR = "\r\n";
 
 string html_header(
 	"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\r\n"

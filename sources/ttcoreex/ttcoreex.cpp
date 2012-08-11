@@ -20,8 +20,6 @@
 #include "JmcObj.h"
 #include "telnet.h"
 
-using namespace std;
-
 // #define _DEBUG_LOG
 
 DWORD dwTime0;
@@ -380,27 +378,10 @@ void write_line_mud(char *line)
         str += "\x1B[0m";
         tintin_puts2((char*)str.c_str());
     }
-//    if(hLogFile) {
-    if(logFile) 
-	{
-		if(bDaaMessage){
-    		daaString[strlen(line)] = '\n';
-			WriteLineToLog(-1, daaString, strlen(line)+1);
-			log(daaString);
-		}
-		else{
-//* /en
-//vls-begin// multiple output + bugfix
-//        WriteLineToLog(line, OriginalLen);
-        char *line_n;
-        line_n = (char *)malloc(strlen(line)+1);
-        strcpy(line_n, line);
-        strcat(line_n, "\n");
-        //WriteLineToLog(-1, line_n, strlen(line)+1);
-		log(line_n);
-        free(line_n);
-		}
-//vls-end//
+
+    if(logFile) {
+		log(processLine(bDaaMessage ? daaString : line, strlen(line)));
+		log(processLine("\n", 1));
     }
 
 //* en
@@ -882,9 +863,7 @@ static void process_incoming(char* buffer)
 //                do_one_line(linebuffer);
             if(logFile.is_open() && !bLogPassedLine) {
 				log(processLine(linebuffer, strlen(linebuffer)));
-				log("\n");
-//                WriteToLog(-1, linebuffer, strlen(linebuffer)); 
-//                WriteToLog(-1, "\r\n", 2); 
+				log(processLine("\n", 1));
             }
             if ( bProcess  ) 
                 do_one_line(linebuffer);
