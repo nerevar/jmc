@@ -7,6 +7,10 @@
 /*********************************************************************/
 #include "stdafx.h"
 #include "tintin.h"
+#include <vector>
+#include <string>
+
+using namespace std;
 
 void syserr(char* msg);
 
@@ -48,4 +52,22 @@ void syserr(char* msg)
   sprintf(ErrMsg,rs::rs(1211),msg, errno);
   ShowError(ErrMsg);
   // EndApplication();
+}
+
+string StrPrintfV(char* pszFormat, va_list marker)
+{
+    vector<char> data;
+        data.reserve(256);
+    while( _vsnprintf(data.begin(), data.capacity(), pszFormat, marker) == -1 )
+           data.reserve(data.capacity() + 256);
+    return data.begin();
+}
+
+string strprintf(char* pszFormat, ...)
+{
+    va_list marker;
+    va_start(marker, pszFormat);
+    string str = StrPrintfV(pszFormat, marker);
+    va_end(marker);
+    return str;
 }

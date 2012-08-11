@@ -2,10 +2,14 @@
 #include "tintin.h"
 #include <time.h>
 #include <io.h>
-#include <string>
+
 #include "Logs.h"
+#include "Utils.h"
+
+#include <string>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -25,7 +29,7 @@ static int new_tcolor = tcolor;
 static int new_bcolor = bcolor;
 
 string strCache = "";
-
+DWORD lastTicker = 0;
 
 static void parse(const char* from, const char* to, int& attrib, int& tcolor, int& bcolor)
 {
@@ -236,14 +240,30 @@ BOOL StartLog(int wnd, char* left, char *right)
 }
 //vls-end//
 
+
 string processHTML(string strInput)
 {
 	return strInput;
 }
 
-string processANSI(string strInput, int isRMA)
+string processRMA(string strInput)
 {
-	return strInput;
+	string strOutput = strInput;
+	DWORD currTicker = 0;
+
+    if ( lastTicker == 0 ) 
+        lastTicker = GetTickCount();
+
+	currTicker = GetTickCount();
+
+    if ( currTicker - lastTicker ) {
+		strOutput = strprintf("%cp:%dm", 0x1B, currTicker - lastTicker);
+		strOutput += strInput;
+    }
+
+	lastTicker = currTicker;
+
+	return strOutput;
 }
 
 string processTEXT(string strInput)
@@ -273,11 +293,9 @@ string processLine(char *charInput, int StrSize)
 		strOutput = processHTML(strInput);
 	} else if (bANSILog) {
 		// keep ANSI codes
-		if (bRMASupport)
-			strOutput = processANSI(strInput, bRMASupport);
-		else
-			// add RMA tags
-			strOutput = strInput;	
+		strOutput = bRMASupport
+			? processRMA(strInput)
+			: strInput;
 	} else {
 		// strip all Esc-sequences
 		strOutput = processTEXT(strInput);
