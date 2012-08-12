@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "resource.h"
 #include "tintin.h"
 #include <time.h>
 #include <io.h>
@@ -16,7 +17,6 @@ BOOL bLogPassedLine = FALSE;
 //vls-end//
 
 static BOOL bCurLogHTML = FALSE;
-static BOOL bOutputCurLogHTML[MAX_OUTPUT];
 
 static int attrib;
 static int tcolor;
@@ -64,114 +64,200 @@ void debug(string str)
 
 void log(string st)
 {
-	if (!logFile.is_open())
+	if (!hLogFile.is_open())
 		return;
 		
-	logFile << st;
+	hLogFile << st;
 }
 
-//vls-begin// multiple output
-BOOL StartLog(int wnd, char* left, char *right)
+void log(int wnd, string st)
 {
 
-	// TODO: wnd
-	if (wnd > 0)
-		return false;
+	if (!(wnd > 0)) {
+		log(st);
+		return;
+	}
 
-//vls-begin// multiple output
-    //HANDLE *hLogFile = wnd < 0 ? &::hLogFile : &hOutputLogFile[wnd];
-    BOOL *bCurLogHTML = wnd < 0 ? &::bCurLogHTML : &bOutputCurLogHTML[wnd];
-//* en	
-	char *logName = wnd<0 ?sLogName : sOutputLogName[wnd];
-//*/en	
+	if (!hOutputLogFile[wnd].is_open())
+		return;
+		
+	hOutputLogFile[wnd] << st;
+}
 
-// all moved from log_command() but:
-// 1) hLogFile changed to *hLogFile
-// 2) bCurLogHTML changed to *bCurLogHTML
-	SYSTEMTIME stl;
-    char Timerecord[BUFFER_SIZE];
-    BOOL bLogMode = bDefaultLogMode;
+string loadHTMLFromResource(int name)
+{
+	DWORD size;
+	HRSRC rc = ::FindResource(rs::hInst, MAKEINTRESOURCE(IDR_HTML_HEAD), RT_HTML);
+    HGLOBAL rcData = ::LoadResource(rs::hInst, rc);
 
-//* en	
-	if(!strcmpi(left,logName) && strcmpi(right, "overwrite") && strcmpi(right, "html") )
-		return FALSE;
-//*/en	
+    size = ::SizeofResource(rs::hInst, rc);
+	string html_content(static_cast<const char*>(::LockResource(rcData)), size);
 
-    if (logFile.is_open()) { // Close log file now opened 
+	return html_content;
+}
+
+BOOL CloseMainLog(char *logName, BOOL logHTML)
+{
+    if (hLogFile.is_open()) { // Close log file now opened 
         if(mesvar[MSG_LOG]) {
 			char message[BUFFER_SIZE];
 			sprintf(message, rs::rs(1024), logName);
 			tintin_puts2(message);
 		}
         
-		if ( *bCurLogHTML ) {
+		if ( logHTML ) {
 			log(html_footer);
         }
 
-		logFile.close();
+		hLogFile.close();
 
-    	strcpy(logName,left);
-
-        if ( !*left) 
-            return FALSE;
+		strcpy(sLogName, "");
+		
+		return TRUE;
     }
+
+	return FALSE;
+}
+
+BOOL CloseWNDLog(int wnd, char *logName)
+{
+    if (hOutputLogFile[wnd].is_open()) { // Close log file now opened 
+        if(mesvar[MSG_LOG]) {
+			char message[BUFFER_SIZE];
+			sprintf(message, rs::rs(1024), logName);
+			tintin_puts2(message);
+		}
+        
+		hOutputLogFile[wnd].close();
+
+		strcpy(sOutputLogName[wnd], "");
+
+		return TRUE;
+    }
+
+	return FALSE;
+}
+
+BOOL StartMainLog(char* logName, BOOL logMode, BOOL logHTML)
+{
+	if (logMode && !logHTML)
+		hLogFile.open(logName, ios::out | ios::binary | ios::app );
+	else 
+		hLogFile.open(logName, ios::out | ios::binary );
+
+	if (!hLogFile.is_open())
+		return FALSE;
+
+    // Do HTML Log pereference
+    if ( logHTML ) {
+		string html_header = loadHTMLFromResource(IDR_HTML_HEAD);
+
+		string::size_type pos = 0;
+		while ( ( pos = html_header.find("%title%", pos) ) != string::npos ) {
+			html_header.replace(pos, 7, logName);
+		}
+
+		log(html_header);
+		log(TAG_OPEN);
+    }
+
+	return TRUE;
+}
+
+BOOL StartWNDLog(int wnd, char* logName, BOOL logMode)
+{
+	if (logMode)
+		hOutputLogFile[wnd].open(logName, ios::out | ios::binary | ios::app );
+	else 
+		hOutputLogFile[wnd].open(logName, ios::out | ios::binary );
+
+	return hOutputLogFile[wnd] != NULL ? TRUE : FALSE;
+}
+
+//vls-begin// multiple output
+BOOL StartLog(int wnd, char* left, char *right)
+{
+	BOOL status;
+	char *logName = wnd > 0 ? sOutputLogName[wnd] : sLogName;
+
+	SYSTEMTIME stl;
+    char Timerecord[BUFFER_SIZE], logTitle[BUFFER_SIZE];
+    BOOL bLogMode = bDefaultLogMode;
+
+//* en	
+	// do nothing on second command "#log <logname>", but overwrite or html
+	if(!strcmpi(left,logName) && strcmpi(right, "overwrite") && strcmpi(right, "html") )
+		return FALSE;
+//*/en	
+
+	// try to close previous log with previous logName
+	if (wnd > 0) {
+		status = CloseWNDLog(wnd, logName);
+	} else {
+		status = CloseMainLog(logName, bCurLogHTML);
+	}
+
+	// successfully closed previous log by #log command
+	if (status)
+		return FALSE;
 
     if ( !*left) {
         tintin_puts2(rs::rs(1025));
         return FALSE;
     }
 
-    *bCurLogHTML = bHTML;
-    if ( *right ) {
-        if ( !strcmpi(right, "append") ) { // try to open in append mode 
+	// set new log name from params
+	strcpy(logName, left);
+
+	// disable HTML mode for output windows
+	if (!(wnd > 0))
+		bCurLogHTML = bHTML;
+    
+	if ( *right ) {
+        if ( !strcmpi(right, "append") ) { 
+			// set append mode 
             bLogMode = TRUE;
-            if ( *bCurLogHTML ) 
+            if ( !(wnd > 0) && bCurLogHTML ) 
                 tintin_puts2(rs::rs(1026));
+        } else if ( !strcmpi(right, "overwrite") ) { 
+			// set overwrite mode 
+            bLogMode = FALSE;
+        } else if ( !strcmpi(right, "html") )  {
+			// set HTML mode for Main log
+			if (!(wnd > 0))
+				bCurLogHTML = TRUE;
+		} else {
+			// error in params
+            tintin_puts2(rs::rs(1027));
+            return FALSE;
         }
-        else 
-            if ( !strcmpi(right, "overwrite") ) { // try to open in overwrite mode 
-                bLogMode = FALSE;
-            }
-            else {
-                if ( !strcmpi(right, "html") ) 
-                    *bCurLogHTML = TRUE;
-                else {
-                    tintin_puts2(rs::rs(1027));
-                    return FALSE;
-                }
-            }
     }
 
-
-	if ( bLogMode && !*bCurLogHTML ) {
-		logFile.open (left, ios::out | ios::app);
+	if (wnd > 0) {
+		status = StartWNDLog(wnd, logName, bLogMode);
 	} else {
-		logFile.open (left);
+		status = StartMainLog(logName, bLogMode, bCurLogHTML);
 	}
 
-	if (!logFile) {
+	if (!status) {
 		char buff[128];
-		sprintf(buff,rs::rs(1028), left);
+		sprintf(buff,rs::rs(1028), logName);
 		tintin_puts2(buff);
 		return FALSE;		
-	}
-
-    // Do HTML Log pereference
-    if ( *bCurLogHTML ) {
-		//log(html_header);
-		log(TAG_OPEN);
-    }
+	}	
 
 	GetLocalTime(&stl);
 
-    if (wnd < 0)
-        sprintf(Timerecord, rs::rs(1029) , stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
-    else
+	sprintf(logTitle, rs::rs(1258) , logName);
+	log(wnd, logTitle);
+
+    if (wnd > 0)
         sprintf(Timerecord, rs::rs(1242) , wnd, stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
+    else
+        sprintf(Timerecord, rs::rs(1029) , stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
     
-	log(Timerecord);
+	log(wnd, Timerecord);
 	
-	strcpy(logName,left);
     return TRUE;
 }
 //vls-end//
@@ -204,19 +290,10 @@ string getCSSClass(int param)
 	if (param >= 30 && param <= 37)
 		return css_colors[ param - 30 ];
 
-	// TODO: set background color
 	if (param >= 40 && param <= 47)
 		return css_bg_colors[ param - 40 ];
 
 	return "";
-}
-
-// remove \r symbols
-void stripCR(string &strInput) {
-	string::size_type pos = 0;
-    while ( ( pos = strInput.find("\r", pos) ) != string::npos ) {
-        strInput.erase ( pos, 1 );
-    }
 }
 
 // remove RMA tags
@@ -239,8 +316,6 @@ void stripDefaultColorDuplicates(string &strInput) {
 string processHTML(string strInput)
 {
 	string strOutput = strInput;
-
-	stripCR(strOutput);
 
 	stripRMA(strOutput);
 
@@ -354,40 +429,20 @@ string processLine(char *charInput)
 }
 
 /**
- * Writes line to log file without any parsing
- */
-void WriteLineToLog(int wnd, char* str, int StrSize )
-{
-	// TODO: wnd
-	if (wnd > 0)
-		return;
-
-	log(str);
-}
-
-
-/**
  * Stops writing to log file and close file handle
  */
 void StopLogging()
 {
-    if (logFile.is_open()) {
+    if (hLogFile.is_open()) {
         if ( bCurLogHTML ) {
 			log(html_footer);
 		}
-		logFile.close();
+		hLogFile.close();
     }
 
-	// TODO: wnd
-	return;
     for (int i = 0; i < MAX_OUTPUT; i++) {
-        if (hOutputLogFile[i]) {
-
-            if ( bOutputCurLogHTML[i] ) {}
-                //WriteFile(hOutputLogFile[i] , html_footer.c_str(), html_footer.length(), &Written, NULL);
-
-            CloseHandle(hOutputLogFile[i]);
-            hOutputLogFile[i] = NULL;
+        if (hOutputLogFile[i]) {	
+			hOutputLogFile[i].close();
 			sOutputLogName[i][0] = '\0';
         }
     }
@@ -453,10 +508,10 @@ void wlog_command(char *arg)
     int wnd;
 
     arg=get_arg_in_braces(arg, number, STOP_SPACES);
-    arg=get_arg_in_braces(arg, left, WITH_SPACES);
+    arg=get_arg_in_braces(arg, left, STOP_SPACES);
     arg=get_arg_in_braces(arg, right, WITH_SPACES);
 
-    if (!sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT || !*left) {
+    if (!sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT /*|| !*left*/) {
         tintin_puts(rs::rs(1241));
         return;
     }

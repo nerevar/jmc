@@ -1,4 +1,4 @@
-\// LogParamsPage.cpp : implementation file
+// LogParamsPage.cpp : implementation file
 //
 
 #include "stdafx.h"

@@ -99,11 +99,8 @@ char verbatim_char=DEFAULT_VERBATIM_CHAR;
 int path_length;
 int old_more_coming,more_coming;
 char last_line[BUFFER_SIZE];
-HANDLE hLogFile;
-ofstream logFile;
-//vls-begin// multiple output
-HANDLE hOutputLogFile[MAX_OUTPUT];
-//vls-end//
+ofstream hLogFile;
+ofstream hOutputLogFile[MAX_OUTPUT];
 //* en: enhanced logs
 char sLogName[BUFFER_SIZE];
 char sOutputLogName[MAX_OUTPUT][BUFFER_SIZE];
@@ -291,10 +288,9 @@ void tintin_puts3(char *cptr, int wnd)
     strcat(buff, "\n");
 
 //vls-begin// multiple output
-//    DirectOutputFunction(buff, 1); // out to output window
     if ( hOutputLogFile[wnd] ) {
-        //WriteToLog(wnd, cptr, strlen(cptr));
-        //WriteToLog(wnd, "\r\n", 2);
+		log(wnd, processTEXT(string(cptr)));
+		log(wnd, "\n");
 	}
 
     DirectOutputFunction(buff, 1+wnd); // out to output window
@@ -379,9 +375,9 @@ void write_line_mud(char *line)
         tintin_puts2((char*)str.c_str());
     }
 
-    if(logFile) {
+    if (hLogFile) {
 		log(processLine(bDaaMessage ? daaString : line));
-		log(processLine("\n"));
+		log("\n");
     }
 
 //* en
@@ -856,9 +852,9 @@ static void process_incoming(char* buffer)
             *cpdest='\0';
 			
 			//vls-begin// #logadd + #logpass // multiple output
-            if(logFile.is_open() && !bLogPassedLine) {
+            if(hLogFile.is_open() && !bLogPassedLine) {
 				log(processLine(linebuffer));
-				log(processLine("\n"));
+				log("\n");
             }
 
             if ( bProcess ) { 
@@ -902,7 +898,7 @@ static void process_incoming(char* buffer)
             do_one_line(linebuffer);
 		}
 
-        if(logFile.is_open() && !bLogPassedLine) {
+        if(hLogFile.is_open() && !bLogPassedLine) {
 			log(processLine(linebuffer));
         }
 
@@ -1160,7 +1156,7 @@ BOOL  DLLEXPORT IsConnected()
 
 BOOL  DLLEXPORT IsLogging()
 {
-    return (BOOL)hLogFile;
+    return (BOOL)hLogFile.is_open();
 }
 
 BOOL  DLLEXPORT IsPathing()

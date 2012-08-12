@@ -188,10 +188,9 @@ extern BOOL bMultiAction, bMultiHighlight;
 extern struct listnode *common_subs;
 extern struct listnode *common_antisubs, *common_pathdirs, *common_path;
 extern char vars[10][BUFFER_SIZE]; /* the %0, %1, %2,....%9 variables */
-extern HANDLE hLogFile;
-extern ofstream logFile;
+extern ofstream hLogFile;
 //vls-begin// multiple output
-extern HANDLE hOutputLogFile[MAX_OUTPUT];
+extern ofstream hOutputLogFile[MAX_OUTPUT];
 //vls-end//
 extern int path_length;
 extern int old_more_coming,more_coming;
@@ -403,12 +402,13 @@ extern int SocketFlags;
 extern unsigned char State;
 int do_telnet_protecol(unsigned char* cpsource, char* cpdest, int size);
 //vls-begin// multiple output
-//void WriteToLog(int wnd, char* str, int StrSize ); 
-void WriteLineToLog(int wnd, char* str, int StrSize );
 void StopLogging();
-
 void log(string st);
+void log(int wnd, string st);
 string processLine(char *strInput);
+string processTEXT(string strInput);
+string processRMA(string strInput);
+string processHTML(string strInput);
 //vls-end//
 struct listnode *init_list(void);
 struct listnode *init_pathdir_list(void);
