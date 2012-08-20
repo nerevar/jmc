@@ -510,6 +510,31 @@ void quit_command(char *arg)
 }
 //vls-end//
 
+void hidewindow_command(char *arg)
+{
+    PostMessage(hwndMAIN, WM_USER+410, 0, 0);
+}
+
+void restorewindow_command(char *arg)
+{
+    PostMessage(hwndMAIN, WM_USER+420, 0, 0);
+}
+
+void systray_command(char *arg)
+{
+	char cmd[BUFFER_SIZE];
+	get_arg_in_braces(arg, cmd, STOP_SPACES);
+	
+	if ( cmd[0] == 'h' && is_abrev(cmd, "hide") ) {
+		PostMessage(hwndMAIN, WM_USER+430, 0, 0);
+	} else if ( cmd[0] == 'r' && is_abrev(cmd, "restore") ) {
+		PostMessage(hwndMAIN, WM_USER+440, 0, 0);
+	} else {
+        tintin_puts2(rs::rs(1259));
+        return;
+	}
+}
+
 //vls-begin// #reloadscripts
 void reloadscripts_command(char *arg)
 {

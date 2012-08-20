@@ -309,6 +309,9 @@ void tabadd_command(char* arg);
 void tabdel_command(char* arg);
 //vls-begin// #quit
 void quit_command(char *arg);
+void hidewindow_command(char *arg);
+void restorewindow_command(char *arg);
+void systray_command(char *arg);
 //vls-begin// #reloadscripts
 void reloadscripts_command(char *arg);
 //vls-begin// script files
@@ -464,7 +467,7 @@ extern void* JMCObjRet[1000];
 // --END
 
 //* en:JMC functions struct. look cmds.h
-const JMC_CMDS_NUM=112;
+const JMC_CMDS_NUM=114;
 typedef struct jmc_cmd 
 	{
 	char*alias;

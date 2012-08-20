@@ -166,6 +166,11 @@ protected:
     afx_msg LONG OnQuitCommand(UINT wParam, LONG lParam);
 //vls-end//
 
+    afx_msg LONG OnHideWindow(UINT wParam, LONG lParam);
+    afx_msg LONG OnRestoreWindow(UINT wParam, LONG lParam);
+    afx_msg LONG OnHideWindowToSystemTray(UINT wParam, LONG lParam);
+    afx_msg LONG OnRestoreWindowFromSystemTray(UINT wParam, LONG lParam);
+
 //vls-begin// #reloadscripts
     afx_msg LONG OnReloadScripts(UINT wParam, LONG lParam);
 //vls-end//

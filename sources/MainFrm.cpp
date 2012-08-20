@@ -269,6 +269,11 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_MESSAGE(WM_USER+400, OnQuitCommand)
 //vls-end//
 
+    ON_MESSAGE(WM_USER+410, OnHideWindow)
+    ON_MESSAGE(WM_USER+420, OnRestoreWindow)
+    ON_MESSAGE(WM_USER+430, OnHideWindowToSystemTray)
+    ON_MESSAGE(WM_USER+440, OnRestoreWindowFromSystemTray)
+
 //vls-begin// multiple output
     ON_MESSAGE(WM_USER+500, OnShowOutput)
     ON_MESSAGE(WM_USER+501, OnNameOutput)
@@ -285,6 +290,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_MESSAGE(WM_USER+655, OnUpdStat5)
 //*/en
 
+	// sysTray command
     ON_MESSAGE(WM_USER+701, OnTrayMessage)
 
 END_MESSAGE_MAP()
@@ -967,6 +973,8 @@ void CInvertSplit::SavePosition()
 void CMainFrame::OnSize(UINT nType, int cx, int cy) 
 {
 
+	/*
+	// TODO: use jmc setting
 	if (nType == SIZE_MINIMIZED) {
 		ShowWindow(SW_HIDE);
 		sysTray.add();
@@ -975,6 +983,7 @@ void CMainFrame::OnSize(UINT nType, int cx, int cy)
 			sysTray.remove();
 		}
 	}
+	*/
 
 	CFrameWnd::OnSize(nType, cx, cy);
 }
@@ -1351,6 +1360,38 @@ LONG CMainFrame::OnTrayMessage(UINT wParam, LONG lParam)
 		ShowWindow(SW_SHOW);
 		ShowWindow(SW_RESTORE);
 	}
+
+	return 1;
+}
+
+LONG CMainFrame::OnHideWindow(UINT wParam, LONG lParam)
+{
+	ShowWindow(SW_MINIMIZE);
+
+	return 1;
+}
+
+LONG CMainFrame::OnRestoreWindow(UINT wParam, LONG lParam)
+{
+	ShowWindow(SW_RESTORE);
+
+	return 1;
+}
+
+LONG CMainFrame::OnHideWindowToSystemTray(UINT wParam, LONG lParam)
+{
+	ShowWindow(SW_MINIMIZE);
+	ShowWindow(SW_HIDE);
+	sysTray.add();
+
+	return 1;
+}
+
+LONG CMainFrame::OnRestoreWindowFromSystemTray(UINT wParam, LONG lParam)
+{
+	ShowWindow(SW_SHOW);
+	ShowWindow(SW_RESTORE);
+	sysTray.remove();
 
 	return 1;
 }
