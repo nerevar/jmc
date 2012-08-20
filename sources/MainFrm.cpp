@@ -7,6 +7,7 @@
 #include "MainFrm.h"
 #include "smcDoc.h"
 #include "smcView.h"
+#include "Tray.h"
 
 #include "CommonParamsPage.h"
 #include "CharSubstPage.h"
@@ -52,6 +53,7 @@ enum INDICATOR_NUM{
         NUM_TICKER=1
 };
 
+CTray sysTray;
 
 CJMCStatus::CJMCStatus()
 {
@@ -283,6 +285,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_MESSAGE(WM_USER+655, OnUpdStat5)
 //*/en
 
+    ON_MESSAGE(WM_USER+701, OnTrayMessage)
+
 END_MESSAGE_MAP()
 
 
@@ -449,7 +453,18 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
         m_editBar.GetHistory().Serialize (ar);
         m_editBar.m_nCurrItem = m_editBar.GetHistory().GetCount();
     }
-        
+
+	char trayTitle[BUFFER_SIZE] = "";
+	
+	CSmcDoc* pDoc = (CSmcDoc*)GetActiveDocument();
+	if ( pDoc ) {
+		CString text;
+		text.Format(IDS_JABA_TITLE, pDoc->m_strProfileName);
+		strcpy(trayTitle, text);
+	}
+
+	sysTray = CTray(IDR_MAINFRAME, trayTitle);
+
 //	GetDlgItem(ID_VIEW_MUDEMULATOR)->SetWindowText("Emulation");
     return 0;
 }
@@ -951,6 +966,16 @@ void CInvertSplit::SavePosition()
 
 void CMainFrame::OnSize(UINT nType, int cx, int cy) 
 {
+
+	if (nType == SIZE_MINIMIZED) {
+		ShowWindow(SW_HIDE);
+		sysTray.add();
+	} else if (nType == SIZE_RESTORED || nType == SIZE_MAXIMIZED) {
+		if (sysTray.isInTray()) {
+			sysTray.remove();
+		}
+	}
+
 	CFrameWnd::OnSize(nType, cx, cy);
 }
 
@@ -1318,3 +1343,14 @@ BOOL CMainFrame::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	return CFrameWnd::OnMouseWheel(nFlags, zDelta, pt);
 }
 //vls-end//
+
+LONG CMainFrame::OnTrayMessage(UINT wParam, LONG lParam)
+{
+	if(lParam == WM_LBUTTONDOWN)
+	{
+		ShowWindow(SW_SHOW);
+		ShowWindow(SW_RESTORE);
+	}
+
+	return 1;
+}
