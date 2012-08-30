@@ -183,6 +183,8 @@ public:
 	CHyperLink	m_cWww1;
 	CHyperLink	m_cWww;
 	CHyperLink	m_cEmail;
+	CHyperLink	m_cEmail2;
+	CHyperLink	m_cEmail3;
 	CString	m_strCopyright;
 	CString	m_strProductName;
 	CString	m_strVersion;
@@ -220,6 +222,8 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_WWW2, m_cWww2);
 	DDX_Control(pDX, IDC_WWW, m_cWww);
 	DDX_Control(pDX, IDC_EMAIL, m_cEmail);
+	DDX_Control(pDX, IDC_EMAIL2, m_cEmail2);
+	DDX_Control(pDX, IDC_EMAIL3, m_cEmail3);
 	DDX_Text(pDX, IDC_COPYRIGHT, m_strCopyright);
 	DDX_Text(pDX, IDC_PRODUCT_NAME, m_strProductName);
 	DDX_Text(pDX, IDC_VERTION, m_strVersion);
@@ -476,7 +480,6 @@ BOOL CAboutDlg::OnInitDialog()
     CString t;
     m_strCopyright += "\nAll rights reserved.";
 
-    m_cEmail.SetURL("mailto:jmc4@zajac.ru");
     UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE

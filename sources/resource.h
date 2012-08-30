@@ -109,7 +109,9 @@
 #define IDC_WWW1                        1050
 #define IDC_CLEAR_INPUT                 1051
 #define IDC_CONNECT_BEEP                1052
+#define IDC_EMAIL2                      1052
 #define IDC_AUTO_RECONNECT              1053
+#define IDC_EMAIL3                      1053
 #define IDC_LANG                        1054
 #define IDC_TEXT                        1055
 #define IDC_SPLIT_ONBACKSCROLL          1056
