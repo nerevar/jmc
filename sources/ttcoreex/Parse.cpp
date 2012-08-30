@@ -95,7 +95,7 @@ void parse_input(char *input)
 			if (bDisplayCommands) {
 				// output command in square brackets
 				char strInputCommand[BUFFER_SIZE], strOutputBuffer[BUFFER_SIZE];
-				strcpy(strInputCommand, "\r[");
+				strcpy(strInputCommand, "\n[");
 				strcat(strInputCommand, command);
 				if (*arg != '\0') {
 					strcat(strInputCommand, " ");
@@ -106,6 +106,10 @@ void parse_input(char *input)
 				add_codes(strInputCommand, strOutputBuffer, "brown", TRUE);
 
 				tintin_puts2(strOutputBuffer);
+
+				if (hLogFile.is_open()) {
+					log(strInputCommand);
+				}
 			}
 
             parse_tintin_command(command+1, arg);
