@@ -67,6 +67,7 @@ END
 // remains consistent on all systems.
 IDR_MAINFRAME           ICON    DISCARDABLE     "res\\Joust.ico"
 IDD_SCRIPT_PARSE        ICON    DISCARDABLE     "res\\icon1.ico"
+IDR_JMC_ICON            ICON    DISCARDABLE     "res\\idr_jmc_.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -144,44 +145,47 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,94,68,50,14
 END
 
-IDD_PARAMS_PAGE DIALOG DISCARDABLE  0, 0, 297, 98
+IDD_PARAMS_PAGE DIALOG DISCARDABLE  0, 0, 297, 107
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "At line begin",IDC_START_LINE,"Button",
-                    BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,17,24,71,10
+                    BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,17,19,71,10
     CONTROL         "At line end",IDC_END_LINE,"Button",BS_AUTORADIOBUTTON,
-                    17,36,68,10
-    GROUPBOX        "Cursor on view:",IDC_STATIC,13,15,91,33,WS_GROUP
-    LTEXT           "Min line length:",IDC_STATIC,110,16,69,11
-    EDITTEXT        IDC_MIN_LEN,180,15,30,12,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "History size:",IDC_STATIC,110,34,38,11
-    EDITTEXT        IDC_HISTORY_SIZE,180,34,30,12,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Uncompleted lines delay:",IDC_STATIC,223,9,66,25
-    EDITTEXT        IDC_TRIG_DELAY,223,36,30,12,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Command char:",IDC_STATIC,7,56,59,11
-    EDITTEXT        IDC_COMMAND_CHAR,74,55,15,12,ES_AUTOHSCROLL
-    LTEXT           "Command delimiter:",IDC_STATIC,7,71,62,11
-    EDITTEXT        IDC_COMMAND_DELIMITER,74,70,15,12,ES_AUTOHSCROLL
+                    17,31,68,10
+    GROUPBOX        "Cursor on view:",IDC_STATIC,13,10,91,33,WS_GROUP
+    LTEXT           "Min line length:",IDC_STATIC,110,11,69,11
+    EDITTEXT        IDC_MIN_LEN,180,10,30,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "History size:",IDC_STATIC,110,29,38,11
+    EDITTEXT        IDC_HISTORY_SIZE,180,29,30,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Uncompleted lines delay:",IDC_STATIC,223,4,66,25
+    EDITTEXT        IDC_TRIG_DELAY,223,31,30,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Command char:",IDC_STATIC,11,56,59,11
+    EDITTEXT        IDC_COMMAND_CHAR,78,55,15,12,ES_AUTOHSCROLL
+    LTEXT           "Command delimiter:",IDC_STATIC,11,71,62,11
+    EDITTEXT        IDC_COMMAND_DELIMITER,78,70,15,12,ES_AUTOHSCROLL
     CONTROL         "Display input",IDC_DISPLAY_INPUT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,98,55,76,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,102,49,76,10
     CONTROL         "Clean input",IDC_CLEAR_INPUT,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,98,66,83,10
+                    WS_TABSTOP,102,60,83,10
     CONTROL         "Split on scroll",IDC_SPLIT_ONBACKSCROLL,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,197,77,99,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,197,71,99,10
     CONTROL         "Autoreconnect",IDC_AUTO_RECONNECT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,197,55,77,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,197,49,77,10
     CONTROL         "Beep on connect",IDC_CONNECT_BEEP,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,197,66,89,10
-    GROUPBOX        "Commands history",IDC_STATIC,7,7,208,45
+                    BS_AUTOCHECKBOX | WS_TABSTOP,197,60,89,10
+    GROUPBOX        "Commands history",IDC_STATIC,7,2,208,45
     CONTROL         "Leave one token",IDC_TOKEN_INPUT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,98,77,100,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,102,71,100,10
     CONTROL         "Clear last token",IDC_TOKEN_LAST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,98,88,87,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,102,82,87,10
     CONTROL         "Cursor in end",IDC_AUTO_END,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,197,88,93,10
+                    WS_TABSTOP,197,82,93,10
     CONTROL         "Display commands",IDC_DISPLAY_COMMANDS,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,8,85,76,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,12,84,76,10
+    CONTROL         "Minimize to system tray",IDC_MINIMIZE_TO_TRAY,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,102,92,87,10
+    GROUPBOX        "Commands",IDC_COMMANDS_FRAME,7,46,90,52
 END
 
 IDD_SUBST_PAGE DIALOG DISCARDABLE  0, 0, 269, 98
@@ -788,6 +792,22 @@ BEGIN
 0x2062, 0x6877, 0x7469, 0x0065, 
     0
 END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_PARAMS_PAGE, DIALOG
+    BEGIN
+        BOTTOMMARGIN, 104
+    END
+END
+#endif    // APSTUDIO_INVOKED
 
 
 /////////////////////////////////////////////////////////////////////////////

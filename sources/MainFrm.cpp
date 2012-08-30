@@ -27,6 +27,8 @@ static char THIS_FILE[] = __FILE__;
 //vls-begin// multiple output
 //vls-end//
 
+int shouldMinimizeToTray = -1;
+
 static UINT indicators[] =
 {
 	    ID_SEPARATOR,           // status line indicator
@@ -307,6 +309,7 @@ CMainFrame::CMainFrame()
     m_wndSplitter.m_nDownSize = ::GetPrivateProfileInt("Main" , "DownSize" , 100, szGLOBAL_PROFILE);
     bDisplayCommands  = ::GetPrivateProfileInt("Options" , "DisplayCommands" , 0, szGLOBAL_PROFILE);
     bDisplayInput  = ::GetPrivateProfileInt("Options" , "DisplayInput" , 1, szGLOBAL_PROFILE);
+    bMinimizeToTray  = ::GetPrivateProfileInt("Options" , "MinimizeToTray" , 0, szGLOBAL_PROFILE);
     MoreComingDelay  = ::GetPrivateProfileInt("Options" , "MoreComingDelay" , 100, szGLOBAL_PROFILE);
 }
 
@@ -316,6 +319,7 @@ CMainFrame::~CMainFrame()
     ::WritePrivateProfileInt("Main" , "DownSize" , m_wndSplitter.m_nDownSize, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "DisplayCommands" , bDisplayCommands, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "DisplayInput" , bDisplayInput , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt("Options" , "MinimizeToTray" , bMinimizeToTray, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "MoreComingDelay" , MoreComingDelay , szGLOBAL_PROFILE);
 }
 
@@ -469,7 +473,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		strcpy(trayTitle, text);
 	}
 
-	sysTray = CTray(IDR_MAINFRAME, trayTitle);
+	sysTray = CTray(IDR_JMC_ICON, trayTitle);
 
 //	GetDlgItem(ID_VIEW_MUDEMULATOR)->SetWindowText("Emulation");
     return 0;
@@ -530,6 +534,7 @@ void CMainFrame::OnOptionsOptions()
     pg1.m_bConnectBeep = bConnectBeep;
     pg1.m_bAutoReconnect = bAutoReconnect;
     pg1.m_bSplitOnBackscroll = pDoc->m_bSplitOnBackscroll;
+	pg1.m_bMinimizeToTray = bMinimizeToTray;
     pg1.m_nTrigDelay = MoreComingDelay;
 
 
@@ -588,6 +593,7 @@ void CMainFrame::OnOptionsOptions()
         cCommandDelimiter = pg1.m_strCommandDelimiter[0];
         bDisplayCommands = pg1.m_bDisplayCommands;
         bDisplayInput = pg1.m_bDisplayInput;
+		bMinimizeToTray = pg1.m_bMinimizeToTray;
         m_editBar.m_bClearInput = pg1.m_bClearInput;
         m_editBar.m_bTokenInput = pg1.m_bTokenInput;
         m_editBar.m_bScrollEnd = pg1.m_bScrollEnd;
@@ -973,17 +979,17 @@ void CInvertSplit::SavePosition()
 void CMainFrame::OnSize(UINT nType, int cx, int cy) 
 {
 
-	/*
-	// TODO: use jmc setting
 	if (nType == SIZE_MINIMIZED) {
-		ShowWindow(SW_HIDE);
-		sysTray.add();
+		if ((shouldMinimizeToTray == TRUE) || ((shouldMinimizeToTray == -1) && bMinimizeToTray)) {
+			ShowWindow(SW_HIDE);
+			sysTray.add();
+		}
 	} else if (nType == SIZE_RESTORED || nType == SIZE_MAXIMIZED) {
+		shouldMinimizeToTray = -1;
 		if (sysTray.isInTray()) {
 			sysTray.remove();
 		}
 	}
-	*/
 
 	CFrameWnd::OnSize(nType, cx, cy);
 }
@@ -1366,6 +1372,9 @@ LONG CMainFrame::OnTrayMessage(UINT wParam, LONG lParam)
 
 LONG CMainFrame::OnHideWindow(UINT wParam, LONG lParam)
 {
+
+	shouldMinimizeToTray = FALSE;
+
 	ShowWindow(SW_MINIMIZE);
 
 	return 1;
@@ -1380,18 +1389,20 @@ LONG CMainFrame::OnRestoreWindow(UINT wParam, LONG lParam)
 
 LONG CMainFrame::OnHideWindowToSystemTray(UINT wParam, LONG lParam)
 {
+	shouldMinimizeToTray = TRUE;
+
 	ShowWindow(SW_MINIMIZE);
-	ShowWindow(SW_HIDE);
-	sysTray.add();
 
 	return 1;
 }
 
 LONG CMainFrame::OnRestoreWindowFromSystemTray(UINT wParam, LONG lParam)
 {
-	ShowWindow(SW_SHOW);
-	ShowWindow(SW_RESTORE);
-	sysTray.remove();
+	if (shouldMinimizeToTray) {
+		ShowWindow(SW_SHOW);
+	}
+
+	ShowWindow(SW_RESTORE);		
 
 	return 1;
 }

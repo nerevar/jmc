@@ -34,6 +34,7 @@ CCommonParamsPage::CCommonParamsPage() : CPropertyPage(CCommonParamsPage::IDD, I
 	m_bAutoReconnect = FALSE;
 	m_bSplitOnBackscroll = FALSE;
 	m_nTrigDelay = 0;
+	m_bMinimizeToTray = FALSE;
 	//}}AFX_DATA_INIT
 }
 
@@ -62,6 +63,7 @@ void CCommonParamsPage::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CONNECT_BEEP, m_bConnectBeep);
 	DDX_Check(pDX, IDC_AUTO_RECONNECT, m_bAutoReconnect);
 	DDX_Check(pDX, IDC_SPLIT_ONBACKSCROLL, m_bSplitOnBackscroll);
+	DDX_Check(pDX, IDC_MINIMIZE_TO_TRAY, m_bMinimizeToTray);
 	DDX_Text(pDX, IDC_TRIG_DELAY, m_nTrigDelay);
 	//}}AFX_DATA_MAP
 }

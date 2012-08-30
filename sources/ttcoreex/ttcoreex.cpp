@@ -63,6 +63,7 @@ BOOL DLLEXPORT bIACSendSingle, bIACReciveSingle;
 int DLLEXPORT nScripterrorOutput; // 0 - msgbox, 1- window, 2- output
 BOOL DLLEXPORT bDisplayCommands = FALSE;
 BOOL DLLEXPORT bDisplayInput = TRUE;
+BOOL DLLEXPORT bMinimizeToTray = FALSE;
 
 char DLLEXPORT strInfo1[BUFFER_SIZE];
 char DLLEXPORT strInfo2[BUFFER_SIZE];

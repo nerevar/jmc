@@ -437,6 +437,10 @@ SOURCE=.\res\icon1.ico
 # End Source File
 # Begin Source File
 
+SOURCE=.\res\idr_jmc_.ico
+# End Source File
+# Begin Source File
+
 SOURCE=.\res\Joust.ico
 # End Source File
 # Begin Source File

@@ -40,6 +40,7 @@ public:
 	BOOL	m_bConnectBeep;
 	BOOL	m_bAutoReconnect;
 	BOOL	m_bSplitOnBackscroll;
+	BOOL	m_bMinimizeToTray;
 	int		m_nTrigDelay;
 	//}}AFX_DATA
 

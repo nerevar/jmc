@@ -527,7 +527,7 @@ void systray_command(char *arg)
 	
 	if ( cmd[0] == 'h' && is_abrev(cmd, "hide") ) {
 		PostMessage(hwndMAIN, WM_USER+430, 0, 0);
-	} else if ( cmd[0] == 'r' && is_abrev(cmd, "restore") ) {
+	} else if ( cmd[0] == 's' && is_abrev(cmd, "show") ) {
 		PostMessage(hwndMAIN, WM_USER+440, 0, 0);
 	} else {
         tintin_puts2(rs::rs(1259));

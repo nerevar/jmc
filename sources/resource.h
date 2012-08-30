@@ -49,6 +49,7 @@
 #define IDD_SCRIPT_FILES                174
 #define IDD_JMC_SCRIPTFILES             175
 #define IDD_EDIT_BAR                    176
+#define IDR_JMC_ICON                    178
 #define ID_DRAW_TEXT_ADDED              400
 #define ID_OUTPUT_TEXT_ADDED            401
 #define ID_INDICATOR_LOGGED             500
@@ -146,7 +147,9 @@
 #define IDC_LANG_SECT                   1108
 #define IDC_LOGTYPE_TEXT                1113
 #define IDC_LOGTYPE_HTML                1114
-#define IDC_LOGTYPE_ANSI                1115
+#define IDC_COMMANDS_FRAME              1115
+#define IDC_LOGTYPE_ANSI                1116
+#define IDC_MINIMIZE_TO_TRAY            1117
 #define ID_OPTIONS_SCROLLBUFFER         32771
 #define ID_OPTIONS_FONT                 32772
 #define ID_OPTIONS_HOTKEYS              32774
@@ -213,9 +216,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        178
+#define _APS_NEXT_RESOURCE_VALUE        179
 #define _APS_NEXT_COMMAND_VALUE         32809
-#define _APS_NEXT_CONTROL_VALUE         1114
+#define _APS_NEXT_CONTROL_VALUE         1116
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif
