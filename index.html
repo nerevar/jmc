@@ -8,20 +8,40 @@
     <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
     <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
 
-    <title>Jmc by nerevar</title>
+	<link href="images/jmc.ico" rel="shortcut icon" type="image/x-icon" />
+	
+    <title>JMC - Jaba Mud Client</title>
   </head>
 
   <body>
 
     <header>
       <div class="container">
-        <h1>Jmc</h1>
-        <h2>JMC - Jaba Mud Client</h2>
+		
+		<img class="logo__icon" src="images/icon.png" alt="Jaba Mud Client Logo">
+        
+		<h1 class="logo__text">Jmc</h1>
+        
+		<h2>Jaba Mud Client - это программа, предназначенная для игр в многопользовательские миры - онлайновые игры в интернет</h2>
 
+		<section class="features">
+			<p> Основные возможности программы: </p>
+			<ul>
+				<li>Легковесный клиент, не требующий установки для Windows XP/Windows Vista/Windows 7</li>
+				<li>Красивые HTML логи с возможностью поделиться в интернете</li>
+				<li>Поддержка работы с переменными и математическими операциями, регулярными выражениями</li>
+				<li>Триггеры, алиасы, горячие клавиши, подсветки, автозамены, дополнительные буфера и окна</li>
+				<li>Высокая скорость отрисовки информации, отсуствие эффектов утомляющих глаза ("дергание текста", "моргание") </li>
+				<li>Поддержка скрипт-языков как JScript/VBScript/Perl</li>
+				<li>Работа с буфером ОС; сворачивание в системный трей, панель задач</li>
+				<li>Поддержка многочисленных "профайлов" для разделения групп настроек</li>
+				<li>Воспроизведение звуковых файлов, запуск любых сторонних приложений</li>
+			</ul>		
+		</section>
+		
         <section id="downloads">
-          <a href="https://github.com/nerevar/jmc/zipball/master" class="btn">Download as .zip</a>
-          <a href="https://github.com/nerevar/jmc/tarball/master" class="btn">Download as .tar.gz</a>
-          <a href="https://github.com/nerevar/jmc" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+          <a href="http://nerevar.github.io/jmc/releases/jmc3600.zip" class="btn btn-jmc"><span class="icon"></span>Скачать последнюю версию 3.6</a>
+          <a href="https://github.com/nerevar/jmc" class="btn btn-github"><span class="icon"></span>Исходный код - GitHub</a>
         </section>
       </div>
     </header>
@@ -34,7 +54,6 @@
 
 <ul>
 <li>Возможность сворачивать JMC в system tray - добавлена галочка в настройках Minimize to system tray</li>
-<li>Изменён bat файл для совместимости с Windows 7, позволяющий зарегистрировать в системе dll библиотеки JMC для корректной работы скриптов. (Его по прежнему нужно запускать от имени Администратора)</li>
 <li>Добавлены команды:
 <code>#hidewindow</code> - сворачивает окно JMC на панель задач (вне зависимости от галочки Minimize to system tray)
 <code>#restorewindow</code> - восстанавливает окно JMC
@@ -65,13 +84,20 @@
 <code>$TIMESTAMP</code> - unix timestamp - время в секундах, прошедшее с 1 января 1970 г.</li>
 </ul>
 </li>
-<li>Исправления языкового файла language.ini</li>
+<li>Изменён bat файл для совместимости с Windows 7, позволяющий зарегистрировать в системе dll библиотеки JMC для корректной работы скриптов. (Его по прежнему нужно запускать от имени Администратора)</li>
+<li>Исправления переводов language.ini</li>
 <li>Галочка в настройках Display commands позволяющая отображать на экране (и выводить в лог файл) системные команды жабы в квадратных скобках</li>
 <li>Каждый раз не создавать файл tabwords.txt при выходе, если он пустой</li>
 <li>Максимальный размер истории увеличен с 500 до 10000</li>
 </ul>
       </section>
     </div>
+	
+	<footer>
+		<section class="container">
+			<p>Вопросы и предложения можно задавать в <a href="https://github.com/nerevar/jmc/issues">Issues</a> или непосредственно к <a href="mailto:mail@nerevar.ru">Nerevar</a> или <a href="mailto:padavit@front.ru">Mell</a> </p>
+		</section>
+	</footer>
 
               <script type="text/javascript">
             var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");

@@ -12,8 +12,9 @@ body {
 
 .container {
   width: 90%;
-  max-width: 600px;
+  max-width: 1000px;
   margin: 0 auto;
+  font-size: 15px;
 }
 
 section {
@@ -29,6 +30,33 @@ li {
   line-height: 1.4 ;
 }
 
+code
+{
+	color: #1EBD00;
+	font: 16px 'Courier New';
+	background-color: #151515;
+	border: 1px solid #383737;
+	padding: 1px 3px;
+}
+
+.logo__icon
+{
+	vertical-align: middle;
+}
+
+.logo__text
+{
+	vertical-align: middle;
+	margin-left: 10px;
+	line-height: 70px;
+}
+
+footer
+{
+	margin-top: 50px;
+	border-top: 1px dashed #1EBD00;
+}
+
 /* Header, <header>
    header   - container
    h1       - project name
@@ -38,18 +66,19 @@ li {
 header {
   background: rgba(0, 0, 0, 0.1);
   width: 100%;
-  border-bottom: 1px dashed #b5e853;
+  border-bottom: 1px dashed #1EBD00;
   padding: 20px 0;
   margin: 0 0 40px 0;
 }
 
 header h1 {
+  display: inline-block;
   font-size: 30px;
   line-height: 1.5;
   margin: 0 0 0 -40px;
   font-weight: bold;
   font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
-  color: #b5e853;
+  color: #1EBD00;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1),
                0 0 5px rgba(181, 232, 83, 0.1),
                0 0 10px rgba(181, 232, 83, 0.1);
@@ -57,15 +86,15 @@ header h1 {
   -webkit-font-smoothing: antialiased;
 }
 
-header h1:before {
-  content: "./ ";
-  font-size: 24px;
+header h2 {
+  font-size: 15px;
+  font-weight: 300;
+  color: #888;
 }
 
-header h2 {
-  font-size: 18px;
-  font-weight: 300;
-  color: #666;
+.features
+{
+	color: #888;
 }
 
 #downloads .btn {
@@ -88,7 +117,7 @@ section img {
 h1, h2, h3, h4, h5, h6 {
   font-weight: normal;
   font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
-  color: #b5e853;
+  color: #1EBD00;
   letter-spacing: -0.03em;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1),
                0 0 5px rgba(181, 232, 83, 0.1),
@@ -137,7 +166,7 @@ ul li:before {
   content: ">>";
   font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
   font-size: 13px;
-  color: #b5e853;
+  color: #1EBD00;
   margin-left: -37px;
   margin-right: 21px;
   line-height: 16px;
@@ -154,7 +183,7 @@ pre {
   border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 10px;
   font-size: 14px;
-  color: #b5e853;
+  color: #1EBD00;
   border-radius: 2px;
   -moz-border-radius: 2px;
   -webkit-border-radius: 2px;
@@ -170,7 +199,7 @@ table {
 
 th {
   text-align: left;
-  border-bottom: 1px dashed #b5e853;
+  border-bottom: 1px dashed #1EBD00;
   padding: 5px 10px;
 }
 
@@ -181,8 +210,8 @@ td {
 hr {
   height: 0;
   border: 0;
-  border-bottom: 1px dashed #b5e853;
-  color: #b5e853;
+  border-bottom: 1px dashed #1EBD00;
+  color: #1EBD00;
 }
 
 /* Buttons
@@ -220,6 +249,11 @@ hr {
 .btn-github .icon {
   opacity: 0.6;
   background: url("../images/blacktocat.png") 0 0 no-repeat;
+}
+
+.btn-jmc .icon {
+  opacity: 0.6;
+  background: url("../images/jmc.ico") 0 0 no-repeat;
 }
 
 /* Links
