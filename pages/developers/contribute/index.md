@@ -13,7 +13,7 @@ description: ""
 - Наира (git:nairsa) nairsa@mail.ru из Рмада
 - Shirs (git:liscar) shirocov@mail.ru из Рмада
 
-<br/><br/>
+<br/><br/><br/>
 Не стесняйтесь добавляться на эту страницу.
 
 #### Присоединиться к работе:
