@@ -7,11 +7,11 @@ description: ""
 
 [Назад]({{ BASE_PATH }}/pages/developers/)
 
-#### По всем вопросам можно обращаться к:
+#### Контакт с командой:
 
 - Неревар (git:nerevar) mail@nerevar.ru из [Арды](http://arda.pp.ru)
-- Наира (git:nairsa) nairsa@mail.ru
-- Shirs (git:liscar) shirocov@mail.ru
+- Наира (git:nairsa) nairsa@mail.ru из Рмада
+- Shirs (git:liscar) shirocov@mail.ru из Рмада
 
 
 Не стесняйтесь добавляться на эту страницу.
