@@ -1,6 +1,6 @@
 ---
 layout: page
-title: 
+title: "Jaba Mud Client 3.6.0.0"
 ---
 {% include JB/setup %}
 
