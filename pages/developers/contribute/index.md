@@ -12,6 +12,7 @@ description: ""
 - Неревар (git:nerevar) mail@nerevar.ru из [Арды](http://arda.pp.ru)
 - Наира (git:nairsa) nairsa@mail.ru из Рмада
 - Shirs (git:liscar) shirocov@mail.ru из Рмада
+- mell_inc (git:mell-inc) из [Арды](http://arda.pp.ru)
 
 <br/>
 Не стесняйтесь добавляться на эту страницу.
