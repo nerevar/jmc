@@ -20,7 +20,7 @@ description: ""
 
 #### Присоединиться к работе:
 
-1. Зарегистрироваться в [GitHub](https://github.com/), запросить у команды (по любому из указанных контактов) добавить [collaborator'а](https://github.com/nerevar/jmc/settings/collaboration). Это даст возможность изменять файлы через гитхаб.
+1. Зарегистрироваться в [GitHub](https://github.com/), запросить у команды (по любому из указанных контактов) добавить соратника в проект на Гитхабе (в настройках - github.com/.../jmc/settings/collaboration ). Это даст возможность изменять файлы через гитхаб.
 2. Зарегистрироваться в [Trello](https://trello.com/), запросить у команды добавить нового человека в организацию [jmcdev](https://trello.com/jmcdev) (и выставить права - Normal, Admin) 
 3. Добавить нового модератора в [disqus](http://jmc-mud.disqus.com/admin/settings/moderation/) 
 
