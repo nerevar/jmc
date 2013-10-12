@@ -8,6 +8,6 @@ tags: []
 {% include JB/setup %}
 
 Syntax:  
-`#multihighlight`
+`#multihighlight [on/off]`
 
 Включает/выключает режим, при котором на одну строку будут применено несколько команд [#hightlight](#hightlight)
