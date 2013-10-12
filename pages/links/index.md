@@ -13,6 +13,7 @@ description: ""
 ## Мады
 - [Арда - мир, созданный по мотивам Толкиена](http://arda.pp.ru/)
 - [Dangerous Fantasy 2 - мад в стиле кибер-панк](http://df2.ru/)
+- [Lensmoor - англоязычный бесклассовый с деревом скиллов мад] (http://lensmoor.org)
 
 ---
 
