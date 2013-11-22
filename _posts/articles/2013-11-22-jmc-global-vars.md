@@ -6,7 +6,7 @@ description: ""
 ---
 {% include JB/setup %}
 
-# Глобальные пермененны в eJMC
+# Глобальные переменные в eJMC
 
 Данная статья основывается на статье [Скриптинг в JMC](http://nerevar.github.io/jmc/articles/jmc-scripts/).
 
