@@ -232,5 +232,5 @@ eJMC.Vars.Delete = function (id){
 			
 	}
 
-{% endhighlight %}
+{% endhighlight %} 
 
