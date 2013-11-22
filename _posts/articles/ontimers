@@ -189,3 +189,4 @@ eJMC.Timers.KillAllTimer();
 
 Для удаления использую:
 `#eJMC.Timers.Kill('go_random')`
+
