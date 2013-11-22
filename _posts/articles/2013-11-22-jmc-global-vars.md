@@ -1,6 +1,6 @@
 ---
 layout: article
-title: "Глобальыне переменные"
+title: "Глобальные переменные"
 category: "articles"
 description: ""
 ---
