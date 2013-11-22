@@ -171,4 +171,4 @@ eJMC.Actions.Delete = function (id){
 {%s (Артефакт) %1 мерцает здесь.}{взять 1.арт}
 {%s(Артефакт) %1 лежит у твоих ног.}{взять 1.арт}
 
-{% endhighlight %}
+{% endhighlight %} 
