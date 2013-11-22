@@ -1,6 +1,6 @@
 ---
 layout: article
-title: "Статья"
+title: "Скриптинг в JMC"
 category: "articles"
 description: ""
 ---
