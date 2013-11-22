@@ -225,14 +225,13 @@ eJMC.Parse = function(str){
 }
 
 // Отправка строки на сервер.
-// В выводе мы не будет видеть, что вводили что-то.
-// Бывает полезным, когда требуется отправить на сервер Пароль, не отображая его на экране
+// Я не помню сечас явной разницы с eJMC.Parse, но она есть :)
 eJMC.Send = function(command){
 	jmc.send(command);
 }
 
 
-
+// Дальше разные вещи на получение времени
 eJMC.Date = {};
 eJMC.Date.getTime = function(){
 	var time  = new Date();
@@ -284,12 +283,7 @@ eJMC.Date.getDate = function(){
 	return result
 }
 
-
-
-eJMC.LoadConfig = function(){
-		//Читает файл в тмп и раскладывает в нужные массивы
-}
-
+// Регулярные выражения, куда же без них )
 eJMC.Regexp = {};
 
 eJMC.Regexp.Quote = function(str) {
@@ -299,6 +293,7 @@ eJMC.Regexp.Quote = function(str) {
 	return result;
 }
 
+// Собсвенно при перезагрузке скриптового движка, следует перечитать различные данные.
 eJMC.Reload = function(){
 
 	eJMC.Actions.Load();
@@ -306,6 +301,7 @@ eJMC.Reload = function(){
 	eJMC.Vars.Load();
 }
 
+// Генератор чисел, полезная штука, для написания ботов и активации произвольных событий
 eJMC.Random = function(id){
 
 	var rand = Math.round(Math.random() * id);
@@ -313,5 +309,5 @@ eJMC.Random = function(id){
 	
 }
 
-
 {% endhighlight %}
+
