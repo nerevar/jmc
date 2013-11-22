@@ -1,0 +1,191 @@
+---
+layout: article
+title: "Работа с таймерами"
+category: "articles"
+description: ""
+---
+{% include JB/setup %}
+
+# Работа с таймерами
+
+Данная статья основывается на статье [Скриптинг в JMC](http://nerevar.github.io/jmc/articles/jmc-scripts/).
+
+Таймеры - крайне полезная штука для мадов. Каждые 5 минут бафать себя, каждве 60 минут организовывать поиск
+артефактов мире, каждые 5 секунд перемещать чара по миру, что бы он автоматически бегал по зоне, та все что угодно :)
+
+Немного теории из JMC, которой обладаю я:
+
+В JMC существет метод jmc.SetTimer(id, second) - метод по запуску таймера. Уникальность таймеров определяется его id,
+а время через которое он должен срабатывать вторым параметром second.
+
+Что бы навесить что-то на сработанный таймер, следует привязать событие срабатывания таймеров к какой-то функции:
+
+{% highlight javascript %}
+
+eJMC.RegisterHandler = function(event, handler){
+	jmc.RegisterHandler(event , "eJMC." + handler + "()");
+};
+
+{% endhighlight %}
+
+
+eJMC.RegisterHandler("Timer",		"OnTimer");
+
+
+Попробую описать, как я работаю с таймерами.
+
+В рамках моего eJMC существует файл `lib/OnTimer/eJMC.Timers.js` с следующим содержимым:
+
+{% highlight javascript %}
+
+
+eJMC.Timers = {};
+//#eJMC.Timers.SetTimer(97,320)
+
+// Регистрируем таймеры, которыми сы часто пользуемся
+eJMC.Timers.Id = {
+		"kill_all_timer": 100,
+		"music": 99,
+		"reconnect": 98,
+		"grimuar": 97,
+		"go_random":96,
+		"bash":95,
+		"heal":94,
+		"kill_nej":93,
+		"detect":92,
+		"sanca": 91
+		
+}
+
+// Объявление таймера
+eJMC.Timers.SetTimer = function(id, second){
+	if (id==null){
+		
+		eJMC.Showme("Данная команда имеет два параметр: ID таймера, в виде константы, или в виде числа 1-100");
+		eJMC.Showme("И количество секунд, по истечению которых будет срабатывать этот таймер");
+		return 0;
+	}
+	
+	if (id==second){
+		
+		eJMC.Showme("Данная команда имеет два параметр: ID таймера, в виде константы, или в виде числа 1-100");
+		eJMC.Showme("И количество секунд, по истечению которых будет срабатывать этот таймер");
+		return 0;
+	}
+
+
+	if (typeof(id)=="string"){
+	  // Запуск таймера по названию
+		jmc.SetTimer(eJMC.Timers.Id[id], second*10);
+	} else {
+		if (typeof(id)=="number")
+		// Запуск таймера по id
+		jmc.SetTimer(id, second*10);
+	}
+
+}
+
+/**
+ * Здесь можно было бы написать функцию для запуска произвольного таймера, и обработчика, вроде
+ * eJMC.Timers.Run('id_timer', 'second','callback_function'), но мне она не понадобиалсь при геймплее
+ */
+
+// Алиас для eJMC.Timers.SetTimer
+eJMC.Timers.Set = function(id, second){
+	eJMC.Timers.SetTimer(id, second)
+}
+
+// Остановка таймера по id или названию
+eJMC.Timers.KillTimer = function(id){
+	if (typeof(id)=="string"){
+		jmc.KillTimer(eJMC.Timers.Id[id]);
+	} else {
+		if (typeof(id)=="number")
+		jmc.KillTimer(id);
+	}
+}
+
+// Алиас для eJMC.Timers.KillTimer
+eJMC.Timers.Kill = function(id){
+	eJMC.Timers.KillTimer(id);
+}
+
+// Остановка всех таймеров. Я ограничился 100 таймерами для себя.
+eJMC.Timers.KillAllTimer = function(){
+	//jmc.SetTimer(id, second*10);
+	for (var i = 0; i <= 100; i++) {
+		eJMC.Timers.KillTimer(i);
+	}
+}
+
+// У меня нет для каждого таймера при срабатывание callback функкции.
+// Весь код исполняется здесь, основываясь на id таймера
+eJMC.Timers.TimerExec = function(id_timer){
+//	eJMC.Showme("Timer " + id_timer + " work!");
+	
+	if (id_timer==eJMC.Timers.Id["music"]){
+		eJMC.MusicPlayer.Play(eJMC.MusicPlayer.Track.Name);
+	}
+	
+	if (id_timer==eJMC.Timers.Id["go_random"]){
+		var id = eJMC.Random(5);
+		eJMC.Bots.Skill.Taiga.GoRandom(id);
+	}
+	
+	if (id_timer==eJMC.Timers.Id["reconnect"]){
+		
+		eJMC.Parse("#connect balderdash.ru 9000");
+	}
+	
+	if (id_timer==eJMC.Timers.Id["heal"]){
+		
+		eJMC.Parse("к зам; к \"изгнать добро\"");
+	}
+	
+	if (id_timer==eJMC.Timers.Id["grimuar"]){
+		eJMC.Parse("гримуар 2.фля; к брон; к плащ");
+	}
+	
+	if (id_timer==eJMC.Timers.Id["kill_nej"]){
+		eJMC.Parse("к обрат 1.дух");
+	}
+	
+	if (id_timer==eJMC.Timers.Id["detect"]){
+		eJMC.Parse("к \"обнаружить невидимое\"");
+		eJMC.Parse("к \"обнаружить скрытое\"");
+	}
+	
+	if (id_timer==eJMC.Timers.Id["sanca"]){
+		eJMC.Parse("к \"защита храма\"");
+		eJMC.Parse("конце");
+	}
+	
+	
+	if (id_timer==eJMC.Timers.Id["kill_all_timer"]){
+		eJMC.Timers.KillAllTimer();
+		eJMC.Parse("конец");
+	}
+	
+	if (id_timer==eJMC.Timers.Id["bash"]){
+		eJMC.Parse("толч");
+	}
+	
+	
+}
+
+// При первоначальной загрузке или перезапуске скриптового движка, следует обнулять таймеры
+eJMC.Timers.KillAllTimer();
+
+{% endhighlight %}
+
+Как я управляю таймерами из JMC:
+У меня есть обертка для выполнения JS кода прямо из JMS через ввод `#eJMC.*`.
+
+Собсвенно для зауска таймера, который бы перемещал чара по миру каждые 5 секунд я ввожу команду: 
+`#eJMC.Timers.Set('go_random', 5)`
+
+Для того, что бы автоматически кастовались детекты (обнаружение скрытого и магии в мире), я ввожу команду:
+`#eJMC.Timers.Set('detect', 5)`
+
+Для удаления использую:
+`#eJMC.Timers.Kill('go_random')`
