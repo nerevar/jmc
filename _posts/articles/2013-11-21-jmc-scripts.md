@@ -13,8 +13,7 @@ description: ""
 
 Оговорюсь сразу, что я не знаю язык JS :) И все строки кода были написаны без представления работы языка JS.
 
-В JMC3.5 в каталоге ./JMC/settings можно создать файл commonlib.scr поместив в него JS код, который будет исполняться
-при запуске скриптового движка во всех профилях. 
+В JMC3.5 в каталоге `./JMC/settings` можно создать файл `commonlib.scr` поместив в него JS код, который будет исполняться при запуске скриптового движка во всех профилях. 
 
 Приведу примеры реализации своих JS скриптов:
 
@@ -74,7 +73,7 @@ FileSystem.Include("lib\\eJMC\\eJMC.js")
 {% endhighlight %}
 
 
-Пример lib/FileSystem/FileSystem.Functions.js
+Пример `lib/FileSystem/FileSystem.Functions.js`
 
 {% highlight javascript %}
 
@@ -128,10 +127,9 @@ FileSystem.ReadFileToArray = function(sFileName){
 
 {% endhighlight %}
 
-Т.к. мой JS код мада находиться на вечной стадии размышлений, тестов и допилов, пример своего `lib/functions.js` и `lib/System/System.js`
-не привожу.
+Т.к. мой JS код мада находиться на вечной стадии размышлений, тестов и допилов, пример своего `lib/functions.js` и `lib/System/System.js` не привожу.
 
-Пример lib/eJMC/eJMC.js
+Пример `lib/eJMC/eJMC.js`
 
 {% highlight javascript %}
 
