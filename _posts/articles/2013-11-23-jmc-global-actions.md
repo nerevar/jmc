@@ -2,7 +2,7 @@
 layout: article
 title: "Глобальные триггеры в eJMC"
 category: "articles"
-tags: ["js", "скрипты", "триггеры"]
+tags: ["js", "скрипты", "триггеры", "eJMC"]
 description: ""
 ---
 {% include JB/setup %}

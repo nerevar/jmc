@@ -1,8 +1,8 @@
 ---
 layout: article
-title: "Скриптинг в JMC. Базовые методы и настройки"
+title: "Скриптинг в JMC. Базовые методы и настройки - eJMC"
 category: "articles"
-tags: ["js", "скрипты"]
+tags: ["js", "скрипты", "eJMC"]
 description: ""
 ---
 {% include JB/setup %}

@@ -2,7 +2,7 @@
 layout: article
 title: "Глобальные переменные скриптов в eJMC"
 category: "articles"
-tags: ["js", "скрипты", "сохранение переменных скриптов в файлы"]
+tags: ["js", "скрипты", "сохранение переменных скриптов в файлы", "eJMC"]
 description: ""
 ---
 {% include JB/setup %}
