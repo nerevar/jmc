@@ -176,7 +176,7 @@ description: ""
 
 {% endhighlight %}
 
-Пример lib\\eJMC\\eJMC.Functions.js
+Пример `lib\\eJMC\\eJMC.Functions.js`
 
 {% highlight javascript %}
 
