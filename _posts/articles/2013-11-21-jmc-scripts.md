@@ -44,15 +44,15 @@ FileSystem = {};
 	FileSystem.File =  new ActiveXObject("Scripting.FileSystemObject");
 	
 	// Режимы работы с файлами: чтение, запись, дозапись
-	FileSystem.mode = {
+	FileSystem.mode = { 
 	"Read" : 1,
 	"Write" : 2,
 	"Append" : 8
 	}
 
-// Функция include, служит для подгрузки дополнительного кода
-// Имеет один входной строковый параметр sFileName - путь и имя подгружаемого файла, относительно FileSystem.SettingsDir
-FileSystem.Include = function(sFileName){
+	// Функция include, служит для подгрузки дополнительного кода
+	// Имеет один входной строковый параметр sFileName - путь и имя подгружаемого файла, относительно FileSystem.SettingsDir
+	FileSystem.Include = function(sFileName){
 	
 	// Открытие файла на чтение
 	var Stream = FileSystem.File.OpenTextFile(FileSystem.SettingsDir + sFileName, FileSystem.mode.Read);
