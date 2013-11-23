@@ -1,12 +1,15 @@
 ---
 layout: article
-title: "Скриптинг в JMC"
+title: "Скриптинг в JMC. Базовые методы и настройки"
 category: "articles"
+tags: ["js", "скрипты"]
 description: ""
 ---
 {% include JB/setup %}
 
 # Скриптинг в JMC
+
+Автор: [Brullek](https://github.com/brullek)
 
 Оговорюсь сразу, что я не знаю язык JS :) И все строки кода были написаны без представления работы языка JS.
 

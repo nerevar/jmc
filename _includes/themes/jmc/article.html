@@ -4,8 +4,18 @@
     </h1>
 </div>
 
+{% unless page.tags == empty %}
 <div class="row">
-    <div class="span8">
+    <ul class="tag_box inline">
+        <li><i class="icon-tags" title="Теги страницы"></i></li>
+        {% assign tags_list = page.tags %}
+        {% include JB/tags_list %}
+    </ul>
+</div>
+{% endunless %}
+
+<div class="row">
+    <div class="span12">
         <div class="btn-group">
             <a class="btn" href="{{ BASE_PATH }}/pages/article/">К статьям</a>
         </div>

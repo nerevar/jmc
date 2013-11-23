@@ -1,12 +1,15 @@
 ---
 layout: article
-title: "Глобальные переменные"
+title: "Глобальные переменные скриптов в eJMC"
 category: "articles"
+tags: ["js", "скрипты", "сохранение переменных скриптов в файлы"]
 description: ""
 ---
 {% include JB/setup %}
 
 # Глобальные переменные в eJMC
+
+Автор: [Brullek](https://github.com/brullek)
 
 Данная статья основывается на статье [Скриптинг в JMC](http://nerevar.github.io/jmc/articles/jmc-scripts/).
 

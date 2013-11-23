@@ -184,8 +184,19 @@ ul li:before {
     line-height: 16px;
 }
 
-ul.nav li:before {
+ul.nav li:before,
+ul.inline li:before,
+ul.tag_box li:before
+{
     content: none;
+}
+
+ul.inline li {
+    display: inline;
+}
+
+.tag_box {
+    margin-bottom: 20px;
 }
 
 blockquote {
