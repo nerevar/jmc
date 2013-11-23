@@ -64,12 +64,12 @@ FileSystem = {};
 	Stream.Close();
 } 
 	
-// Дальше я подгружаю различные хелперы и, собсвенно,  eJMC.
-// У меня eJMC - объект содержащий все мои `extended`
-FileSystem.Include("lib\\functions.js")
-FileSystem.Include("lib\\FileSystem\\FileSystem.Functions.js")
-FileSystem.Include("lib\\System\\System.js")
-FileSystem.Include("lib\\eJMC\\eJMC.js")
+	// Дальше я подгружаю различные хелперы и, собсвенно,  eJMC.
+	// У меня eJMC - объект содержащий все мои `extended`
+	FileSystem.Include("lib\\functions.js")
+	FileSystem.Include("lib\\FileSystem\\FileSystem.Functions.js")
+	FileSystem.Include("lib\\System\\System.js")
+	FileSystem.Include("lib\\eJMC\\eJMC.js")
 {% endhighlight %}
 
 
