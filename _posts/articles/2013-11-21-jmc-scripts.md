@@ -128,7 +128,7 @@ FileSystem.ReadFileToArray = function(sFileName){
 
 {% endhighlight %}
 
-Т.к. мой JS код мада находиться на вечной стадии размышлений, тестов и допилов, пример своего lib/functions.js и lib/System/System.js
+Т.к. мой JS код мада находиться на вечной стадии размышлений, тестов и допилов, пример своего `lib/functions.js` и `lib/System/System.js`
 не привожу.
 
 Пример lib/eJMC/eJMC.js
