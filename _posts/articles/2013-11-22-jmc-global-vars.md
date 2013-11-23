@@ -1,6 +1,6 @@
 ---
 layout: article
-title: "Глобальные переменные скриптов в eJMC"
+title: "Глобальные переменные в eJMC"
 category: "articles"
 tags: ["js", "скрипты", "сохранение переменных скриптов в файлы", "eJMC"]
 description: ""
