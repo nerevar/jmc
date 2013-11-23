@@ -19,12 +19,10 @@ description: ""
 
 {% highlight javascript %}
 
-	// Начинаю с настройки путей и подгрузки FileSystemObject, который будет
-	инклудить весь пользовательский JS код.
+	// Начинаю с настройки путей и подгрузки FileSystemObject, который будет инклудить весь пользовательский JS код.
 	FileSystem = {};
 	
-	// Здесь у меня лежит жаба. В windows слеши приходится
-	экранировать, и двойные слеши тут не случайны
+	// Здесь у меня лежит жаба. В windows слеши приходится экранировать, и двойные слеши тут не случайны
 	FileSystem.BinDir = "C:\\JMC\\JMC\\";
 	
 	// Каталог, где у меня лежат файлы с текстами песен, используется в eJMC.MusicPlayer
@@ -78,52 +76,52 @@ description: ""
 
 {% highlight javascript %}
 
-// Чтение файла в переменную
-FileSystem.ReadFile = function(sFileName){
-	var Stream = FileSystem.File.OpenTextFile(FileSystem.SettingsDir + sFileName, FileSystem.mode.Read);
-	var result = Stream.ReadAll();
-		Stream.Close();
-		return result;
-}
-
-// Запись строки в файл
-FileSystem.WriteLine = function(sFileName, text){
-	var Stream = FileSystem.File.OpenTextFile(sFileName, FileSystem.mode.Append);
-		Stream.Write(text + "\n");
-		Stream.Close();
-}
-
-// Очистка файла
-FileSystem.EraseFile = function(sFileName){
-	var Stream = FileSystem.File.OpenTextFile(sFileName, FileSystem.mode.Write);
-		//Stream.Write(text + "\n");
-		Stream.Close();
-}
-
-// Функция возвращает массив строк, элемент с индексом 0 хранит в себе количество строк.
-// Полезно, когда нам нужно иметь построчный доступ к данным файла.
-// Например: одна строка = одно правило чего-либо.
-FileSystem.ReadFileToArray = function(sFileName){
-	var Stream = FileSystem.File.OpenTextFile(sFileName, FileSystem.mode.Read);
-	
-	var result = [0];
-	
-	// Пока не достигнут конец файла, считываем из него данные	
-	while (Stream.AtEndOfStream == false) {
-		
-		var str = Stream.ReadLine();
-		
-		//Добавляет строку в массив, а в result[0] возвращает размер получившегося массива
-		result[0] = result.push(str);
+	// Чтение файла в переменную
+	FileSystem.ReadFile = function(sFileName){
+		var Stream = FileSystem.File.OpenTextFile(FileSystem.SettingsDir + sFileName, FileSystem.mode.Read);
+		var result = Stream.ReadAll();
+			Stream.Close();
+			return result;
 	}
-		// result[0] = размерности массива, но счет в массиве начинается не с 1 а с 0 )))
-	result[0] = result[0]-1;
-		
-		// Закрываем файл и возвращаем результат
-		Stream.Close();
-		return result;
 	
-}
+	// Запись строки в файл
+	FileSystem.WriteLine = function(sFileName, text){
+		var Stream = FileSystem.File.OpenTextFile(sFileName, FileSystem.mode.Append);
+			Stream.Write(text + "\n");
+			Stream.Close();
+	}
+	
+	// Очистка файла
+	FileSystem.EraseFile = function(sFileName){
+		var Stream = FileSystem.File.OpenTextFile(sFileName, FileSystem.mode.Write);
+			//Stream.Write(text + "\n");
+			Stream.Close();
+	}
+	
+	// Функция возвращает массив строк, элемент с индексом 0 хранит в себе количество строк.
+	// Полезно, когда нам нужно иметь построчный доступ к данным файла.
+	// Например: одна строка = одно правило чего-либо.
+	FileSystem.ReadFileToArray = function(sFileName){
+		var Stream = FileSystem.File.OpenTextFile(sFileName, FileSystem.mode.Read);
+		
+		var result = [0];
+		
+		// Пока не достигнут конец файла, считываем из него данные	
+		while (Stream.AtEndOfStream == false) {
+			
+			var str = Stream.ReadLine();
+			
+			//Добавляет строку в массив, а в result[0] возвращает размер получившегося массива
+			result[0] = result.push(str);
+		}
+			// result[0] = размерности массива, но счет в массиве начинается не с 1 а с 0 )))
+		result[0] = result[0]-1;
+			
+			// Закрываем файл и возвращаем результат
+			Stream.Close();
+			return result;
+		
+	}
 
 
 {% endhighlight %}
