@@ -437,11 +437,7 @@ SOURCE=.\res\icon1.ico
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\idr_jmc_.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\Joust.ico
+SOURCE=.\res\jmc_main_icon.ico
 # End Source File
 # Begin Source File
 
@@ -453,24 +449,12 @@ SOURCE=.\res\logged1.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\smc.ico
-# End Source File
-# Begin Source File
-
 SOURCE=.\res\smc.rc2
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\smcDoc.ico
 # End Source File
 # Begin Source File
 
 SOURCE=.\res\Toolbar.bmp
 # End Source File
 # End Group
-# Begin Source File
-
-SOURCE=.\ChangeLog328.txt
-# End Source File
 # End Target
 # End Project

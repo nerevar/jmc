@@ -65,9 +65,8 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDR_MAINFRAME           ICON    DISCARDABLE     "res\\Joust.ico"
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\jmc_main_icon.ico"
 IDD_SCRIPT_PARSE        ICON    DISCARDABLE     "res\\icon1.ico"
-IDR_JMC_ICON            ICON    DISCARDABLE     "res\\idr_jmc_.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -94,7 +93,7 @@ BEGIN
     LTEXT           "Ver",IDC_VERTION,107,7,90,8
     LTEXT           "jmc@alfuken.net",IDC_EMAIL,135,95,54,8
     LTEXT           "Supported sites:",IDC_STATIC,5,74,87,8
-    LTEXT           "http://nerevar.github.com/jmc/",IDC_WWW,6,84,101,8
+    LTEXT           "http://nerevar.github.io/jmc/",IDC_WWW,6,84,101,8
     LTEXT           "http://jmc.mud.ru",IDC_WWW1,6,106,116,8
     LTEXT           "http://jmc.kharkov.org/",IDC_WWW2,6,95,76,8
     LTEXT           "mail@nerevar.ru",IDC_EMAIL2,135,84,52,8
@@ -659,7 +658,7 @@ BEGIN
             VALUE "FileDescription", "JMC application\0"
             VALUE "FileVersion", "3, 6, 0, 0\0"
             VALUE "InternalName", "JMC\0"
-            VALUE "LegalCopyright", "© Copyright Sergey Iliyn 1998\r\n© Likhtarov Anton 2002\r\n© Shchepansky Bohdan, Kim Yursen, Ennin 2006-2007\r\n© NeReVaR 2012\0"
+            VALUE "LegalCopyright", "© Copyright Sergey Iliyn 1998\r\n© Likhtarov Anton 2002\r\n© Shchepansky Bohdan, Kim Yursen, Ennin 2006-2007\r\n© NeReVaR 2012-2013\0"
             VALUE "LegalTrademarks", "JMC\0"
             VALUE "OriginalFilename", "JMC.EXE\0"
             VALUE "PrivateBuild", "\0"

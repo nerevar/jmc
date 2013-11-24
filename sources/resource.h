@@ -49,7 +49,6 @@
 #define IDD_SCRIPT_FILES                174
 #define IDD_JMC_SCRIPTFILES             175
 #define IDD_EDIT_BAR                    176
-#define IDR_JMC_ICON                    178
 #define ID_DRAW_TEXT_ADDED              400
 #define ID_OUTPUT_TEXT_ADDED            401
 #define ID_INDICATOR_LOGGED             500

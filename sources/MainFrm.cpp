@@ -473,7 +473,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		strcpy(trayTitle, text);
 	}
 
-	sysTray = CTray(IDR_JMC_ICON, trayTitle);
+	sysTray = CTray(IDR_MAINFRAME, trayTitle);
 
 //	GetDlgItem(ID_VIEW_MUDEMULATOR)->SetWindowText("Emulation");
     return 0;
