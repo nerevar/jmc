@@ -219,6 +219,7 @@ IMPLEMENT_DYNCREATE(CMainFrame, CFrameWnd)
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	//{{AFX_MSG_MAP(CMainFrame)
 	ON_WM_CREATE()
+	ON_WM_SYSCOMMAND()
 	ON_COMMAND(ID_OPTIONS_OPTIONS, OnOptionsOptions)
 	ON_WM_DESTROY()
 	ON_COMMAND(ID_UNSPLIT, OnUnsplit)
@@ -1405,4 +1406,9 @@ LONG CMainFrame::OnRestoreWindowFromSystemTray(UINT wParam, LONG lParam)
 	ShowWindow(SW_RESTORE);		
 
 	return 1;
+}
+
+void CMainFrame::OnSysCommand(UINT wParam, LPARAM lParam){
+	if(wParam==SC_KEYMENU && (lParam>>16)<=0) return;
+	CFrameWnd::OnSysCommand(wParam, lParam);
 }

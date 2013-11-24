@@ -191,6 +191,7 @@ protected:
 	afx_msg LONG OnUpdStat5(UINT wParam, LONG lParam);
 
 	afx_msg LONG OnTrayMessage(UINT wParam, LONG lParam);
+	afx_msg void OnSysCommand(UINT wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()
 };
