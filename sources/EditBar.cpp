@@ -425,14 +425,49 @@ void CEditBar::DoPaste()
     ASSERT(pEdit);
     if ( !OpenClipboard() ) 
         return;
-    HANDLE hData = GetClipboardData(CF_TEXT);
-    ASSERT(hData);
-    if ( hData == NULL ) 
-        return;
 
-    CString str = (LPSTR)GlobalLock(hData);
-    GlobalUnlock(hData);
-    CloseClipboard();
+	UINT uFormat = EnumClipboardFormats(0);
+
+    while (uFormat) {
+		if(uFormat == 0 || uFormat == CF_TEXT || uFormat == CF_UNICODETEXT)
+			break;
+
+		uFormat = EnumClipboardFormats(uFormat);
+	}
+
+	if(!uFormat)
+		return;
+
+	HANDLE hData = GetClipboardData(uFormat);
+	ASSERT(hData);
+	if ( hData == NULL )
+		return;
+
+	LPSTR str;
+
+	if (uFormat == CF_TEXT) {
+
+		LPSTR pwsz = (LPSTR)GlobalLock(hData);
+		GlobalUnlock(hData);
+		CloseClipboard();
+
+		int nLen = strlen( pwsz ) + 1;
+		str = new char[ nLen ];
+		memcpy(str, pwsz, nLen);
+		GlobalUnlock(hData);
+
+	} else if (uFormat == CF_UNICODETEXT) {
+
+		LPWSTR pwsz = (LPWSTR)GlobalLock(hData);
+		int nLenUnicode = wcslen( pwsz ) + 1; // Convert all UNICODE characters
+		int nLen = WideCharToMultiByte( CP_ACP,	0, pwsz, nLenUnicode, NULL, 0, NULL, NULL );
+
+		str = new char[ nLen ]; // nLen includes the NULL character
+		WideCharToMultiByte( CP_ACP, 0,	pwsz, nLenUnicode, str, nLen, NULL, NULL );
+		GlobalUnlock(hData);
+	}
+	CloseClipboard();
+
     CString strIns, strAdd;
     pEdit->GetWindowText(strIns);
     char* src = (LPSTR)(LPCSTR)str;
@@ -459,6 +494,7 @@ void CEditBar::DoPaste()
         };
 
     } while (*src++);
+	delete[] str;
     if ( strAdd.GetLength() ) {
         int size = strAdd.GetLength();
         strAdd = strIns.Left(StartSel) + strAdd + strIns.Right(strIns.GetLength() - EndSel);
