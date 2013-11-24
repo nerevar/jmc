@@ -1,14 +1,14 @@
 # exclude JMC
-/sources\smc.aps
 /sources\smc.clw
 /sources\smc.ncb
 /sources\smc.opt
-/sources\smc.plg
-/sources\ttcoreex\ttcoreex.aps
 /sources\ttcoreex\ttcoreex.h
 /sources\ttcoreex\ttcoreex.tlb
 /sources\ttcoreex\ttcoreex_i.c
 /sources\ttcoreex\ttcoreex_p.c
+
+*.aps
+*.plg
 
 # jmc user settings
 /sources/Default.set
@@ -16,4 +16,4 @@
 /sources/history.dat
 /sources/settings/Default.opt
 /sources/tabwords.txt
-/sources/jmc.ini
+*jmc.ini
