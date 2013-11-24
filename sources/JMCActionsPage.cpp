@@ -209,17 +209,17 @@ void CJMCActionsPage::OnChangeText()
     ASSERT(pos >= 0 );
     PACTION pAct = (PACTION )m_cActionsList.GetItemData(pos);
     ASSERT(pAct);
-    // SetAction((LPSTR)pAct->m_strLeft.data(), (LPSTR)(LPCSTR)m_strText, pAct->m_nPriority , NULL);
-    pAct->m_strRight = m_strText;
+	SetActionText(pAct, (LPSTR)(LPCSTR)m_strText) ;
+    //SetAction((LPSTR)pAct->m_strLeft.data(), (LPSTR)(LPCSTR)m_strText, pAct->m_nPriority , NULL);
+    //pAct->m_strRight = m_strText;
 
-    LV_ITEM lvi;
-    ZeroMemory(&lvi , sizeof(lvi));
+	LV_ITEM lvi;
+	ZeroMemory(&lvi, sizeof(lvi));
     lvi.iItem = pos;
     lvi.iSubItem = 1;
     lvi.mask = LVIF_TEXT ;
     lvi.pszText  = (LPSTR)(LPCSTR)m_strText;
     m_cActionsList.SetItem (&lvi);
-
 }
 
 void CJMCActionsPage::OnSelchangeGrp() 
@@ -269,11 +269,15 @@ void CJMCActionsPage::OnRemove()
     PACTION pAct = (PACTION)m_cActionsList.GetItemData(pos);
     ASSERT(pAct);
 	
-    RemoveAction((LPSTR)pAct->m_strLeft.data());
-    m_cActionsList.DeleteItem (pos);
-    m_cActionsList.SetItemState(min(pos, m_cActionsList.GetItemCount () -1),
+    //RemoveAction((LPSTR)pAct->m_strLeft.data());
+	if(RemoveAction(pAct)){
+		m_cActionsList.DeleteItem (pos);
+		m_cActionsList.SetItemState(min(pos, m_cActionsList.GetItemCount () -1),
             LVNI_SELECTED | LVNI_FOCUSED ,  LVNI_SELECTED | LVNI_FOCUSED);
-    SetControls();
+	}else{
+		MessageBox("Error deleting action!." , "JMC" , MB_OK | MB_ICONSTOP);
+	}
+	SetControls();
 }
 
 void CJMCActionsPage::OnKillfocusName() 
@@ -290,7 +294,8 @@ void CJMCActionsPage::OnKillfocusName()
             SetControls();
             return;
         }
-*/        PACTION pAct = SetAction((LPSTR)(LPCSTR)m_strName, "", 5, NULL );
+*/
+        PACTION pAct = SetAction((LPSTR)(LPCSTR)m_strName, "", 5, NULL );
         if ( !pAct ) 
             return;
         int i = AddItem(pAct);
@@ -353,5 +358,4 @@ void CJMCActionsPage::OnChangeName()
     lvi.mask = LVIF_TEXT ;
     lvi.pszText  = (LPSTR)(LPCSTR)m_strName;
     m_cActionsList.SetItem (&lvi);
-    
 }

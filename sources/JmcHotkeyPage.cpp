@@ -162,7 +162,7 @@ void CJmcHotkeyPage::OnRemove()
         return;
     CHotKey* pHot = (CHotKey*)m_cHotkeysList.GetItemData (pos);
 
-    RemoveHot (pHot);
+    RemoveHot(pHot);
     m_cHotkeysList.DeleteItem (pos);
     m_cHotkeysList.SetItemState(min(pos, m_cHotkeysList.GetItemCount () -1),
             LVNI_SELECTED | LVNI_FOCUSED ,  LVNI_SELECTED | LVNI_FOCUSED);
@@ -177,14 +177,15 @@ void CJmcHotkeyPage::OnChangeText()
     if ( pos < 0 ) 
         return;
     CHotKey* pHot = (CHotKey*)m_cHotkeysList.GetItemData (pos);
-    pHot->m_strAction = m_strText;
+    SetHotText(pHot, (LPSTR)(LPCSTR)m_strText);
+	//pHot->m_strAction = m_strText;
 
     LV_ITEM lvi;
     ZeroMemory(&lvi , sizeof(lvi));
     lvi.mask = LVIF_TEXT;
     lvi.iItem = pos;
     lvi.iSubItem = 1;
-    lvi.pszText  = (LPSTR)pHot->m_strAction.data();
+    lvi.pszText  = (LPSTR)(LPCSTR)m_strText;
     m_cHotkeysList.SetItem (&lvi);
 
 }

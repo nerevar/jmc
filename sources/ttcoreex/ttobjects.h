@@ -134,8 +134,10 @@ PPALIAS DLLEXPORT GetAliasList(int* size);
 PALIAS DLLEXPORT GetAlias(char* name);
 
 // action operations 
-void DLLEXPORT RemoveAction(char* name) ;
+//void DLLEXPORT RemoveAction(char* name) ;
+BOOL DLLEXPORT RemoveAction(ACTION* pac);
 PACTION DLLEXPORT SetAction(char* name, char* text, int priority, char* group) ;
+void DLLEXPORT SetActionText(ACTION* pac, char* text) ;
 PPACTION DLLEXPORT GetActionsList(int* size); 
 PACTION DLLEXPORT GetAction(char* name);
 void DLLEXPORT SetActionPattern(PACTION pAct, LPCSTR strText);
@@ -163,6 +165,7 @@ PCHotKey DLLEXPORT GetHot(WORD wScanCode, WORD wAltState);
 PCHotKey DLLEXPORT SetHot(WORD wScanCode, WORD wAltState, char* strKeyString, char* action, char* group);
 //vls-end//
 void DLLEXPORT RemoveHot(CHotKey* pHot);
+void DLLEXPORT SetHotText(CHotKey* hot, char* text) ;
 
 //vls-begin// script files
 PCScriptFile DLLEXPORT GetScriptFileList(int* size);

@@ -373,3 +373,10 @@ PCHotKey DLLEXPORT SetHot(WORD wKeyCode, WORD wAltState, char* strKeyString, cha
     }
     return pKey;
 }
+
+void DLLEXPORT SetHotText(CHotKey* hot, char* text)
+{
+
+    hot->m_strAction = text;
+
+}

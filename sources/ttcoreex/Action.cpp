@@ -75,7 +75,7 @@ void action_command(char *arg)
     while (ind  != ActionList.end() ) {
         // CActionPtr pac1 = *ind;
         ACTION* pac1 = *ind;
-        if ( !pac1->m_bDeleted && !strcmp(left, pac1->m_strLeft.data()) ) {
+        if ( !pac1->m_bDeleted && !strcmp(left, pac1->m_strLeft.data()) && !strcmp(right, pac1->m_strRight.data())) {
             bNew = FALSE;
             break;
         }
@@ -453,18 +453,32 @@ int check_a_action(char *line, char *action)
     
 
 
-void DLLEXPORT RemoveAction(char* name) 
+BOOL DLLEXPORT RemoveAction(ACTION* pac)
 {
     ACTION_INDEX ind = ActionList.begin();
     while (ind  != ActionList.end() ) {
-        ACTION* pac = *ind;
-        if ( !pac->m_bDeleted && !strcmp(name, (char*)pac->m_strLeft.data()) ){
+        ACTION* pactodel = *ind;
+        if (pactodel == pac){
+			delete pactodel;
+            ActionList .erase (ind);
+            return true;
+		}
+/*		if ( !pac->m_bDeleted && !strcmp(name, (char*)pac->m_strLeft.data()) ){
             delete pac;
             ActionList .erase (ind);
             return;
         }
+*/
         ind++;
     }
+	return false;
+}
+
+void DLLEXPORT SetActionText(ACTION* pac, char* text)
+{
+
+    pac->m_strRight = text;
+
 }
 
 PACTION DLLEXPORT SetAction(char* name, char* text, int priority, char* group) 
