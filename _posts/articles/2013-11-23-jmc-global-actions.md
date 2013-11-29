@@ -19,7 +19,7 @@ description: ""
 
 {% highlight javascript %}
 
-eJMC.Actions = {}; // объект хранящий в себе все глобальные тигеры
+eJMC.Actions = {}; // объект хранящий в себе все глобальные триггеры
 
 eJMC.Actions.Init = function () {
     eJMC.Actions.Buffer = new Array();
