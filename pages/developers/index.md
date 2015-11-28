@@ -38,7 +38,7 @@ JMC прошел долгий путь развития. У проекта [мн
 
 И немного технических деталей о сайте. 
 
-Помимо хостинга статических html файлов, github поддерживает шаблонизатор [jekyll](jekyllrb.com), конвертирующий _файлы со статьями_ в формате [markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet), [ещё дока](http://stackoverflow.com/editing-help)
+Помимо хостинга статических html файлов, github поддерживает шаблонизатор [jekyll](http://jekyllrb.com/), конвертирующий _файлы со статьями_ в формате [markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet), [ещё дока](http://stackoverflow.com/editing-help)
 в статичные html-файлы (с помощью шаблонизатора [Liquid](https://github.com/shopify/liquid/wiki/liquid-for-designers)). GitHub при каждом коммите(при любом изменении файлов) в [ветку gh-pages](https://github.com/nerevar/jmc/tree/gh-pages) перегенерирует статику и обновляет сайт (обычно в течение 10 минут). Проект интегрирован с [jekyllbootstrap](http://jekyllbootstrap.com/), благодаря чему можно использовать огромный набор кнопочек, менюшек, табличек от [Twitter Bootstrap](http://getbootstrap.com/2.3.2/components.html).
 
 Ох, как много ссылок и как много технологий нужно для того, чтобы в результате _просто добавлять файлики_ в нужную папку и писать статьи в формате markdown (считай - plain-текстом) через веб-интерфейс Гитхаба. А еще со временем тут появится WYSIWYG редактор текстов `TODO: прикрутить prose.io`
