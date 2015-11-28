@@ -23,6 +23,7 @@ description: ""
 Получившийся в итоге конфиг
 
 ```yaml
+
 ---
 name: JMC set
 scopeName: config.jmc
@@ -67,6 +68,7 @@ patterns:
   - include: $self
   - name: support.other.jmc
     match: .
+    
 ```
 
 Благодаря чему конфиги для jmc будут выглядеть вот так:
