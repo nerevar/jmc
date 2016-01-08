@@ -53,6 +53,7 @@ extern char DLLEXPORT cCommandChar;
 extern char DLLEXPORT cCommandDelimiter;
 extern BOOL DLLEXPORT bDefaultLogMode; // TRUE - append , FALSE - ovewrite
 extern BOOL DLLEXPORT bRMASupport;
+extern BOOL DLLEXPORT bAppendLogTitle;
 extern BOOL DLLEXPORT bANSILog;
 extern int DLLEXPORT iSecToTick;
 extern BOOL DLLEXPORT bTickStatus;

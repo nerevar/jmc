@@ -548,6 +548,7 @@ BOOL CSmcDoc::OnNewDocument()
 
     // Load ANSi settings 
 	bRMASupport = AfxGetApp()->GetProfileInt("ANSI" , "RMAsupport" , 0);
+	bAppendLogTitle = AfxGetApp()->GetProfileInt("ANSI" , "AppendLogTitle" , 0);
 	bANSILog = AfxGetApp()->GetProfileInt("ANSI" , "ANSILog" , 0);
 	bDefaultLogMode = AfxGetApp()->GetProfileInt("ANSI" , "AppendMode" , 0);
 	bHTML = AfxGetApp()->GetProfileInt("ANSI" , "HTMLLog" , 0);
@@ -675,6 +676,7 @@ BOOL CSmcDoc::DoProfileSave()
 
     // Save ANSI settings
 	AfxGetApp()->WriteProfileInt("ANSI" , "RMAsupport" , bRMASupport);
+	AfxGetApp()->WriteProfileInt("ANSI" , "AppendLogTitle" , bAppendLogTitle);
 	AfxGetApp()->WriteProfileInt("ANSI" , "ANSILog" , bANSILog);
 	AfxGetApp()->WriteProfileInt("ANSI" , "AppendMode" , bDefaultLogMode);
 	AfxGetApp()->WriteProfileInt("ANSI" , "HTMLLog" , bHTML);
