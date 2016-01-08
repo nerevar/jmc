@@ -572,6 +572,7 @@ void CMainFrame::OnOptionsOptions()
 
     pg4.m_bRMASupport = bRMASupport;
     pg4.m_nAppendMode = bDefaultLogMode ? 1 : 0 ;
+    pg4.m_bAppendLogTitle = bAppendLogTitle;
 	
     memcpy(&pg5.m_guidLang ,  &theApp.m_guidScriptLang, sizeof(GUID));
     pg5.m_bAllowDebug = bAllowDebug;
@@ -627,6 +628,7 @@ void CMainFrame::OnOptionsOptions()
         bHTML = pg4.m_LogType == 1; 
         bRMASupport = bANSILog ? pg4.m_bRMASupport : FALSE;
         bDefaultLogMode = pg4.m_nAppendMode ;
+        bAppendLogTitle = pg4.m_bAppendLogTitle;
 
         if ( memcmp(&theApp.m_guidScriptLang, &pg5.m_guidLang , sizeof(GUID) ) ) {
             memcpy(&theApp.m_guidScriptLang, &pg5.m_guidLang , sizeof(GUID) ) ;

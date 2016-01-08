@@ -29,6 +29,7 @@ public:
 	CButton	m_RmaSupportControl;
 	CButton	m_logTypeControl;
 	BOOL	m_bRMASupport;
+	BOOL	m_bAppendLogTitle;
 	int		m_nAppendMode;
 	int		m_logTypeHtml;
 	int		m_logTypeText;

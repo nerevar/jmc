@@ -51,6 +51,7 @@ char DLLEXPORT cCommandChar='#';
 char DLLEXPORT cCommandDelimiter=';';
 BOOL DLLEXPORT bDefaultLogMode = FALSE; // Overwrite 
 BOOL DLLEXPORT bRMASupport;
+BOOL DLLEXPORT bAppendLogTitle;
 BOOL DLLEXPORT bANSILog;
 int DLLEXPORT iSecToTick;
 BOOL DLLEXPORT bTickStatus;

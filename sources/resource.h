@@ -151,6 +151,7 @@
 #define IDC_COMMANDS_FRAME              1115
 #define IDC_LOGTYPE_ANSI                1116
 #define IDC_MINIMIZE_TO_TRAY            1117
+#define IDC_LOG_TITLE                   1118
 #define ID_OPTIONS_SCROLLBUFFER         32771
 #define ID_OPTIONS_FONT                 32772
 #define ID_OPTIONS_HOTKEYS              32774
@@ -219,7 +220,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        179
 #define _APS_NEXT_COMMAND_VALUE         32809
-#define _APS_NEXT_CONTROL_VALUE         1116
+#define _APS_NEXT_CONTROL_VALUE         1118
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

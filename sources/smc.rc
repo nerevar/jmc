@@ -325,6 +325,8 @@ BEGIN
                     35,36,10
     CONTROL         "ANSI (+Esc colors)",IDC_LOGTYPE_ANSI,"Button",
                     BS_AUTORADIOBUTTON,18,50,75,10
+    CONTROL         "Append log title",IDC_LOG_TITLE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,125,47,65,10
 END
 
 IDD_SCRIPT_PAGE DIALOG DISCARDABLE  0, 0, 209, 98

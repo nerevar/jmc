@@ -248,15 +248,18 @@ BOOL StartLog(int wnd, char* left, char *right)
 
 	GetLocalTime(&stl);
 
-	sprintf(logTitle, rs::rs(1258) , logName);
-	log(wnd, logTitle);
+	if (bAppendLogTitle) {
 
-    if (wnd > 0)
-        sprintf(Timerecord, rs::rs(1242) , wnd, stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
-    else
-        sprintf(Timerecord, rs::rs(1029) , stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
-    
-	log(wnd, Timerecord);
+		sprintf(logTitle, rs::rs(1258) , logName);
+		log(wnd, logTitle);
+
+		if (wnd > 0)
+			sprintf(Timerecord, rs::rs(1242) , wnd, stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
+		else
+			sprintf(Timerecord, rs::rs(1029) , stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
+	    
+		log(wnd, Timerecord);
+	}
 	
     return TRUE;
 }
