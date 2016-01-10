@@ -1,6 +1,6 @@
 ---
 layout: article
-title: "Запуск JMC под Linux Mint"
+title: "Как запустить JMC под Linux Mint"
 category: "articles"
 tags:
 description: "и сохранить девственность"
@@ -22,7 +22,6 @@ description: "и сохранить девственность"
 `err:module:import_dll Library MFC42.DLL (which is needed by L"Z:\\home\\mell\\mell\\jmc\\jmc.exe") not found`
 - `sudo apt-get install winetricks`
 - `winetricks mfc42`
-- удалить из папки тот файл что ты прислал
 - `wine jmc.exe`
 
 #### Решение проблемы с кодировкой CP1251
