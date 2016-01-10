@@ -15,7 +15,7 @@ description: "и сохранить девственность"
 
 Всего этого можно избежать, если будете следовать простым советам.
 
-#### Решение проблемы с MFC42.DLL, если при запуске Жабы у вас появляется ошибка вида `err:module:import_dll Library MFC42.DLL (which is needed by L"Z:\\home\\mell\\mell\\jmc\\jmc.exe") not found`:
+#### Решение проблемы с недостающей в вашем Wine библиотеки MFC42.DLL:
 - `sudo apt-get install winetricks`
 - `winetricks mfc42`
 - `wine jmc.exe`
@@ -26,4 +26,4 @@ description: "и сохранить девственность"
 - закрыть с сохранением
 - `sudo locale-gen`
 - отныне запускать жабу командой `LC_ALL=ru_RU.cp1251 wine jmc.exe`
-- Options → Font → Courier
+- Поменять шрифт в настройках Жабки: Options → Font → Courier
