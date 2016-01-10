@@ -1,6 +1,8 @@
 JMC
 ===
 
+[![Join the chat at https://gitter.im/nerevar/jmc](https://badges.gitter.im/nerevar/jmc.svg)](https://gitter.im/nerevar/jmc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [Jaba Mud Client](http://nerevar.github.io/jmc/) - это программа, предназначенная для игр в многопользовательские миры - онлайновые игры в интернет
 
 [Скачать с официальной страницы http://nerevar.github.io/jmc/](http://nerevar.github.io/jmc/)
