@@ -7,8 +7,6 @@ description: "и сохранить девственность"
 ---
 {% include JB/setup %}
 
-# Запуск JMC в Linux Mint
-
 Автор: [Mell](https://github.com/mell-inc)
 
 Итак, вы только что прибыли в страну Linux на станцию Mint и начинаете осматриваться.
@@ -18,13 +16,12 @@ description: "и сохранить девственность"
 Всего этого можно избежать, если будете следовать простым советам.
 
 #### Решение проблемы с MFC42.DLL:
-Если при запуске Жабы у вас появляется ошибка вида:
-`err:module:import_dll Library MFC42.DLL (which is needed by L"Z:\\home\\mell\\mell\\jmc\\jmc.exe") not found`
+Если при запуске Жабы у вас появляется ошибка вида `err:module:import_dll Library MFC42.DLL (which is needed by L"Z:\\home\\mell\\mell\\jmc\\jmc.exe") not found`:
 - `sudo apt-get install winetricks`
 - `winetricks mfc42`
 - `wine jmc.exe`
 
-#### Решение проблемы с кодировкой CP1251
+#### Решение проблемы с кодировкой CP1251:
 - `sudo gedit /var/lib/locales/supported.d/ru`
 - добавить строчку `ru_RU.CP1251 CP1251`
 - закрыть с сохранением
