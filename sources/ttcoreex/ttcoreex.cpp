@@ -707,7 +707,7 @@ void do_one_line(char *line)
 
     pJmcObj->m_pvarEventParams[0] = (line);
     BOOL bRet = pJmcObj->Fire_Incoming();
-    if ( pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) 
+    if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) 
         strcpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal) );
     else 
         strcpy(line, "." );
