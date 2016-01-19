@@ -1083,7 +1083,7 @@ void DLLEXPORT ReadMud()
             ptm->m_bPreTimerDone = TRUE;
         }
 
-        if ( (dwTick - ptm->m_dwLastTickCount)/100 >= ptm->m_nInterval ) {
+        if ( ((int)(dwTick - ptm->m_dwLastTickCount))/100 >= (int)ptm->m_nInterval ) {
             ptm->m_dwLastTickCount = dwTick ;
             ptm->m_bPreTimerDone = FALSE;
             pJmcObj->Fire_Timer (ptm->m_nID);
