@@ -402,9 +402,12 @@ string processTEXT(string strInput)
 		endEscPos = 0;
 
 	while ( (escPos = strOutput.find(0x1B, escPos)) != string::npos) {
-		endEscPos = strOutput.find('m', escPos);
-
-		strOutput.erase(escPos, endEscPos - escPos + 1);
+		if ( (endEscPos = strOutput.find('m', escPos)) == string::npos ) {
+			//incorrect escape sequence, erase entire string
+			strOutput.erase(escPos);
+		} else {
+			strOutput.erase(escPos, endEscPos - escPos + 1);
+		}
 	}
 
 	return strOutput;
