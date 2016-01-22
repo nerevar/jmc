@@ -15,8 +15,7 @@
 #define BUFFER_SIZE 2048
 
 typedef void (CALLBACK* END_FUNC)(void);
-typedef void (CALLBACK* DIRECT_OUT_FUNC)(char*, int);
-typedef void (CALLBACK* CLEAR_CONTENTS_FUNC)(int);
+typedef void (CALLBACK* DIRECT_OUT_FUNC)(char*, BOOL);
 typedef void (CALLBACK* SET_HOTKEYS)(char*, char*);
 typedef void (CALLBACK* SET_HOTSET)(char*);
 //vls-begin// multiple output
