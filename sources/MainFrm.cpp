@@ -1300,11 +1300,43 @@ LONG CMainFrame::OnDockOutput(UINT wParam, LONG lParam)
 {
     int wnd = (int)wParam;
 
-    DWORD cs = lParam ? CBRS_ALIGN_ANY : 0;
+	DWORD cs;
+	UINT nDockBarID;
+	switch ( lParam ) {
+	default:
+		cs = 0;
+		nDockBarID = 0;
+		break;
+	case 1:
+		cs = CBRS_ALIGN_ANY;
+		nDockBarID = 0;
+		break;
+	case 2:
+		cs = CBRS_ALIGN_LEFT;
+		nDockBarID = AFX_IDW_DOCKBAR_LEFT;
+		break;
+	case 3:
+		cs = CBRS_ALIGN_TOP;
+		nDockBarID = AFX_IDW_DOCKBAR_TOP;
+		break;
+	case 4:
+		cs = CBRS_ALIGN_RIGHT;
+		nDockBarID = AFX_IDW_DOCKBAR_RIGHT;
+		break;
+	case 5:
+		cs = CBRS_ALIGN_BOTTOM;
+		nDockBarID = AFX_IDW_DOCKBAR_BOTTOM;
+		break;
+	}
 	
     if (wnd >=0 && wnd < MAX_OUTPUT)
 	{
         m_coolBar[wnd].EnableDocking(cs);
+		if(cs) {
+			DockControlBar(&m_coolBar[wnd], nDockBarID);
+		} else {
+			FloatControlBar(&m_coolBar[wnd], CPoint(m_coolBar[wnd].m_mX, m_coolBar[wnd].m_mY));
+		}
 	    m_coolBar[wnd].m_Dock = cs;
 	}
 

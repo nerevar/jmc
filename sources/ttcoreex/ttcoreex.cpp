@@ -1308,10 +1308,20 @@ void wdock_command(char *arg)
         }
     }
 
-	enable = is_abrev(option,"disable") ? 0 : 1;
+	enable = 1;
+	if ( is_abrev(option, "disable") )
+		enable = 0;
+	else if ( is_abrev(option, "left") )
+		enable = 2;
+	else if ( is_abrev(option, "top") )
+		enable = 3;
+	else if ( is_abrev(option, "right") )
+		enable = 4;
+	else if ( is_abrev(option, "bottom") )
+		enable = 5;
 
     if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
-        tintin_puts(rs::rs(1244));
+        tintin_puts(rs::rs(1258));
         return;
     }
 
