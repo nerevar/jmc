@@ -1030,6 +1030,7 @@ BEGIN_MESSAGE_MAP(COutputBar, CCoolDialogBar)
 	//{{AFX_MSG_MAP(COutputBar)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
+	ON_WM_DESTROY()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -1060,6 +1061,19 @@ void COutputBar::OnSize(UINT nType, int cx, int cy)
 
     m_wndAnsi.SetWindowPos(NULL, 0 , 0 , cx, cy, SWP_NOZORDER | SWP_NOMOVE);
 
+}
+void COutputBar::OnDestroy()
+{
+	if(IsFloating() && 
+	   GetParent() && 
+	   GetParent()->GetParent() &&
+	   IsWindow(GetParent()->GetParent()->m_hWnd)) {
+		CRect rect;
+		GetParent()->GetParent()->GetWindowRect(&rect);
+		m_mX = rect.left;
+		m_mY = rect.top;
+	}
+	CCoolDialogBar::OnDestroy();
 }
 
 BOOL CMainFrame::OnBarCheckEx(UINT nID)
