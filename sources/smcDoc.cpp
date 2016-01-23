@@ -579,7 +579,7 @@ BOOL CSmcDoc::OnNewDocument()
     InputSection.Unlock();
 
 //vls-begin// script files
-//  OnScriptingReload();
+  OnScriptingReload();
 //vls-end//
 
     SetEvent(hInputDoneEvent);

@@ -707,7 +707,7 @@ void do_one_line(char *line)
 
     pJmcObj->m_pvarEventParams[0] = (line);
     BOOL bRet = pJmcObj->Fire_Incoming();
-    if ( pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) 
+    if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) 
         strcpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal) );
     else 
         strcpy(line, "." );
@@ -1083,7 +1083,7 @@ void DLLEXPORT ReadMud()
             ptm->m_bPreTimerDone = TRUE;
         }
 
-        if ( (dwTick - ptm->m_dwLastTickCount)/100 >= ptm->m_nInterval ) {
+        if ( ((int)(dwTick - ptm->m_dwLastTickCount))/100 >= (int)ptm->m_nInterval ) {
             ptm->m_dwLastTickCount = dwTick ;
             ptm->m_bPreTimerDone = FALSE;
             pJmcObj->Fire_Timer (ptm->m_nID);

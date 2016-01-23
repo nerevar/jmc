@@ -73,7 +73,7 @@ void log(string st)
 void log(int wnd, string st)
 {
 
-	if (!(wnd > 0)) {
+	if (!(wnd >= 0)) {
 		log(st);
 		return;
 	}
@@ -178,7 +178,7 @@ BOOL StartWNDLog(int wnd, char* logName, BOOL logMode)
 BOOL StartLog(int wnd, char* left, char *right)
 {
 	BOOL status;
-	char *logName = wnd > 0 ? sOutputLogName[wnd] : sLogName;
+	char *logName = wnd >= 0 ? sOutputLogName[wnd] : sLogName;
 
 	SYSTEMTIME stl;
     char Timerecord[BUFFER_SIZE], logTitle[BUFFER_SIZE];
@@ -191,7 +191,7 @@ BOOL StartLog(int wnd, char* left, char *right)
 //*/en	
 
 	// try to close previous log with previous logName
-	if (wnd > 0) {
+	if (wnd >= 0) {
 		status = CloseWNDLog(wnd, logName);
 	} else {
 		status = CloseMainLog(logName, bCurLogHTML);
@@ -210,21 +210,21 @@ BOOL StartLog(int wnd, char* left, char *right)
 	strcpy(logName, left);
 
 	// disable HTML mode for output windows
-	if (!(wnd > 0))
+	if (!(wnd >= 0))
 		bCurLogHTML = bHTML;
     
 	if ( *right ) {
         if ( !strcmpi(right, "append") ) { 
 			// set append mode 
             bLogMode = TRUE;
-            if ( !(wnd > 0) && bCurLogHTML ) 
+            if ( !(wnd >= 0) && bCurLogHTML ) 
                 tintin_puts2(rs::rs(1026));
         } else if ( !strcmpi(right, "overwrite") ) { 
 			// set overwrite mode 
             bLogMode = FALSE;
         } else if ( !strcmpi(right, "html") )  {
 			// set HTML mode for Main log
-			if (!(wnd > 0))
+			if (!(wnd >= 0))
 				bCurLogHTML = TRUE;
 		} else {
 			// error in params
@@ -233,7 +233,7 @@ BOOL StartLog(int wnd, char* left, char *right)
         }
     }
 
-	if (wnd > 0) {
+	if (wnd >= 0) {
 		status = StartWNDLog(wnd, logName, bLogMode);
 	} else {
 		status = StartMainLog(logName, bLogMode, bCurLogHTML);
@@ -253,7 +253,7 @@ BOOL StartLog(int wnd, char* left, char *right)
 		sprintf(logTitle, rs::rs(1258) , logName);
 		log(wnd, logTitle);
 
-		if (wnd > 0)
+		if (wnd >= 0)
 			sprintf(Timerecord, rs::rs(1242) , wnd, stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
 		else
 			sprintf(Timerecord, rs::rs(1029) , stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
@@ -402,9 +402,12 @@ string processTEXT(string strInput)
 		endEscPos = 0;
 
 	while ( (escPos = strOutput.find(0x1B, escPos)) != string::npos) {
-		endEscPos = strOutput.find('m', escPos);
-
-		strOutput.erase(escPos, endEscPos - escPos + 1);
+		if ( (endEscPos = strOutput.find('m', escPos)) == string::npos ) {
+			//incorrect escape sequence, erase entire string
+			strOutput.erase(escPos);
+		} else {
+			strOutput.erase(escPos, endEscPos - escPos + 1);
+		}
 	}
 
 	return strOutput;
