@@ -120,6 +120,7 @@ BOOL bMultiAction, bMultiHighlight;
 
 /*END_FUNC  FastEndFunction;*/
 DIRECT_OUT_FUNC  DirectOutputFunction;
+CLEAR_CONTENTS_FUNC ClearContentsFunction;
 HWND hwndMAIN;
 
 #ifdef _DEBUG_LOG
@@ -517,9 +518,10 @@ CComObject<CJmcObj>* pJmcObj = NULL;
 
 
 
-void  DLLEXPORT InitState(/*END_FUNC EndFunc, */DIRECT_OUT_FUNC OutFunc, HWND mainWnd)
+void  DLLEXPORT InitState(/*END_FUNC EndFunc, */DIRECT_OUT_FUNC OutFunc, CLEAR_CONTENTS_FUNC ClearFunc, HWND mainWnd)
 {
     DirectOutputFunction = OutFunc;
+	ClearContentsFunction = ClearFunc;
     hwndMAIN = mainWnd;
 
     dwTime0 = GetTickCount()/1000;
@@ -1181,6 +1183,36 @@ void  DLLEXPORT LunchDebuger()
         pSite->m_pDebugApp->StartDebugSession();
 }
 
+void clear_command(char *arg)
+{
+	ClearContentsFunction(0);
+}
+
+void wclear_command(char *arg)
+{
+	char number[BUFFER_SIZE];
+    int wnd = MAX_OUTPUT;
+    int i, ok;
+    
+    arg=get_arg_in_braces(arg, number, STOP_SPACES);
+    
+    // checking first parameter to be all digits
+    ok = 1;
+    for (i = 0; number[i]; i++) {
+        if (number[i] < '0' || number[i] > '9') {
+            ok = 0;
+            break;
+        }
+    }
+
+    if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+        tintin_puts(rs::rs(1259));
+        return;
+    }
+
+	ClearContentsFunction(wnd+1);
+}
+
 //vls-begin// multiple output
 void woutput_command(char* arg)
 { 
@@ -1308,10 +1340,20 @@ void wdock_command(char *arg)
         }
     }
 
-	enable = is_abrev(option,"disable") ? 0 : 1;
+	enable = 1;
+	if ( is_abrev(option, "disable") )
+		enable = 0;
+	else if ( is_abrev(option, "left") )
+		enable = 2;
+	else if ( is_abrev(option, "top") )
+		enable = 3;
+	else if ( is_abrev(option, "right") )
+		enable = 4;
+	else if ( is_abrev(option, "bottom") )
+		enable = 5;
 
     if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
-        tintin_puts(rs::rs(1244));
+        tintin_puts(rs::rs(1258));
         return;
     }
 
