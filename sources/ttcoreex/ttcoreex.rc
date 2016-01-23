@@ -6378,6 +6378,7 @@ BEGIN
     1256                    "#Window %d must be at %d/%d."
     1257                    "#Auto reconnect is now %s."
     1258                    "#FORMAT: #wdock <window> [disable|top|left|right|bottom]"
+    1259                    "#FORMAT: #wclear <window>"
 END
 
 #endif    // English (U.S.) resources

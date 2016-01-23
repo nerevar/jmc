@@ -671,6 +671,11 @@ void CAnsiWnd::OnUpdate(LPARAM lHint)
 //            if ( pDoc->m_nOutputUpdateCount ) 
 //	            ScrollWindowEx(0, -pDoc->m_nYsize*pDoc->m_nOutputUpdateCount, NULL, &rect, NULL, /*&rectSmall*/ NULL , SW_INVALIDATE | SW_ERASE);
             if (pDoc->m_strOutputTempList[m_wndCode].GetCount() > 0 && pDoc->m_nOutputUpdateCount[m_wndCode] == pDoc->m_strOutputTempList[m_wndCode].GetCount()-1) {
+				if ( pDoc->m_bClearOutputContents[m_wndCode] == TRUE ) {
+					for ( POSITION pos = m_strList.GetHeadPosition(); pos != NULL; m_strList.GetNext(pos) )
+						m_strList.SetAt(pos, "");
+				}
+
                 m_strList.SetAt(m_strList.GetTailPosition(), pDoc->m_strOutputTempList[m_wndCode].GetHead());
                 // pDoc->m_strOutoputTempList.RemoveHead();
                 
@@ -691,7 +696,10 @@ void CAnsiWnd::OnUpdate(LPARAM lHint)
             }
 //vls-end//
             /*else */
-            InvalidateRect(&rectSmall, FALSE);
+			if ( pDoc->m_bClearOutputContents[m_wndCode] == TRUE )
+				InvalidateRect(NULL, FALSE);
+			else
+				InvalidateRect(&rectSmall, FALSE);
 	        UpdateWindow();
         }        
 

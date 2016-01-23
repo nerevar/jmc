@@ -269,14 +269,49 @@ static void __stdcall OutTextFrom(char* str, int wndCode)
     }
 }
 
+static void __stdcall ClearContents(int wndCode) 
+{
 
+    if ( pDoc ) {
+        CCriticalSection* pSec;
+        if ( wndCode )
+            pSec = &(pDoc->m_OutputUpdateSection[wndCode > MAX_OUTPUT ? 0 : wndCode-1]);
+        else 
+            pSec = &pDoc->m_UpdateSection ;
+
+        pSec->Lock();
+
+		CStringList* pList;
+		int * pCount ;
+		BOOL * pClearContents;
+		if ( wndCode) {
+			wndCode = wndCode > MAX_OUTPUT ? 0 : wndCode-1;
+			pList = &(pDoc->m_strOutputTempList[wndCode]);
+			pCount = &(pDoc->m_nOutputUpdateCount[wndCode]);
+			pClearContents = &(pDoc->m_bClearOutputContents[wndCode]);
+		}  else {
+			pList = &pDoc->m_strTempList;
+			pCount = &pDoc->m_nUpdateCount ;
+			pClearContents = &(pDoc->m_bClearContents);
+		}
+
+		*pClearContents = TRUE;
+		pList->RemoveAll();
+		pList->AddTail("");
+		*pCount = 0;
+
+        if ( pMainWnd ) 
+            pMainWnd->PostMessage (WM_COMMAND, wndCode ? ID_OUTPUT_TEXT_ADDED :ID_DRAW_TEXT_ADDED, 0 );
+        pSec->Unlock();
+    }
+}
 
 
 
 unsigned long __stdcall ClientThread(void * pParam)
 {
     CoInitialize (NULL);
-    InitState(OutTextFrom, AfxGetMainWnd()->GetSafeHwnd());
+    InitState(OutTextFrom, ClearContents, AfxGetMainWnd()->GetSafeHwnd());
     while (1) {
         DWORD dwWait = WaitForSingleObject(hInputDoneEvent, 30 );
         if ( bExit ) {
@@ -356,9 +391,11 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
 //    m_nUpdateCount = 0;
 //    m_nOutputUpdateCount = 0;
     m_nUpdateCount = 0;
+	m_bClearContents = FALSE;
     for (int i = 0; i < MAX_OUTPUT; i++) {
         m_nOutputWindowCharsSize[i] = 1;
         m_nOutputUpdateCount[i] = 0;
+		m_bClearOutputContents[i] = FALSE;
     }
 //vls-end//
 
@@ -820,6 +857,7 @@ void CSmcDoc::OnDrawTextAdded()
     m_UpdateSection.Lock();
     UpdateAllViews(NULL, TEXT_ARRIVED, NULL );
     m_nUpdateCount =0;
+	m_bClearContents = FALSE;
     CString str = m_strTempList.GetTail();
     m_strTempList.RemoveAll ();
     m_strTempList.AddTail(str);
@@ -849,6 +887,7 @@ void CSmcDoc::OnOutputTextAdded()
             m_OutputUpdateSection[i].Lock();
             pMainWnd->m_coolBar[i].m_wndAnsi.OnUpdate(TEXT_ARRIVED);
             m_nOutputUpdateCount[i] = 0;
+			m_bClearOutputContents[i] = FALSE;
             CString str = m_strOutputTempList[i].GetTail();
             m_strOutputTempList[i].RemoveAll();
             m_strOutputTempList[i].AddTail(str);
