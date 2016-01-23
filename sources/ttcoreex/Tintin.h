@@ -331,7 +331,9 @@ void woutput_command(char *arg);
 void wshow_command(char *arg);
 void wlog_command(char *arg);
 void wname_command(char *arg);
+void wclear_command(char *arg);
 //vls-end//
+void clear_command(char *arg);
 //vls-begin// #logadd + #logpass
 void logadd_command(char *arg);
 void logpass_command(char *arg);
@@ -467,7 +469,7 @@ extern void* JMCObjRet[1000];
 // --END
 
 //* en:JMC functions struct. look cmds.h
-const JMC_CMDS_NUM=114;
+const JMC_CMDS_NUM=116;
 typedef struct jmc_cmd 
 	{
 	char*alias;

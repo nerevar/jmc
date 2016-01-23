@@ -114,6 +114,8 @@ jmc_cmdi jmc_cmds[JMC_CMDS_NUM]={
 		   {"winamp",&winamp_command,"winamp"},
 		   {"wamp",&winamp_command,"winamp"},
 		   {"autoreconnect",&autoreconnect_command,"autoreconnect"},
-           {"run",&run_command,"\0"}
+           {"run",&run_command,"\0"},
+           {"clear",&clear_command,"\0"},
+           {"wclear",&wclear_command,"\0"}
 	   };
 #endif
