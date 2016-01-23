@@ -53,3 +53,22 @@ TestResults/
 ehthumbs.db
 Icon?
 Thumbs.db
+
+
+# jmc user settings
+Default.set
+global.set
+history.dat
+tabwords.txt
+jmc.ini
+testprofile.set
+settings/
+
+jmc.ilk
+smc.ncb
+smc.opt
+smc.plg
+smc.aps
+smc.clw
+recore.ilk
+ttcoreex.ilk
