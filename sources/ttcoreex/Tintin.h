@@ -385,6 +385,9 @@ void nope_command(char *arg);
 void abort_timer_command(char*arg);
 void autoreconnect_command(char*arg);
 
+void clear_command(char *arg);
+void wclear_command(char *arg);
+
 // VARIABLES:
 void variable_value_input(char *arg);
 void variable_value_date(char *arg);
@@ -467,7 +470,7 @@ extern void* JMCObjRet[1000];
 // --END
 
 //* en:JMC functions struct. look cmds.h
-const JMC_CMDS_NUM=114;
+const JMC_CMDS_NUM=116;
 typedef struct jmc_cmd 
 	{
 	char*alias;

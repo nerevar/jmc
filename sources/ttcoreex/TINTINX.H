@@ -15,7 +15,8 @@
 #define BUFFER_SIZE 2048
 
 typedef void (CALLBACK* END_FUNC)(void);
-typedef void (CALLBACK* DIRECT_OUT_FUNC)(char*, BOOL);
+typedef void (CALLBACK* DIRECT_OUT_FUNC)(char*, int);
+typedef void (CALLBACK* CLEAR_WINDOW_FUNC)(int);
 typedef void (CALLBACK* SET_HOTKEYS)(char*, char*);
 typedef void (CALLBACK* SET_HOTSET)(char*);
 //vls-begin// multiple output
@@ -24,7 +25,7 @@ typedef void (CALLBACK* GET_OUTPUTNAME_FUNC)(int, char*, int);
 void DLLEXPORT InitOutputNameFunc(GET_OUTPUTNAME_FUNC OutNameFunc);
 //vls-end//
 
-void  DLLEXPORT InitState(DIRECT_OUT_FUNC OutFunc, HWND mainWnd);
+void  DLLEXPORT InitState(DIRECT_OUT_FUNC OutFunc, CLEAR_WINDOW_FUNC ClearFunc, HWND mainWnd);
 void  DLLEXPORT CloseState(void);
 void  DLLEXPORT ReloadScriptEngine(LPCSTR strScriptText, GUID guidEngine, LPCSTR strProfile);
 void  DLLEXPORT CompileInput(char* str);
@@ -64,6 +65,8 @@ extern BOOL DLLEXPORT bDisplayCommands;
 extern BOOL DLLEXPORT bDisplayInput;
 extern BOOL DLLEXPORT bMinimizeToTray;
 extern BOOL DLLEXPORT bHTML;
+extern BOOL DLLEXPORT bHTMLTimestamps;
+extern BOOL DLLEXPORT bLogAsUserSeen;
 extern BOOL DLLEXPORT bAllowDebug;
 extern BOOL DLLEXPORT bIACSendSingle, bIACReciveSingle;
 extern int DLLEXPORT nScripterrorOutput;

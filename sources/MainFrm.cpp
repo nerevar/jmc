@@ -573,6 +573,8 @@ void CMainFrame::OnOptionsOptions()
     pg4.m_bRMASupport = bRMASupport;
     pg4.m_nAppendMode = bDefaultLogMode ? 1 : 0 ;
     pg4.m_bAppendLogTitle = bAppendLogTitle;
+	pg4.m_bHTMLTimestamps = bHTML ? bHTMLTimestamps : FALSE;
+	pg4.m_nLogAs = bLogAsUserSeen ? 1 : 0;
 	
     memcpy(&pg5.m_guidLang ,  &theApp.m_guidScriptLang, sizeof(GUID));
     pg5.m_bAllowDebug = bAllowDebug;
@@ -627,7 +629,9 @@ void CMainFrame::OnOptionsOptions()
 		bANSILog = pg4.m_LogType == 2;
         bHTML = pg4.m_LogType == 1; 
         bRMASupport = bANSILog ? pg4.m_bRMASupport : FALSE;
+		bHTMLTimestamps = bHTML ? pg4.m_bHTMLTimestamps : FALSE;
         bDefaultLogMode = pg4.m_nAppendMode ;
+		bLogAsUserSeen = pg4.m_nLogAs;
         bAppendLogTitle = pg4.m_bAppendLogTitle;
 
         if ( memcmp(&theApp.m_guidScriptLang, &pg5.m_guidLang , sizeof(GUID) ) ) {
@@ -1030,6 +1034,7 @@ BEGIN_MESSAGE_MAP(COutputBar, CCoolDialogBar)
 	//{{AFX_MSG_MAP(COutputBar)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
+	ON_WM_DESTROY()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -1060,6 +1065,19 @@ void COutputBar::OnSize(UINT nType, int cx, int cy)
 
     m_wndAnsi.SetWindowPos(NULL, 0 , 0 , cx, cy, SWP_NOZORDER | SWP_NOMOVE);
 
+}
+void COutputBar::OnDestroy()
+{
+	if(IsFloating() && 
+	   GetParent() && 
+	   GetParent()->GetParent() &&
+	   IsWindow(GetParent()->GetParent()->m_hWnd)) {
+		CRect rect;
+		GetParent()->GetParent()->GetWindowRect(&rect);
+		m_mX = rect.left;
+		m_mY = rect.top;
+	}
+	CCoolDialogBar::OnDestroy();
 }
 
 BOOL CMainFrame::OnBarCheckEx(UINT nID)
@@ -1300,11 +1318,43 @@ LONG CMainFrame::OnDockOutput(UINT wParam, LONG lParam)
 {
     int wnd = (int)wParam;
 
-    DWORD cs = lParam ? CBRS_ALIGN_ANY : 0;
+	DWORD cs;
+	UINT nDockBarID;
+	switch ( lParam ) {
+	default:
+		cs = 0;
+		nDockBarID = 0;
+		break;
+	case 1:
+		cs = CBRS_ALIGN_ANY;
+		nDockBarID = 0;
+		break;
+	case 2:
+		cs = CBRS_ALIGN_LEFT;
+		nDockBarID = AFX_IDW_DOCKBAR_LEFT;
+		break;
+	case 3:
+		cs = CBRS_ALIGN_TOP;
+		nDockBarID = AFX_IDW_DOCKBAR_TOP;
+		break;
+	case 4:
+		cs = CBRS_ALIGN_RIGHT;
+		nDockBarID = AFX_IDW_DOCKBAR_RIGHT;
+		break;
+	case 5:
+		cs = CBRS_ALIGN_BOTTOM;
+		nDockBarID = AFX_IDW_DOCKBAR_BOTTOM;
+		break;
+	}
 	
     if (wnd >=0 && wnd < MAX_OUTPUT)
 	{
         m_coolBar[wnd].EnableDocking(cs);
+		if(cs) {
+			DockControlBar(&m_coolBar[wnd], nDockBarID);
+		} else {
+			FloatControlBar(&m_coolBar[wnd], CPoint(m_coolBar[wnd].m_mX, m_coolBar[wnd].m_mY));
+		}
 	    m_coolBar[wnd].m_Dock = cs;
 	}
 

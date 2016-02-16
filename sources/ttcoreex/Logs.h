@@ -2,6 +2,9 @@
 #include "tintin.h"
 #include <string>
 
+//decrease fps to 25Hz max.
+const int MIN_HTML_FRAMES_DELAY_MS = 40;
+
 const string
 	HTML_TAG = "i",
 	TAG_OPEN = "<i>",
@@ -10,7 +13,7 @@ const string
 	CSS_LIGHT_COLOR = "l";
 
 string html_footer(
-	"\n</pre></body></html>"
+	"\n</pre></div></body></html>"
 );
 
 static const string css_colors[] = 
