@@ -19,7 +19,13 @@ public:
 // Dialog Data
 	//{{AFX_DATA(CMudEmuDlg)
 	enum { IDD = IDD_TESTTEXT };
+	CButton	m_StartStopButton;
+	CButton	m_SendButton;
+	CButton	m_SendLineButton;
+	CButton	m_HandleRMAButton;
 	CString	m_strText;
+	CString m_strLogPath;
+	BOOL	m_bHandleRMA;
 	//}}AFX_DATA
 
 
@@ -36,9 +42,13 @@ protected:
     void SendData();
     char* m_pBuff;
     int m_nBufSize, m_nOffset;
+	HANDLE m_hLogFile;
+	DWORD m_dwTickStarted, m_dwTickPlayed;
 
 	// Generated message map functions
 	//{{AFX_MSG(CMudEmuDlg)
+	afx_msg void OnStartStopLog();
+	afx_msg void OnHandleRMA();
 	afx_msg void OnSend();
 	afx_msg void OnSendLine();
 	virtual void OnCancel();

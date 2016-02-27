@@ -670,9 +670,15 @@ void CAnsiWnd::OnUpdate(LPARAM lHint)
 //	        rectSmall.top = rect.bottom -pDoc->m_nYsize*(pDoc->m_nOutputUpdateCount+1);
 //            if ( pDoc->m_nOutputUpdateCount ) 
 //	            ScrollWindowEx(0, -pDoc->m_nYsize*pDoc->m_nOutputUpdateCount, NULL, &rect, NULL, /*&rectSmall*/ NULL , SW_INVALIDATE | SW_ERASE);
-            if (pDoc->m_strOutputTempList[m_wndCode].GetCount() > 0 && pDoc->m_nOutputUpdateCount[m_wndCode] == pDoc->m_strOutputTempList[m_wndCode].GetCount()-1) {
+
+			if (pDoc->m_strOutputTempList[m_wndCode].GetCount() > 0 && pDoc->m_nOutputUpdateCount[m_wndCode] == pDoc->m_strOutputTempList[m_wndCode].GetCount()-1) {
                 m_strList.SetAt(m_strList.GetTailPosition(), pDoc->m_strOutputTempList[m_wndCode].GetHead());
                 // pDoc->m_strOutoputTempList.RemoveHead();
+
+				if ( pDoc->m_bClearOutputContents[m_wndCode] ) {
+					for ( POSITION it = m_strList.GetHeadPosition(); it != NULL; m_strList.GetNext(it))
+							m_strList.SetAt(it, "");
+				}
                 
                 POSITION pos = pDoc->m_strOutputTempList[m_wndCode].GetHeadPosition();
                 pDoc->m_strOutputTempList[m_wndCode].GetNext(pos);
@@ -682,17 +688,22 @@ void CAnsiWnd::OnUpdate(LPARAM lHint)
                     m_strList.AddTail(str);
                     m_strList.RemoveHead();
                 }
+				
                 rectSmall.left = 0;
                 rectSmall.right = rect.right;
                 rectSmall.bottom = rect.bottom; 
                 rectSmall.top = rect.bottom -pDoc->m_nYsize*(pDoc->m_nOutputUpdateCount[m_wndCode]+1);
                 if ( pDoc->m_nOutputUpdateCount[m_wndCode] ) 
                     ScrollWindowEx(0, -pDoc->m_nYsize*pDoc->m_nOutputUpdateCount[m_wndCode], NULL, &rect, NULL, /*&rectSmall*/ NULL , SW_INVALIDATE | SW_ERASE);
+
+				if ( pDoc->m_bClearOutputContents[m_wndCode] )
+					InvalidateRect(NULL, FALSE);
+				else
+					InvalidateRect(&rectSmall, FALSE);
+				UpdateWindow();
             }
 //vls-end//
             /*else */
-            InvalidateRect(&rectSmall, FALSE);
-	        UpdateWindow();
         }        
 
         break;

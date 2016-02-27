@@ -59,6 +59,8 @@ BOOL DLLEXPORT bPasswordEcho = TRUE;
 BOOL DLLEXPORT bConnectBeep;
 BOOL DLLEXPORT bAutoReconnect;
 BOOL DLLEXPORT bHTML;
+BOOL DLLEXPORT bHTMLTimestamps;
+BOOL DLLEXPORT bLogAsUserSeen;
 BOOL DLLEXPORT bAllowDebug = FALSE;
 BOOL DLLEXPORT bIACSendSingle, bIACReciveSingle;
 int DLLEXPORT nScripterrorOutput; // 0 - msgbox, 1- window, 2- output
@@ -120,6 +122,7 @@ BOOL bMultiAction, bMultiHighlight;
 
 /*END_FUNC  FastEndFunction;*/
 DIRECT_OUT_FUNC  DirectOutputFunction;
+CLEAR_WINDOW_FUNC  ClearWindowFunction;
 HWND hwndMAIN;
 
 #ifdef _DEBUG_LOG
@@ -319,7 +322,6 @@ void output_command(char* arg)
 //vls-end//
 }
 
-
 void write_line_mud(char *line)
 {
     int len, OriginalLen;
@@ -517,8 +519,9 @@ CComObject<CJmcObj>* pJmcObj = NULL;
 
 
 
-void  DLLEXPORT InitState(/*END_FUNC EndFunc, */DIRECT_OUT_FUNC OutFunc, HWND mainWnd)
+void  DLLEXPORT InitState(/*END_FUNC EndFunc, */DIRECT_OUT_FUNC OutFunc, CLEAR_WINDOW_FUNC ClearFunc, HWND mainWnd)
 {
+	ClearWindowFunction = ClearFunc;
     DirectOutputFunction = OutFunc;
     hwndMAIN = mainWnd;
 
@@ -825,6 +828,7 @@ int read_buffer_mud(char *buffer)
 static void process_incoming(char* buffer)
 {
     char linebuffer[BUFFER_SIZE], *cpsource, *cpdest;
+	char line_to_log[BUFFER_SIZE];
     int LastLineLen = 0, n;
     
     
@@ -852,16 +856,22 @@ static void process_incoming(char* buffer)
 
         if(*cpsource=='\n' /*|| *cpsource=='\r'*/ || *cpsource==0x1) {
             *cpdest='\0';
-			
-			//vls-begin// #logadd + #logpass // multiple output
-            if(hLogFile.is_open() && !bLogPassedLine) {
-				log(processLine(linebuffer));
-				log("\n");
-            }
 
+			if ( !bLogAsUserSeen ) {
+				strcpy(line_to_log, linebuffer);
+			}
             if ( bProcess ) { 
                 do_one_line(linebuffer);
 			}
+			if ( bLogAsUserSeen ) {
+				strcpy(line_to_log, linebuffer);
+			}
+
+			//vls-begin// #logadd + #logpass // multiple output
+            if(hLogFile.is_open() && !bLogPassedLine) {
+				log(processLine(line_to_log));
+				log("\n");
+            }
 
             bLogPassedLine = FALSE;
 			//vls-end//
@@ -896,12 +906,20 @@ static void process_incoming(char* buffer)
         strcpy(last_line , linebuffer);
     } else { 
 		//vls-begin// #logadd + #logpass // multiple output
+		if ( !bLogAsUserSeen ) {
+			strcpy(line_to_log, linebuffer);
+		}
         if ( bProcess ) { 
-            do_one_line(linebuffer);
+			do_one_line(linebuffer);
+		}
+		if ( bLogAsUserSeen ) {
+			strcpy(line_to_log, linebuffer);
 		}
 
+		//vls-begin// #logadd + #logpass // multiple output
         if(hLogFile.is_open() && !bLogPassedLine) {
-			log(processLine(linebuffer));
+			log(processLine(line_to_log));
+			log("\n");
         }
 
         bLogPassedLine = FALSE;
@@ -1061,12 +1079,13 @@ void DLLEXPORT ReadMud()
             char buf[BUFFER_SIZE];
             memcpy(buf, strMudEmuText, nMudEmuTextSize);
             buf[nMudEmuTextSize] = 0;
-            ResetEvent(eventMudEmuTextArrives);
             old_more_coming=more_coming;
             if ( buf[nMudEmuTextSize-1] != 0xA && buf[nMudEmuTextSize-1]!= 1 )
                 more_coming = 1;
             else 
                 more_coming = 0;
+
+			ResetEvent(eventMudEmuTextArrives);
 
             process_incoming (buf);
         }
@@ -1308,10 +1327,20 @@ void wdock_command(char *arg)
         }
     }
 
-	enable = is_abrev(option,"disable") ? 0 : 1;
+	enable = 1;
+	if ( is_abrev(option, "disable") )
+		enable = 0;
+	else if ( is_abrev(option, "left") )
+		enable = 2;
+	else if ( is_abrev(option, "top") )
+		enable = 3;
+	else if ( is_abrev(option, "right") )
+		enable = 4;
+	else if ( is_abrev(option, "bottom") )
+		enable = 5;
 
     if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
-        tintin_puts(rs::rs(1244));
+        tintin_puts(rs::rs(1260));
         return;
     }
 

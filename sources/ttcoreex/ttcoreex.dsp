@@ -332,6 +332,10 @@ SOURCE=.\JmcSite.rgs
 # End Group
 # Begin Source File
 
+SOURCE=.\html_tes.htm
+# End Source File
+# Begin Source File
+
 SOURCE=.\ttcoreex.tlb
 # End Source File
 # End Target

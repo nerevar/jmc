@@ -98,10 +98,12 @@ public:
 //    CCriticalSection m_UpdateSection, m_UpdateOutputSection; // crit section to prevent access to lines list
     CStringList m_strTempList;
     int m_nUpdateCount;
+	BOOL m_bClearContents;
     CCriticalSection m_UpdateSection;
 
     CStringList m_strOutputTempList[MAX_OUTPUT];
     int m_nOutputUpdateCount[MAX_OUTPUT];
+	BOOL m_bClearOutputContents[MAX_OUTPUT];
     CCriticalSection m_OutputUpdateSection[MAX_OUTPUT];
 //vls-end//
 

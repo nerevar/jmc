@@ -152,6 +152,14 @@
 #define IDC_LOGTYPE_ANSI                1116
 #define IDC_MINIMIZE_TO_TRAY            1117
 #define IDC_LOG_TITLE                   1118
+#define IDC_WRITE_LOG_AS_SHOWN_BY_SERVER 1119
+#define IDC_WRITE_LOG_AS_SEEN_BY_USER   1120
+#define IDC_HTML_TIMESTAMPS             1121
+#define IDC_EDIT_EMUL_LOG_PATH          1122
+#define IDC_STATIC_LOG_PROMPT           1123
+#define IDC_CHK_EMULATE_RMA             1124
+#define IDC_BTN_CHOOSE_LOGFILE          1125
+#define IDC_BTN_STARTSTOP_EMUL_LOG      1126
 #define ID_OPTIONS_SCROLLBUFFER         32771
 #define ID_OPTIONS_FONT                 32772
 #define ID_OPTIONS_HOTKEYS              32774
@@ -220,7 +228,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        179
 #define _APS_NEXT_COMMAND_VALUE         32809
-#define _APS_NEXT_CONTROL_VALUE         1118
+#define _APS_NEXT_CONTROL_VALUE         1127
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

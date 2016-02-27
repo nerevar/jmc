@@ -135,8 +135,6 @@ static void AddToOutList(char* str, int wndCode)
         CharSize = pDoc->m_nWindowCharsSize ;
     }
 
-
-
     CString strTail;
 	if ( !pList->GetCount() ) 
 		pList->AddTail("");
@@ -172,13 +170,18 @@ static void AddToOutList(char* str, int wndCode)
             do {
                 *ansi++ = *src;
                 *dest++ = *src++;
-            } while ( *src && *src != 'm' ) ;
+			//} while ( *src == '[' || *src == ';' || isdigit(*src) ) ;
+            } while ( *src && *src != 'm') ;
             *ansi++ = *src;
             *dest++ = *src;
             *ansi = 0;
-            // Ansi skipped
-            if ( *src ) 
+            // Ansi color skipped
+            if ( *src == 'm' ) 
                 break;
+			// All the other esc-sequences skipped and erased
+			while ( *ansi != 0x1B )
+				ansi--;
+			*ansi = 0;
         case 0:
             // End of line - time to do all save operations 
             *dest = 0;
@@ -263,20 +266,58 @@ static void __stdcall OutTextFrom(char* str, int wndCode)
                         *dest++ = *src;
         } while (*src++ ) ;
 
-        if ( pMainWnd ) 
-            pMainWnd->PostMessage (WM_COMMAND, wndCode ? ID_OUTPUT_TEXT_ADDED :ID_DRAW_TEXT_ADDED, 0 );
+        if ( pMainWnd )
+			pMainWnd->PostMessage (WM_COMMAND, wndCode ? ID_OUTPUT_TEXT_ADDED :ID_DRAW_TEXT_ADDED, 0 );
+
+        pSec->Unlock();
+    }
+}
+
+static void __stdcall ClearContents(int wndCode) 
+{
+
+    if ( pDoc ) {
+        CCriticalSection* pSec;
+        if ( wndCode )
+            pSec = &(pDoc->m_OutputUpdateSection[wndCode > MAX_OUTPUT ? 0 : wndCode-1]);
+        else 
+            pSec = &pDoc->m_UpdateSection ;
+
+        pSec->Lock();
+        
+		CStringList* pList;
+		int * pCount ;
+		BOOL * pClearContents;
+		if ( wndCode) {
+			int n = wndCode > MAX_OUTPUT ? 0 : wndCode-1;
+			pList = &(pDoc->m_strOutputTempList[n]);
+			pCount = &(pDoc->m_nOutputUpdateCount[n]);
+			pClearContents = &(pDoc->m_bClearOutputContents[n]);
+		}  else {
+			pList = &pDoc->m_strTempList;
+			pCount = &pDoc->m_nUpdateCount ;
+			pClearContents = &pDoc->m_bClearContents;
+		}
+		
+		pList->RemoveAll();
+		pList->AddTail("");
+
+		*pCount = 0;
+		*pClearContents = TRUE;
+
+		if ( pMainWnd )
+			pMainWnd->PostMessage (WM_COMMAND, wndCode ? ID_OUTPUT_TEXT_ADDED :ID_DRAW_TEXT_ADDED, 0 );
+
         pSec->Unlock();
     }
 }
 
 
 
-
-
 unsigned long __stdcall ClientThread(void * pParam)
 {
     CoInitialize (NULL);
-    InitState(OutTextFrom, AfxGetMainWnd()->GetSafeHwnd());
+    InitState(OutTextFrom, ClearContents, AfxGetMainWnd()->GetSafeHwnd());
     while (1) {
         DWORD dwWait = WaitForSingleObject(hInputDoneEvent, 30 );
         if ( bExit ) {
@@ -349,16 +390,17 @@ END_MESSAGE_MAP()
 
 CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd() )
 {
-
     m_nWindowCharsSize = 1;
 //vls-begin// multiple output
 //    m_nOutWindowCharsSize = 1;
 //    m_nUpdateCount = 0;
 //    m_nOutputUpdateCount = 0;
     m_nUpdateCount = 0;
+	m_bClearContents = FALSE;
     for (int i = 0; i < MAX_OUTPUT; i++) {
         m_nOutputWindowCharsSize[i] = 1;
         m_nOutputUpdateCount[i] = 0;
+		m_bClearOutputContents[i] = FALSE;
     }
 //vls-end//
 
@@ -552,7 +594,8 @@ BOOL CSmcDoc::OnNewDocument()
 	bANSILog = AfxGetApp()->GetProfileInt("ANSI" , "ANSILog" , 0);
 	bDefaultLogMode = AfxGetApp()->GetProfileInt("ANSI" , "AppendMode" , 0);
 	bHTML = AfxGetApp()->GetProfileInt("ANSI" , "HTMLLog" , 0);
-
+	bHTMLTimestamps = AfxGetApp()->GetProfileInt("ANSI" , "HTMLLogTimestamps" , 0);
+	bLogAsUserSeen = AfxGetApp()->GetProfileInt("ANSI" , "LogAsUserSeen" , 0);
 
 	bIACSendSingle = AfxGetApp()->GetProfileInt("Substitution" , "IACSendSingle" , 0);
 	bIACReciveSingle = AfxGetApp()->GetProfileInt("Substitution" , "IACReciveSingle" , 0);
@@ -579,12 +622,13 @@ BOOL CSmcDoc::OnNewDocument()
     InputSection.Unlock();
 
 //vls-begin// script files
-  OnScriptingReload();
+    OnScriptingReload();
 //vls-end//
 
     SetEvent(hInputDoneEvent);
 
     SetModifiedFlag(FALSE);
+
     return TRUE;
 }
 
@@ -680,6 +724,8 @@ BOOL CSmcDoc::DoProfileSave()
 	AfxGetApp()->WriteProfileInt("ANSI" , "ANSILog" , bANSILog);
 	AfxGetApp()->WriteProfileInt("ANSI" , "AppendMode" , bDefaultLogMode);
 	AfxGetApp()->WriteProfileInt("ANSI" , "HTMLLog" , bHTML);
+	AfxGetApp()->WriteProfileInt("ANSI" , "HTMLLogTimestamps" , bHTMLTimestamps);
+	AfxGetApp()->WriteProfileInt("ANSI" , "LogAsUserSeen" , bLogAsUserSeen);
 
 
     ::WritePrivateProfileBinary("Colors" , "Foreground", (LPBYTE)m_ForeColors, sizeof(m_ForeColors), szGLOBAL_PROFILE);
@@ -819,7 +865,8 @@ void CSmcDoc::OnDrawTextAdded()
         return;
     m_UpdateSection.Lock();
     UpdateAllViews(NULL, TEXT_ARRIVED, NULL );
-    m_nUpdateCount =0;
+    m_nUpdateCount = 0;
+	m_bClearContents = FALSE;
     CString str = m_strTempList.GetTail();
     m_strTempList.RemoveAll ();
     m_strTempList.AddTail(str);
@@ -849,6 +896,7 @@ void CSmcDoc::OnOutputTextAdded()
             m_OutputUpdateSection[i].Lock();
             pMainWnd->m_coolBar[i].m_wndAnsi.OnUpdate(TEXT_ARRIVED);
             m_nOutputUpdateCount[i] = 0;
+			m_bClearOutputContents[i] = FALSE;
             CString str = m_strOutputTempList[i].GetTail();
             m_strOutputTempList[i].RemoveAll();
             m_strOutputTempList[i].AddTail(str);

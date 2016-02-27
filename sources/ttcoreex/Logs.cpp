@@ -27,6 +27,7 @@ static int new_tcolor = tcolor;
 static int new_bcolor = bcolor;
 
 DWORD lastTicker = 0;
+DWORD firstTicker = 0;
 
 GET_OUTPUTNAME_FUNC GetOutputName;
 
@@ -87,7 +88,7 @@ void log(int wnd, string st)
 string loadHTMLFromResource(int name)
 {
 	DWORD size;
-	HRSRC rc = ::FindResource(rs::hInst, MAKEINTRESOURCE(IDR_HTML_HEAD), RT_HTML);
+	HRSRC rc = ::FindResource(rs::hInst, MAKEINTRESOURCE(name), RT_HTML);
     HGLOBAL rcData = ::LoadResource(rs::hInst, rc);
 
     size = ::SizeofResource(rs::hInst, rc);
@@ -140,6 +141,8 @@ BOOL CloseWNDLog(int wnd, char *logName)
 
 BOOL StartMainLog(char* logName, BOOL logMode, BOOL logHTML)
 {
+	lastTicker = firstTicker = 0;
+
 	if (logMode && !logHTML)
 		hLogFile.open(logName, ios::out | ios::binary | ios::app );
 	else 
@@ -150,7 +153,11 @@ BOOL StartMainLog(char* logName, BOOL logMode, BOOL logHTML)
 
     // Do HTML Log pereference
     if ( logHTML ) {
-		string html_header = loadHTMLFromResource(IDR_HTML_HEAD);
+		string html_header;
+		if ( bHTMLTimestamps )
+			html_header = loadHTMLFromResource(IDR_HTML_HEAD_TIMESTAMPS);
+		else
+			html_header = loadHTMLFromResource(IDR_HTML_HEAD);
 
 		string::size_type pos = 0;
 		while ( ( pos = html_header.find("%title%", pos) ) != string::npos ) {
@@ -318,11 +325,32 @@ void stripDefaultColorDuplicates(string &strInput) {
 
 string processHTML(string strInput)
 {
-	string strOutput = strInput;
+	string strOutput = "";
 
 	stripRMA(strOutput);
 
 	stripDefaultColorDuplicates(strOutput);
+
+	BOOL close_timestamp_tag = FALSE;
+
+	if ( bHTMLTimestamps ) {
+		DWORD currTicker = 0;
+
+		if ( firstTicker == 0 ) {
+			firstTicker = GetTickCount();
+			lastTicker = 0;
+		}
+
+		currTicker = GetTickCount() - firstTicker;
+
+		if ( currTicker - lastTicker >= MIN_HTML_FRAMES_DELAY_MS ) {
+			strOutput += strprintf("<div id=\"t_%d\">", currTicker);
+			lastTicker = currTicker;
+			close_timestamp_tag = TRUE;
+		}
+	}
+
+	strOutput += strInput;
 
 	string::size_type pos = 0;
     while ( ( pos = strOutput.find("\x1B[", pos) ) != string::npos ) {
@@ -365,9 +393,11 @@ string processHTML(string strInput)
 
 		// replace source escape sequence to html entity
 		strOutput.replace(pos, posEscEnd - pos + 1, html_tags);
-
-		pos = strOutput.find("\x1B[", pos);
     }
+
+	if (close_timestamp_tag == TRUE) {
+		strOutput += "</div>";
+	}
 
 	return strOutput;
 }
@@ -400,11 +430,13 @@ string processTEXT(string strInput)
 	string strOutput = strInput;
 	int escPos = 0,
 		endEscPos = 0;
-
+	
 	while ( (escPos = strOutput.find(0x1B, escPos)) != string::npos) {
-		if ( (endEscPos = strOutput.find('m', escPos)) == string::npos ) {
-			//incorrect escape sequence, erase entire string
-			strOutput.erase(escPos);
+		endEscPos = strOutput.find('m', escPos);
+
+		if (endEscPos == string::npos) {
+			strOutput.erase(escPos, string::npos);
+			break;
 		} else {
 			strOutput.erase(escPos, endEscPos - escPos + 1);
 		}
@@ -441,6 +473,7 @@ void StopLogging()
 {
     if (hLogFile.is_open()) {
         if ( bCurLogHTML ) {
+			log(TAG_CLOSE);
 			log(html_footer);
 		}
 		hLogFile.close();
