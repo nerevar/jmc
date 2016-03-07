@@ -18,7 +18,8 @@ sTimer sTimers[sTimersV];
 
 //* /en
 
-
+extern DIRECT_OUT_FUNC DirectOutputFunction;
+extern CLEAR_WINDOW_FUNC ClearWindowFunction;
 
 /****************************/
 /* the cr command           */
@@ -908,6 +909,42 @@ void clean_command(char *arg)
 {
     PostMessage(hwndMAIN, WM_USER+600, 0, 0);
 }
+
+/***********************/
+/* the #clear command  */
+/***********************/
+void clear_command(char *arg)
+{
+	ClearWindowFunction(0);
+}
+/***********************/
+/* the #wclear command */
+/***********************/
+void wclear_command(char *arg)
+{
+	char number[BUFFER_SIZE];
+    int wnd = MAX_OUTPUT;
+    int i, ok;
+
+    arg=get_arg_in_braces(arg, number, STOP_SPACES);
+    
+    // checking first parameter to be all digits
+    ok = 1;
+    for (i = 0; number[i]; i++) {
+        if (number[i] < '0' || number[i] > '9') {
+            ok = 0;
+            break;
+        }
+    }
+
+    if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+        tintin_puts(rs::rs(1261));
+        return;
+    }
+
+	ClearWindowFunction(wnd + 1);
+}
+
 
 // these are commands for WM_COMMAND to winamp
 // you can add other easily

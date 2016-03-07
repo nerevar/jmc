@@ -786,6 +786,11 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 
 	        ASSERT(pDoc->m_nUpdateCount == pDoc->m_strTempList.GetCount()-1 );
 
+			if ( pDoc->m_bClearContents ) {
+				for ( POSITION it = m_strList.GetHeadPosition(); it != NULL; m_strList.GetNext(it))
+						m_strList.SetAt(it, "");
+			}
+
 	        m_strList.SetAt(m_strList.GetTailPosition(), pDoc->m_strTempList.GetHead());
 	        // pDoc->m_strTempList.RemoveHead();
 
@@ -809,7 +814,10 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
                 if ( pDoc->m_nUpdateCount ) 
 	                ScrollWindowEx(0, -pDoc->m_nYsize*pDoc->m_nUpdateCount, NULL, &rect, NULL, /*&rectSmall*/ NULL , SW_INVALIDATE | SW_ERASE);
                 /*else */
-                InvalidateRect(&rectSmall, FALSE);
+                if ( pDoc->m_bClearContents ) 
+					InvalidateRect(NULL, FALSE);
+				else
+					InvalidateRect(&rectSmall, FALSE);
 	            UpdateWindow();
             }
         }        

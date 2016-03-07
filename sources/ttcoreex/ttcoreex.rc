@@ -6377,6 +6377,10 @@ BEGIN
     1255                    "prefix = %s"
     1256                    "#Window %d must be at %d/%d."
     1257                    "#Auto reconnect is now %s."
+    1258                    "Log: %s\n"
+    1259                    "#FORMAT: #tray <show|hide>"
+    1260                    "#FORMAT: #wdock <widnow> [disable|left|top|right|bottom]"
+    1261                    "#FORMAT: #wclear <window>"
 END
 
 #endif    // English (U.S.) resources

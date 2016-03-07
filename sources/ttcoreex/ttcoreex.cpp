@@ -120,6 +120,7 @@ BOOL bMultiAction, bMultiHighlight;
 
 /*END_FUNC  FastEndFunction;*/
 DIRECT_OUT_FUNC  DirectOutputFunction;
+CLEAR_WINDOW_FUNC  ClearWindowFunction;
 HWND hwndMAIN;
 
 #ifdef _DEBUG_LOG
@@ -517,8 +518,9 @@ CComObject<CJmcObj>* pJmcObj = NULL;
 
 
 
-void  DLLEXPORT InitState(/*END_FUNC EndFunc, */DIRECT_OUT_FUNC OutFunc, HWND mainWnd)
+void  DLLEXPORT InitState(/*END_FUNC EndFunc, */DIRECT_OUT_FUNC OutFunc, CLEAR_WINDOW_FUNC ClearFunc, HWND mainWnd)
 {
+	ClearWindowFunction = ClearFunc;
     DirectOutputFunction = OutFunc;
     hwndMAIN = mainWnd;
 
