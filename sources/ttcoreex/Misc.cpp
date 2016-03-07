@@ -226,7 +226,11 @@ void showme_command(char *arg)
         prepare_actionalias(right,result); 
         add_codes(result, strng, left);
     }
-    
+
+	if (bLogAsUserSeen) {
+		log(processLine(strng));
+		log("\n");
+	}
     tintin_puts2(strng);
 }
 /***********************/

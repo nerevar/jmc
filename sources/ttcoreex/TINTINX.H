@@ -65,6 +65,7 @@ extern BOOL DLLEXPORT bDisplayCommands;
 extern BOOL DLLEXPORT bDisplayInput;
 extern BOOL DLLEXPORT bMinimizeToTray;
 extern BOOL DLLEXPORT bHTML;
+extern BOOL DLLEXPORT bLogAsUserSeen;
 extern BOOL DLLEXPORT bAllowDebug;
 extern BOOL DLLEXPORT bIACSendSingle, bIACReciveSingle;
 extern int DLLEXPORT nScripterrorOutput;

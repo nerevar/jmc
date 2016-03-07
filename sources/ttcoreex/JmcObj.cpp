@@ -30,9 +30,16 @@ STDMETHODIMP CJmcObj::ShowMe(BSTR varText, BSTR varColor)
 
     if ( varColor ) {
         add_codes(W2A(varText), result, W2A(varColor));
-        tintin_puts2(result);
-    } else 
-        tintin_puts2(W2A(varText));
+    } else {
+        strcpy(result, W2A(varText));
+	}
+
+	if ( bLogAsUserSeen ) {
+		log(processLine(result));
+		log("\n");
+	}
+	tintin_puts2(result);
+
 	return S_OK;
 }
 

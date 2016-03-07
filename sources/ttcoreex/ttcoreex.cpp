@@ -59,6 +59,7 @@ BOOL DLLEXPORT bPasswordEcho = TRUE;
 BOOL DLLEXPORT bConnectBeep;
 BOOL DLLEXPORT bAutoReconnect;
 BOOL DLLEXPORT bHTML;
+BOOL DLLEXPORT bLogAsUserSeen;
 BOOL DLLEXPORT bAllowDebug = FALSE;
 BOOL DLLEXPORT bIACSendSingle, bIACReciveSingle;
 int DLLEXPORT nScripterrorOutput; // 0 - msgbox, 1- window, 2- output
@@ -827,6 +828,7 @@ int read_buffer_mud(char *buffer)
 static void process_incoming(char* buffer)
 {
     char linebuffer[BUFFER_SIZE], *cpsource, *cpdest;
+	char line_to_log[BUFFER_SIZE];
     int LastLineLen = 0, n;
     
     
@@ -855,15 +857,21 @@ static void process_incoming(char* buffer)
         if(*cpsource=='\n' /*|| *cpsource=='\r'*/ || *cpsource==0x1) {
             *cpdest='\0';
 			
-			//vls-begin// #logadd + #logpass // multiple output
-            if(hLogFile.is_open() && !bLogPassedLine) {
-				log(processLine(linebuffer));
-				log("\n");
-            }
-
+			if ( !bLogAsUserSeen ) {
+				strcpy(line_to_log, linebuffer);
+			}
             if ( bProcess ) { 
                 do_one_line(linebuffer);
 			}
+			if ( bLogAsUserSeen ) {
+				strcpy(line_to_log, linebuffer);
+			}
+
+			//vls-begin// #logadd + #logpass // multiple output
+            if(hLogFile.is_open() && !bLogPassedLine) {
+				log(processLine(line_to_log));
+				log("\n");
+            }
 
             bLogPassedLine = FALSE;
 			//vls-end//
@@ -898,12 +906,20 @@ static void process_incoming(char* buffer)
         strcpy(last_line , linebuffer);
     } else { 
 		//vls-begin// #logadd + #logpass // multiple output
+		if ( !bLogAsUserSeen ) {
+			strcpy(line_to_log, linebuffer);
+		}
         if ( bProcess ) { 
-            do_one_line(linebuffer);
+			do_one_line(linebuffer);
+		}
+		if ( bLogAsUserSeen ) {
+			strcpy(line_to_log, linebuffer);
 		}
 
+		//vls-begin// #logadd + #logpass // multiple output
         if(hLogFile.is_open() && !bLogPassedLine) {
-			log(processLine(linebuffer));
+			log(processLine(line_to_log));
+			log("\n");
         }
 
         bLogPassedLine = FALSE;

@@ -31,6 +31,7 @@ public:
 	BOOL	m_bRMASupport;
 	BOOL	m_bAppendLogTitle;
 	int		m_nAppendMode;
+	int		m_nLogAs;
 	int		m_logTypeHtml;
 	int		m_logTypeText;
 	int		m_logTypeAnsi;
