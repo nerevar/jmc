@@ -1063,12 +1063,14 @@ void DLLEXPORT ReadMud()
             char buf[BUFFER_SIZE];
             memcpy(buf, strMudEmuText, nMudEmuTextSize);
             buf[nMudEmuTextSize] = 0;
-            ResetEvent(eventMudEmuTextArrives);
+            
             old_more_coming=more_coming;
             if ( buf[nMudEmuTextSize-1] != 0xA && buf[nMudEmuTextSize-1]!= 1 )
                 more_coming = 1;
             else 
                 more_coming = 0;
+
+			ResetEvent(eventMudEmuTextArrives);
 
             process_incoming (buf);
         }
