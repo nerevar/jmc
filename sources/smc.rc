@@ -316,15 +316,15 @@ BEGIN
     CONTROL         "Append",IDC_APPEND_LOG_MODE,"Button",BS_AUTORADIOBUTTON,
                     131,28,58,10
     GROUPBOX        "Default writing",IDC_STATIC,125,8,90,35,WS_GROUP
-    GROUPBOX        "Log format",IDC_STATIC,10,7,89,75
+    GROUPBOX        "Log format",IDC_STATIC,10,7,112,86
     CONTROL         "Write RMA",IDC_RMA_SUPPORT,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,41,64,49,10
+                    WS_TABSTOP,37,72,49,10
     CONTROL         "Text",IDC_LOGTYPE_TEXT,"Button",BS_AUTORADIOBUTTON | 
                     WS_GROUP,18,21,30,10
     CONTROL         "HTML",IDC_LOGTYPE_HTML,"Button",BS_AUTORADIOBUTTON,18,
                     35,36,10
     CONTROL         "ANSI (+Esc colors)",IDC_LOGTYPE_ANSI,"Button",
-                    BS_AUTORADIOBUTTON,18,50,75,10
+                    BS_AUTORADIOBUTTON,17,60,75,10
     CONTROL         "Append log title",IDC_LOG_TITLE,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,130,57,65,10
     GROUPBOX        "Log contents",IDC_STATIC,125,47,89,46
@@ -333,6 +333,8 @@ BEGIN
                     69,78,9
     CONTROL         "As seen by User",IDC_WRITE_LOG_AS_SEEN_BY_USER,"Button",
                     BS_AUTORADIOBUTTON,129,81,78,9
+    CONTROL         "Timestamps",IDC_HTML_TIMESTAMPS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,37,46,52,10
 END
 
 IDD_SCRIPT_PAGE DIALOG DISCARDABLE  0, 0, 209, 98
@@ -825,6 +827,11 @@ BEGIN
     IDD_PARAMS_PAGE, DIALOG
     BEGIN
         BOTTOMMARGIN, 104
+    END
+
+    IDD_LOG_PARAMS_PAGE, DIALOG
+    BEGIN
+        RIGHTMARGIN, 199
     END
 END
 #endif    // APSTUDIO_INVOKED

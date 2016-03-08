@@ -6381,6 +6381,7 @@ BEGIN
     1259                    "#FORMAT: #tray <show|hide>"
     1260                    "#FORMAT: #wdock <widnow> [disable|left|top|right|bottom]"
     1261                    "#FORMAT: #wclear <window>"
+    1262                    "#Error: can't open file %s"
 END
 
 #endif    // English (U.S.) resources

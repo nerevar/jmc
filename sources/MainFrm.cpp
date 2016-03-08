@@ -573,6 +573,7 @@ void CMainFrame::OnOptionsOptions()
     pg4.m_bRMASupport = bRMASupport;
     pg4.m_nAppendMode = bDefaultLogMode ? 1 : 0 ;
     pg4.m_bAppendLogTitle = bAppendLogTitle;
+	pg4.m_bHTMLTimestamps = bHTML ? bHTMLTimestamps : FALSE;
 	pg4.m_nLogAs = bLogAsUserSeen ? 1 : 0;
 	
     memcpy(&pg5.m_guidLang ,  &theApp.m_guidScriptLang, sizeof(GUID));
@@ -627,6 +628,7 @@ void CMainFrame::OnOptionsOptions()
         // Log settings save
 		bANSILog = pg4.m_LogType == 2;
         bHTML = pg4.m_LogType == 1; 
+		bHTMLTimestamps = bHTML ? pg4.m_bHTMLTimestamps : FALSE;
         bRMASupport = bANSILog ? pg4.m_bRMASupport : FALSE;
         bDefaultLogMode = pg4.m_nAppendMode ;
 		bLogAsUserSeen = pg4.m_nLogAs;

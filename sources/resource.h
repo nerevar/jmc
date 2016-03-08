@@ -157,6 +157,7 @@
 #define IDC_CHK_EMULATE_RMA             1120
 #define IDC_WRITE_LOG_AS_SHOWN_BY_SERVER 1121
 #define IDC_WRITE_LOG_AS_SEEN_BY_USER   1122
+#define IDC_HTML_TIMESTAMPS             1123
 #define ID_OPTIONS_SCROLLBUFFER         32771
 #define ID_OPTIONS_FONT                 32772
 #define ID_OPTIONS_HOTKEYS              32774
@@ -225,7 +226,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        179
 #define _APS_NEXT_COMMAND_VALUE         32809
-#define _APS_NEXT_CONTROL_VALUE         1123
+#define _APS_NEXT_CONTROL_VALUE         1124
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

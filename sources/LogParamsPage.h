@@ -27,8 +27,10 @@ public:
 	CButton	m_logTypeHtmlControl;
 	CButton	m_logTypeAnsiControl;
 	CButton	m_RmaSupportControl;
+	CButton	m_HtmlTimestampsControl;
 	CButton	m_logTypeControl;
 	BOOL	m_bRMASupport;
+	BOOL	m_bHTMLTimestamps;
 	BOOL	m_bAppendLogTitle;
 	int		m_nAppendMode;
 	int		m_nLogAs;

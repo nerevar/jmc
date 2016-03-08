@@ -591,6 +591,7 @@ BOOL CSmcDoc::OnNewDocument()
 	bANSILog = AfxGetApp()->GetProfileInt("ANSI" , "ANSILog" , 0);
 	bDefaultLogMode = AfxGetApp()->GetProfileInt("ANSI" , "AppendMode" , 0);
 	bHTML = AfxGetApp()->GetProfileInt("ANSI" , "HTMLLog" , 0);
+	bHTMLTimestamps = AfxGetApp()->GetProfileInt("ANSI" , "HTMLLogTimestamps" , 0);
 	bLogAsUserSeen = AfxGetApp()->GetProfileInt("ANSI" , "LogAsUserSeen" , 0);
 
 	bIACSendSingle = AfxGetApp()->GetProfileInt("Substitution" , "IACSendSingle" , 0);
@@ -719,6 +720,7 @@ BOOL CSmcDoc::DoProfileSave()
 	AfxGetApp()->WriteProfileInt("ANSI" , "ANSILog" , bANSILog);
 	AfxGetApp()->WriteProfileInt("ANSI" , "AppendMode" , bDefaultLogMode);
 	AfxGetApp()->WriteProfileInt("ANSI" , "HTMLLog" , bHTML);
+	AfxGetApp()->WriteProfileInt("ANSI" , "HTMLLogTimestamps" , bHTMLTimestamps);
 	AfxGetApp()->WriteProfileInt("ANSI" , "LogAsUserSeen" , bLogAsUserSeen);
 
 

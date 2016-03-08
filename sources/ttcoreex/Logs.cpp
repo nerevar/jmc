@@ -9,8 +9,10 @@
 
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <vector>
+#include <streambuf>
 
 //vls-begin// #logadd + #logpass
 BOOL bLogPassedLine = FALSE;
@@ -27,6 +29,7 @@ static int new_tcolor = tcolor;
 static int new_bcolor = bcolor;
 
 DWORD lastTicker = 0;
+DWORD firstTicker = 0;
 
 GET_OUTPUTNAME_FUNC GetOutputName;
 
@@ -87,13 +90,35 @@ void log(int wnd, string st)
 string loadHTMLFromResource(int name)
 {
 	DWORD size;
-	HRSRC rc = ::FindResource(rs::hInst, MAKEINTRESOURCE(IDR_HTML_HEAD), RT_HTML);
+	HRSRC rc = ::FindResource(rs::hInst, MAKEINTRESOURCE(name), RT_HTML);
     HGLOBAL rcData = ::LoadResource(rs::hInst, rc);
 
     size = ::SizeofResource(rs::hInst, rc);
 	string html_content(static_cast<const char*>(::LockResource(rcData)), size);
 
 	return html_content;
+}
+
+string loadHTMLFromFile(const char *filename)
+{
+	char fn[MAX_PATH+2];
+	string ret;
+
+	MakeAbsolutePath(fn, filename, szBASE_DIR);
+
+	ifstream t(filename);
+	if(t.fail()) {
+		char message[BUFFER_SIZE];
+		sprintf(message,rs::rs(1262), fn);
+        tintin_puts2(message);
+		ret = loadHTMLFromResource(IDR_HTML_HEAD);
+	} else {
+		stringstream buffer;
+		buffer << t.rdbuf();
+		ret = buffer.str();
+	}
+
+	return ret;
 }
 
 BOOL CloseMainLog(char *logName, BOOL logHTML)
@@ -140,6 +165,8 @@ BOOL CloseWNDLog(int wnd, char *logName)
 
 BOOL StartMainLog(char* logName, BOOL logMode, BOOL logHTML)
 {
+	lastTicker = firstTicker = 0;
+
 	if (logMode && !logHTML)
 		hLogFile.open(logName, ios::out | ios::binary | ios::app );
 	else 
@@ -150,7 +177,11 @@ BOOL StartMainLog(char* logName, BOOL logMode, BOOL logHTML)
 
     // Do HTML Log pereference
     if ( logHTML ) {
-		string html_header = loadHTMLFromResource(IDR_HTML_HEAD);
+		string html_header;
+		if ( !bHTMLTimestamps )
+			html_header = loadHTMLFromFile("html.log.template");
+		else
+			html_header = loadHTMLFromFile("htmltimestamps.log.template");
 
 		string::size_type pos = 0;
 		while ( ( pos = html_header.find("%title%", pos) ) != string::npos ) {
@@ -318,7 +349,28 @@ void stripDefaultColorDuplicates(string &strInput) {
 
 string processHTML(string strInput)
 {
-	string strOutput = strInput;
+	string strOutput = "";
+
+	BOOL close_timestamp_tag = FALSE;
+
+	if ( bHTMLTimestamps ) {
+		DWORD currTicker = 0;
+
+		if ( firstTicker == 0 ) {
+			firstTicker = GetTickCount();
+			lastTicker = 0;
+		}
+
+		currTicker = GetTickCount() - firstTicker;
+
+		if ( currTicker - lastTicker >= MIN_HTML_FRAMES_DELAY_MS ) {
+			strOutput += strprintf("<div id=\"t_%d\">", currTicker);
+			lastTicker = currTicker;
+			close_timestamp_tag = TRUE;
+		}
+	}
+
+	strOutput += strInput;
 
 	stripRMA(strOutput);
 
@@ -365,9 +417,11 @@ string processHTML(string strInput)
 
 		// replace source escape sequence to html entity
 		strOutput.replace(pos, posEscEnd - pos + 1, html_tags);
-
-		pos = strOutput.find("\x1B[", pos);
     }
+
+	if (close_timestamp_tag == TRUE) {
+		strOutput += "</div>";
+	}
 
 	return strOutput;
 }
