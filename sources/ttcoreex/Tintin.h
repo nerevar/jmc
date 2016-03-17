@@ -264,6 +264,7 @@ void end_command(char *command);
 void help_command(char *arg);
 void parse_high(char *arg);
 void if_command(char *line);
+void strcmp_command(char *arg);
 void ignore_command(char* arg);
 void display_info(char* arg);
 void log_command(char *arg);
@@ -471,7 +472,7 @@ extern void* JMCObjRet[1000];
 // --END
 
 //* en:JMC functions struct. look cmds.h
-const JMC_CMDS_NUM=116;
+const JMC_CMDS_NUM=117;
 typedef struct jmc_cmd 
 	{
 	char*alias;

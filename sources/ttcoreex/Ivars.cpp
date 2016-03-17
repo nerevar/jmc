@@ -320,3 +320,34 @@ int do_one_inside(int begin, int end)
     }
   }
 }
+
+void strcmp_command(char *arg) 
+{
+	char arg1[BUFFER_SIZE], 
+		 arg2[BUFFER_SIZE], 
+		 if_then[BUFFER_SIZE], 
+		 if_else[BUFFER_SIZE],
+		 temp[BUFFER_SIZE];
+
+	arg = get_arg_in_braces(arg, arg1, STOP_SPACES);
+	substitute_vars(arg1,temp);
+	substitute_myvars(temp,arg1);
+
+	arg = get_arg_in_braces(arg, arg2, STOP_SPACES);
+	substitute_vars(arg2,temp);
+	substitute_myvars(temp,arg2);
+ 
+	arg = get_arg_in_braces(arg, if_then, WITH_SPACES);
+    substitute_vars(if_then,temp);
+	substitute_myvars(temp,if_then);
+
+	arg = get_arg_in_braces(arg, if_else, WITH_SPACES);
+    substitute_vars(if_else,temp);
+	substitute_myvars(temp,if_else);
+
+	if( !strcmp(arg1, arg2) ) {
+		parse_input(if_then); 
+	} else if(*if_else) {
+		parse_input(if_else);
+	}
+}

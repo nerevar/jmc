@@ -116,6 +116,7 @@ jmc_cmdi jmc_cmds[JMC_CMDS_NUM]={
 		   {"autoreconnect",&autoreconnect_command,"autoreconnect"},
            {"run",&run_command,"\0"},
 		   {"clear",&clear_command,"\0"},
-		   {"wclear",&wclear_command,"\0"}
+		   {"wclear",&wclear_command,"\0"},
+		   {"strcmp",&strcmp_command,"\0"}
 	   };
 #endif
