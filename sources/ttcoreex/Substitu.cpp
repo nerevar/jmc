@@ -110,20 +110,34 @@ void do_one_sub(char *line)
             }
             BOOL bAnchored = FALSE;
             char pattern[BUFFER_SIZE],SubStr[BUFFER_SIZE],result[BUFFER_SIZE];
-            prepare_actionalias(ln->left , pattern);
-            prepare_actionalias(ln->right , SubStr);
+            prepare_actionalias(ln->left , pattern, sizeof(pattern));
+            prepare_actionalias(ln->right , SubStr, sizeof(SubStr));
             int pattern_len = strlen(pattern);
+			int sublen = strlen(SubStr);
             if ( pattern_len == 0 ) 
                 continue;
 
             result[0] = 0;
             char* line1 = line;
             char* ptr, *res = result;
+			int rest = sizeof(result) - 1;
             while ( (ptr = strstr(line1, pattern)) != NULL ) {
-                strncpy(res, line1, ptr-line1 );
-                res += ptr-line1;
-                strcpy(res, SubStr);
-                res += strlen(res);
+				int to_copy = ptr - line1;
+				if (to_copy > rest)
+					to_copy = rest;
+                strncpy(res, line1, to_copy );
+				res[to_copy] = '\0';
+                res += to_copy;
+				rest -= to_copy;
+
+				to_copy = sublen;
+				if (to_copy > rest)
+					to_copy = rest;
+                strncpy(res, SubStr, to_copy);
+				res[to_copy] = '\0';
+                res += to_copy;
+				rest -= to_copy;
+
                 line1 += pattern_len + (ptr-line1);
             
             }

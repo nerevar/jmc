@@ -13,6 +13,7 @@
 
 #define SUBST_ARRAY_SIZE 68
 #define BUFFER_SIZE 2048
+#define MAX_VARNAME_LENGTH 64
 
 typedef void (CALLBACK* END_FUNC)(void);
 typedef void (CALLBACK* DIRECT_OUT_FUNC)(char*, BOOL);
@@ -37,6 +38,18 @@ BOOL  DLLEXPORT ParseScript(LPCSTR strScriptlet);
 void  DLLEXPORT BreakScript();
 void  DLLEXPORT LunchDebuger();
 
+const DLLEXPORT char * act_type_to_str(int type);
+
+extern BOOL DLLEXPORT bBCastFilterIP;
+extern BOOL DLLEXPORT bBCastFilterPort;
+extern WORD DLLEXPORT wBCastUdpPort;
+extern void DLLEXPORT reopen_bcast_socket();
+
+extern BOOL DLLEXPORT bMCCPEnabled;
+
+extern unsigned char DLLEXPORT strPromptEndSequence[BUFFER_SIZE];
+extern unsigned char DLLEXPORT strPromptEndReplace[BUFFER_SIZE];
+extern BOOL DLLEXPORT bPromptEndEnabled;
 //vls-begin// base dir
 extern char DLLEXPORT szBASE_DIR[MAX_PATH];
 extern char DLLEXPORT szSETTINGS_DIR[MAX_PATH];
@@ -106,6 +119,12 @@ extern HANDLE DLLEXPORT eventReadingConfig;
 extern HANDLE DLLEXPORT eventReadingHasUse;
 extern HANDLE DLLEXPORT eventReadingFirst;
 //vls-end//
+
+extern DWORD DLLEXPORT ulProxyAddress;
+extern WORD DLLEXPORT dwProxyPort;
+extern WORD DLLEXPORT dwProxyType;
+extern char DLLEXPORT sProxyUserName[256];
+extern char DLLEXPORT sProxyUserPassword[256];
 
 #endif /* */
 

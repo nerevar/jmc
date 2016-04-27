@@ -5,6 +5,8 @@
 #include "JmcSite.h"
 #include "JmcObj.h"
 
+extern jmc_special_variable jmc_vars[JMC_SPECIAL_VARIABLES_NUM];
+
 /////////////////////////////////////////////////////////////////////////////
 // CJmcObj
 
@@ -75,17 +77,13 @@ STDMETHODIMP CJmcObj::Output(BSTR bstrText, BSTR bstrColor)
 
     char text[BUFFER_SIZE], result[BUFFER_SIZE];
 
-    prepare_actionalias(W2A(bstrText) ,text); 
+    prepare_actionalias(W2A(bstrText) ,text, sizeof(text)); 
     if ( bstrColor ) {
         add_codes(text, result, W2A(bstrColor));
-//vls-begin// multiple output
-//        tintin_puts3(result);
-//    } else 
-//        tintin_puts3(text);
         tintin_puts3(result, 0);
-    } else 
+    } else {
         tintin_puts3(text, 0);
-//vls-end//
+	}
 	return S_OK;
 }
 
@@ -190,6 +188,9 @@ STDMETHODIMP CJmcObj::RegisterHandler(BSTR bstrEvent, BSTR bstrCode)
     if ( *event == 'U' && !strcmp(event, "UNLOAD" ) ){
         m_bstrEventsHandlers[ID_Unload] = bstrCode;
     } else
+	if ( *event == 'P' && !strcmp(event, "PROMPT" ) ){
+        m_bstrEventsHandlers[ID_Prompt] = bstrCode;
+    } else 
         return E_INVALIDARG;
     return S_OK;
 }
@@ -325,7 +326,15 @@ STDMETHODIMP CJmcObj::GetVar(BSTR bstrVarName, BSTR *bstrRet)
     if ( ind != VarList.end() ) {
         VAR* pvar = ind->second;
         ret = pvar->m_strVal.data();
-    } 
+    } else {
+		for(int i = 0; i < JMC_SPECIAL_VARIABLES_NUM; i++)
+			if (!strcmp(varname, jmc_vars[i].name)) {
+				char specialVariableValue[BUFFER_SIZE];
+				(*(jmc_vars[i].jmcfn))(specialVariableValue);
+				ret = specialVariableValue;
+				break;
+			}
+	}
     *bstrRet = ret.Copy ();
 
     
@@ -398,7 +407,7 @@ STDMETHODIMP CJmcObj::wOutput(LONG wndNum, BSTR bstrText, BSTR bstrColor)
 	if(wndNum>MAX_OUTPUT || wndNum<0)
    	  return S_OK;
 
-    prepare_actionalias(W2A(bstrText) ,text); 
+    prepare_actionalias(W2A(bstrText) ,text, sizeof(text)); 
     if ( bstrColor ) {
         add_codes(text, result, W2A(bstrColor));
         tintin_puts3(result, wndNum);

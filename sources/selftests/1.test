@@ -1,0 +1,30 @@
+##   CHECK ACTIONS FUNCTIONALITY VIA LOOPBACK COMMAND
+
+#action {^For test1: Arg1 = %1, Arg2 = %2, Arg3 = %3.} {#var Arg1 {%%1}; #var Arg2 {%%2}; #var Arg3 {%%3}}
+#var Arg1Correct {123}
+#var Arg2Correct {qwerty}
+#var Arg3Correct {AAAA}
+#var Args1Correct {$Arg1Correct.$Arg2Correct.$Arg3Correct}
+
+#loopback {For test1: Arg1 = $Arg1Correct, Arg2 = $Arg2Correct, Arg3 = $Arg3Correct.}
+#sync
+#var Args1 {$Arg1.$Arg2.$Arg3}; assertEqual ACTIONS_MULTIArg Args1 Args1Correct
+#loopback {And For test1: Arg1 = Arg1Correct, Arg2 = Arg2Correct, Arg3 = Arg3Correct.}
+#sync
+#var Args1 {$Arg1.$Arg2.$Arg3}; assertEqual ACTIONS_MULTIArg Args1 Args1Correct
+
+#action {/^For test2: Arg4 = (.+), Arg5 = ([0-9]+), Arg6 = ([^0-9]+)\./} {#var Arg4 {%%0}; #var Arg5 {%%1}; #var Arg6 {%%2}}
+#var Arg4Correct {qwe234rty}
+#var Arg5Correct {123}
+#var Arg6Correct {AAAA}
+#var Args2Correct {$Arg4Correct.$Arg5Correct.$Arg6Correct}
+
+#loopback {For test2: Arg4 = $Arg4Correct, Arg5 = $Arg5Correct, Arg6 = $Arg6Correct.}
+#sync
+#var Args2 {$Arg4.$Arg5.$Arg6}; assertEqual ACTIONS_REGEXP_MULTIArg Args2 Args2Correct
+#loopback {For test2: Arg4 = $Arg5Correct, Arg5 = $Arg4Correct, Arg6 = $Arg6Correct.}
+#sync
+#var Args2 {$Arg4.$Arg5.$Arg6}; assertEqual ACTIONS_REGEXP_MULTIArg Args2 Args2Correct
+#loopback {For test2: Arg4 = $Arg6Correct, Arg5 = $Arg5Correct, Arg6 = $Arg4Correct.}
+#sync
+#var Args2 {$Arg4.$Arg5.$Arg6}; assertEqual ACTIONS_REGEXP_MULTIArg Args2 Args2Correct

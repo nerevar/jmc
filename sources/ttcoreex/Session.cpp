@@ -46,8 +46,9 @@ void  newactive_session()
 /*****************************************************************************/
 void cleanup_session(void)
 {
-    closesocket(MUDSocket);
+    proxy_close(MUDSocket);
     MUDSocket = NULL;
+	memset(&MUDAddress, 0, sizeof(MUDAddress));
     // bTickStatus=FALSE;
 }
 
@@ -55,7 +56,6 @@ void connect_command(char* arg)
 {
   char *host, *port;
 
-  SocketFlags = SOCKECHO;
   State = 0;
 
   if ( MUDSocket ) {

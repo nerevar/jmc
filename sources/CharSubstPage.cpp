@@ -180,7 +180,8 @@ void CCharSubstPage::OnAdd()
         return;
     }
 
-    for ( int i = 0 ; i <  *((int*)m_charsSubst) ; i++ ) {
+	int i;
+    for ( i = 0 ; i <  *((int*)m_charsSubst) ; i++ ) {
         if ( m_charsSubst[sizeof(int) + i*2] == m_strOldChar[0] && 
             m_charsSubst[sizeof(int) + i*2+1] == m_strNewChar[0] ) {
             CString t1,t2;

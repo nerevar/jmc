@@ -153,7 +153,7 @@ extern BOOL bColon;           //colon
 extern BOOL bSosExact;        //sos
 extern int iWaitState;        //wait
 extern char cCommentChar;        
-extern const sTimersV;
+extern const int sTimersV;
 typedef struct {
 	BOOL isActive;
 	int  startV;
@@ -173,7 +173,7 @@ extern char sOutputLogName[MAX_OUTPUT][BUFFER_SIZE];
 //* /en
 
 extern struct completenode *complete_head;
-extern tick_size;
+extern int tick_size;
 extern int ticker_interrupted;
 extern DWORD dwTime0;
 extern HWND hwndMAIN;
@@ -193,11 +193,17 @@ extern ofstream hLogFile;
 extern ofstream hOutputLogFile[MAX_OUTPUT];
 //vls-end//
 extern int path_length;
-extern int old_more_coming,more_coming;
+//extern int old_more_coming,more_coming;
+extern int more_coming;
 extern char last_line[BUFFER_SIZE];
 extern int ignore;
 
 extern SOCKET MUDSocket;
+extern sockaddr_in MUDAddress;
+extern LONG DLLEXPORT lPingMUD;
+extern LONG DLLEXPORT lPingProxy;
+
+extern UINT DLLEXPORT uBroadcastMessage;
 
 /* ------ Extern functions implemented in exe file ----- */
 /* typedef BOOL (CALLBACK* DLGPROC)(HWND, UINT, WPARAM, LPARAM); */
@@ -233,16 +239,16 @@ char *mystrdup(char *s);
 char *space_out(char* s);
 void add_codes(char *line, char *result, char *htype, BOOL bAddTAil= TRUE);
 void tintin_puts(char *cptr);
-void substitute_myvars(char *arg, char *result);
+void substitute_myvars(char *arg, char *result, int maxlength);
 int check_one_action(char *line, ACTION *action);
 int check_one_action(char* line, char* action);
-void parse_input(char *input);
+void parse_input(char *input, BOOL bExecuteNow = FALSE);
 int check_a_action(char *line, char *action);
 BOOL show_aliases(char* left = NULL, CGROUP* pGroup= NULL);
 char *get_arg_in_braces( char *s, char *arg, int flag);
 int is_abrev( char *s1, char *s2);
-void prepare_actionalias( char *string, char *result);
-void substitute_vars(char *arg, char *result);
+void prepare_actionalias( char *string, char *result, int maxlength);
+void substitute_vars(char *arg, char *result, int maxlength);
 int eval_expression(char *arg);
 int conv_to_ints(char *arg);
 void cleanup_session(void);
@@ -264,7 +270,7 @@ void end_command(char *command);
 void help_command(char *arg);
 void parse_high(char *arg);
 void if_command(char *line);
-void strcmp_command(char *arg);
+void strcmp_command(char *line);
 void ignore_command(char* arg);
 void display_info(char* arg);
 void log_command(char *arg);
@@ -371,7 +377,7 @@ void wpos_command(char *arg);
 // parse.cpp
 void prefix_command(char *arg);
 //* /en
-void check_all_actions(char *line);
+void check_all_actions(char *line, bool multiline);
 void do_one_sub(char *line);
 void do_one_high(char *line);
 void read_command(char* filename);
@@ -389,6 +395,23 @@ void autoreconnect_command(char*arg);
 void clear_command(char *arg);
 void wclear_command(char *arg);
 
+void loopback_command(char *arg);
+void broadcast_command(char *arg);
+
+void srandom_command(char *arg);
+void random_command(char *arg);
+
+void sync_command(char *arg);
+
+//Proxy support
+void proxy_command(char *arg);
+int proxy_connect(int, const struct sockaddr *, int);
+int proxy_close(int);
+
+//MCCP support
+void mccp_command(char *arg);
+
+void promptend_command(char *arg);
 
 // VARIABLES:
 void variable_value_input(char *arg);
@@ -402,13 +425,27 @@ void variable_value_minute(char *arg);
 void variable_value_second(char *arg);
 void variable_value_millisecond(char *arg);
 void variable_value_timestamp(char *arg);
+void variable_value_clockms(char *arg);
+void variable_value_clock(char *arg);
 void variable_value_color_default(char *arg);
+void variable_value_random(char *arg);
+void variable_value_hostip(char *arg);
+void variable_value_hostport(char *arg);
+void variable_value_eop(char *arg);
+void variable_value_eol(char *arg);
+void variable_value_esc(char *arg);
+void variable_value_ping(char *arg);
+void variable_value_ping_proxy(char *arg);
 
 BOOL show_actions(char* left = NULL, CGROUP* pGroup = NULL);
 int do_one_antisub(char *line);
 extern int SocketFlags;
 extern unsigned char State;
-int do_telnet_protecol(unsigned char* cpsource, char* cpdest, int size);
+void telnet_push_back(const char *src, int size);
+int telnet_more_coming();
+int telnet_pop_front(char *dst, int maxsize);
+void reset_telnet_protocol();
+void do_telnet_protecol(const unsigned char* input, int length, int *used, unsigned char* output, int capacity, int *generated);
 //vls-begin// multiple output
 void StopLogging();
 void log(string st);
@@ -435,8 +472,9 @@ extern GROUPLIST  GroupList;
 
 namespace std
 {
+	template<>
     struct greater<ACTION*> : public binary_function<ACTION*, ACTION*, bool> {
-    bool operator()(const ACTION*& x, const ACTION*& y) const{return x->m_nPriority < y->m_nPriority; };
+    bool operator()(ACTION* x, ACTION* y) const{return x->m_nPriority < y->m_nPriority; };
     };
 }
 
@@ -472,7 +510,7 @@ extern void* JMCObjRet[1000];
 // --END
 
 //* en:JMC functions struct. look cmds.h
-const JMC_CMDS_NUM=117;
+const int JMC_CMDS_NUM=125;
 typedef struct jmc_cmd 
 	{
 	char*alias;
@@ -482,7 +520,7 @@ typedef struct jmc_cmd
 //*/en
 
 
-const JMC_SPECIAL_VARIABLES_NUM = 12;
+const int JMC_SPECIAL_VARIABLES_NUM = 22;
 typedef struct jmc_special_variable_struct {
 	char *name;
 	void (*jmcfn)(char*);

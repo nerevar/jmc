@@ -7,6 +7,7 @@ extern struct listnode *searchnode_list();
 int var_len[10];
 char *var_ptr[10];
 
+
 /***********************/
 /* the #action command */
 /***********************/
@@ -17,9 +18,31 @@ static BOOL bDroppedLine;
 BOOL bContinuedAction = FALSE;
 //* /en
 
+const DLLEXPORT char * act_type_to_str(int type)
+{
+	switch ((ACTION::ActionType)type) {
+	default:
+	case ACTION::Action_TEXT:
+		return "TEXT";
+		break;
+	case ACTION::Action_RAW:
+		return "RAW";
+		break;
+	case ACTION::Action_ANSI:
+		return "ANSI";
+		break;
+	case ACTION::Action_SMAUG:
+		return "SMAUG";
+		break;
+	case ACTION::Action_SOW:
+		return "SOW";
+		break;
+	}
+}
 
 BOOL show_actions(char* left, CGROUP* pGroup)
 {
+	static char temp[BUFFER_SIZE];
     BOOL bFound = FALSE;
 
     if ( !left || !*left ) 
@@ -28,9 +51,13 @@ BOOL show_actions(char* left, CGROUP* pGroup)
     ACTION_INDEX ind = ActionList.begin();
     while (ind  != ActionList.end() ) {
         ACTION* pac = *ind;
-        if ( (!pGroup || (pGroup == pac->m_pGroup) ) && !pac->m_bDeleted &&  match(left, (char*)pac->m_strLeft.data() ) ){
-            char temp[BUFFER_SIZE];
-            sprintf(temp, rs::rs(1002), (char*)pac->m_strLeft.data(), (char*)(pac->m_strRight.data()), pac->m_nPriority , (char*)pac->m_pGroup->m_strName.data() );
+        if ( (!pGroup || (pGroup == pac->m_pGroup) ) && !pac->m_bDeleted &&  match(left, (char*)pac->m_strLeft.data() ) ) {
+            sprintf(temp, rs::rs(1276), 
+				act_type_to_str((int)pac->m_InputType),
+				(char*)pac->m_strLeft.data(), 
+				(char*)(pac->m_strRight.data()), 
+				pac->m_nPriority , 
+				(char*)pac->m_pGroup->m_strName.data() );
             tintin_puts2(temp);
             bFound = TRUE;
         }
@@ -47,9 +74,30 @@ void action_command(char *arg)
     char pr[BUFFER_SIZE];
     int priority = 5;
 
+	enum ACTION::ActionType type = ACTION::Action_TEXT;
+
     arg=get_arg_in_braces(arg, left,  STOP_SPACES);
+	
+	if (is_abrev(left, "text")) {
+		type = ACTION::Action_TEXT;
+		arg=get_arg_in_braces(arg, left,  STOP_SPACES);
+	} else if (is_abrev(left, "raw")) {
+		type = ACTION::Action_RAW;
+		arg=get_arg_in_braces(arg, left,  STOP_SPACES);
+	} else if (is_abrev(left, "ansi")) {
+		type = ACTION::Action_ANSI;
+		arg=get_arg_in_braces(arg, left,  STOP_SPACES);
+	} else if (is_abrev(left, "smaug")) {
+		type = ACTION::Action_SMAUG;
+		arg=get_arg_in_braces(arg, left,  STOP_SPACES);
+	} else if (is_abrev(left, "sow")) {
+		type = ACTION::Action_SOW;
+		arg=get_arg_in_braces(arg, left,  STOP_SPACES);
+	}
+
     arg=get_arg_in_braces(arg, right, WITH_SPACES);
     arg=get_arg_in_braces(arg, pr,    STOP_SPACES);
+
     // check for priority/group name set
     if ( *pr ) {
         if ( isdigit(*pr) ) {
@@ -95,6 +143,7 @@ void action_command(char *arg)
         }
         return;
     }
+	pac->m_InputType = type;
     pac->m_strRight = right;
     pac->m_nPriority = priority;
     pac->SetGroup(pr);
@@ -104,7 +153,11 @@ void action_command(char *arg)
     ActionList.sort(std::greater<ACTION*>());
 
     if (mesvar[MSG_ACTION]) {
-      sprintf(result,rs::rs(1005),left,right,priority);
+		sprintf(result,rs::rs(1277),
+			act_type_to_str((int)type),
+			left,
+			right,
+			priority);
       tintin_puts2(result);
     }
 }
@@ -148,25 +201,26 @@ void unaction_command(char* arg)
 /* run throught each of the commands on the right side of an alias/action */
 /* expression, call substitute_text() for all commands but #alias/#action */
 /**************************************************************************/
-void prepare_actionalias(char *string, char *result)
+void prepare_actionalias(char *string, char *result, int maxlength)
 {
 
   char arg[BUFFER_SIZE];
   *result='\0';
-  substitute_vars(string,arg);
-  substitute_myvars(arg, result);
+  substitute_vars(string,arg,sizeof(arg));
+  substitute_myvars(arg, result, maxlength);
 }
 
 /*************************************************************************/
 /* copy the arg text into the result-space, but substitute the variables */
 /* %0..%9 with the real variables                                        */
 /*************************************************************************/
-void substitute_vars(char *arg, char *result)
+void substitute_vars(char *arg, char *result, int maxlength)
 {
   int nest=0;
   int numands,n;
   char *ptr;
-  while(*arg) {
+  maxlength--; //reserve for null-terminator
+  while(*arg && maxlength > 0) {
 
     if(*arg=='%') { /* substitute variable */
       numands=0;
@@ -174,14 +228,23 @@ void substitute_vars(char *arg, char *result)
         numands++;
       if (isdigit(*(arg+numands)) && numands==(nest+1)) {
          n=*(arg+numands)-'0';
-         strcpy(result,vars[n]);
-         arg=arg+numands+1;
-         result+=strlen(vars[n]);
+
+		 int len = strlen(vars[n]);
+		 if( len > maxlength )
+			len = maxlength;
+         strncpy(result,vars[n],len);
+         arg += numands+1;
+         result += len;
+		 maxlength -= len;
       }
       else {
-        strncpy(result,arg,numands+1);
-        arg+=numands+1;
-        result+=numands+1;
+		int len = numands + 1;
+		if( len > maxlength )
+			len = maxlength;
+        strncpy(result,arg,len);
+        arg += numands+1;
+        result += len;
+		maxlength -= len;
       }
     }
     if(*arg=='$') { /* substitute variable */
@@ -195,52 +258,207 @@ void substitute_vars(char *arg, char *result)
            // DELIMITER if (*ptr==';')
 		   if (*ptr==cCommandDelimiter)
              ptr++;
-           else
+           else if (maxlength > 0) {
              *result++=*ptr++;
+			 --maxlength;
+		   } else
+			   ptr++;
          }
-         arg=arg+numands+1;
+         arg += numands+1;
       }
       else {
-        strncpy(result,arg,numands);
-        arg+=numands;
-        result+=numands;
+		int len = numands;
+		if( len > maxlength )
+			len = maxlength;
+        strncpy(result,arg,len);
+        arg += numands;
+        result += len;
+		maxlength -= len;
       }
     }
     else if (*arg==DEFAULT_OPEN) {
       nest++;
-      *result++=*arg++;
+	  if (maxlength > 0) {
+		*result++=*arg++;
+		--maxlength;
+	  } else
+		  arg++;
     }
     else if (*arg==DEFAULT_CLOSE) {
       nest--;
-      *result++=*arg++;
+	  if (maxlength > 0) {
+		*result++=*arg++;
+		--maxlength;
+	  } else
+		  arg++;
     }
     else if (*arg=='\\' && nest==0) {
-      while(*arg=='\\')
-        *result++=*arg++;
+		while(*arg=='\\') {
+			if (maxlength > 0) {
+				*result++=*arg++;
+				--maxlength;
+			} else
+				arg++;
+		}
       if(*arg=='%') {
-        result--;
-        *result++=*arg++;
-	*result++=*arg++;
+		if (maxlength > 0) {
+			result--;
+			*result++=*arg++;
+			*result++=*arg++;
+			--maxlength;
+		} else {
+			arg++;
+			arg++;
+		}
       }
     }
-    else
+    else if (maxlength > 0) {
       *result++=*arg++;
+	  --maxlength;
+	} else
+	  arg++;
   }
-  *result='\0';
+  *result++='\0';
 }
 
+static void canonize_ansi_codes(const char *input, char *output, int maxlength)
+{
+	static int state = 37;
+	int last_printed = -1;
+	int len;
+	maxlength -= 7;
+	for(len = 0; (*input) && len < maxlength; ) {
+		if (*input == 0x1B) {
+			input++;
+			int cmd = 0, cmdlen = 0;
+			while (*input) {
+				if (*input >= '0' && *input <= '9') {
+					cmd = cmd * 10 + (*input - '0');
+					cmdlen++;
+				} else if (cmdlen > 0) {
+					//parse cmd
+					if (cmd == 0) {
+						state = 37;
+					} else if (cmd == 1) {
+						state |= 0x100;
+					} else if (cmd >= 30 && cmd <= 37) {
+						state = (state & 0x100) | cmd;
+					}
+					cmd = cmdlen = 0;
+				}
+				if (*input == 'm') {
+					input++;
+					break;
+				}
+				input++;
+			}
+			continue;
+		}
+		if (isprint((unsigned char)(*input)) || (*input) < 0 || (*input) == '\n') {
+			if (!isspace((unsigned char)(*input)) && last_printed != state) {
+				output[len++] = 0x1B;
+				output[len++] = '[';
+				output[len++] = '0' + (state >> 8);
+				output[len++] = ';';
+				output[len++] = '3';
+				output[len++] = '0' + ((state & 0xFF) - 30);
+				output[len++] = 'm';
+				last_printed = state;
+			}
+			output[len++] = *input;
+		}
+		input++;
+	}
+	output[len] = '\0';
+}
 
+static void replace_all_inplace(char *inout, const char *search_for, const char *replace_with)
+{
+	int len1 = strlen(replace_with);
+	int len2 = strlen(search_for);
+	int length = strlen(inout);
+
+	char *ptr = inout;
+	while ((ptr = strstr(ptr, search_for))) {
+		int rest = length - (ptr - inout);
+		if (len1 != len2)
+			memmove(ptr + len1, ptr + len2, rest - len2);
+		memmove(ptr, replace_with, len1);
+		ptr += len1;
+		length = length - len2 + len1;
+		inout[length] = '\0';
+	}
+}
+static void translate_to_smaug(const char *canonized, char *output)
+{
+	strcpy(output, canonized);
+
+	replace_all_inplace(output, "&", "&&");
+
+	replace_all_inplace(output, "\x1b[0;30m", "&x");
+	replace_all_inplace(output, "\x1b[0;31m", "&r");
+	replace_all_inplace(output, "\x1b[0;32m", "&g");
+	replace_all_inplace(output, "\x1b[0;33m", "&O");
+	replace_all_inplace(output, "\x1b[0;34m", "&b");
+	replace_all_inplace(output, "\x1b[0;35m", "&p");
+	replace_all_inplace(output, "\x1b[0;36m", "&c");
+	replace_all_inplace(output, "\x1b[0;37m", "&w");
+
+	replace_all_inplace(output, "\x1b[1;30m", "&z");
+	replace_all_inplace(output, "\x1b[1;31m", "&R");
+	replace_all_inplace(output, "\x1b[1;32m", "&G");
+	replace_all_inplace(output, "\x1b[1;33m", "&Y");
+	replace_all_inplace(output, "\x1b[1;34m", "&B");
+	replace_all_inplace(output, "\x1b[1;35m", "&P");
+	replace_all_inplace(output, "\x1b[1;36m", "&C");
+	replace_all_inplace(output, "\x1b[1;37m", "&W");
+}
+static void translate_to_sow(const char *canonized, char *output)
+{
+	strcpy(output, canonized);
+
+	replace_all_inplace(output, "[", "[[");
+	replace_all_inplace(output, "]", "]]");
+	replace_all_inplace(output, "{", "{{");
+	replace_all_inplace(output, "}", "}}");
+
+	replace_all_inplace(output, "\x1b[[0;30m", "[0]");
+	replace_all_inplace(output, "\x1b[[0;31m", "[1]");
+	replace_all_inplace(output, "\x1b[[0;32m", "[2]");
+	replace_all_inplace(output, "\x1b[[0;33m", "[3]");
+	replace_all_inplace(output, "\x1b[[0;34m", "[4]");
+	replace_all_inplace(output, "\x1b[[0;35m", "[5]");
+	replace_all_inplace(output, "\x1b[[0;36m", "[6]");
+	replace_all_inplace(output, "\x1b[[0;37m", "[7]");
+
+	replace_all_inplace(output, "\x1b[[1;30m", "{0}");
+	replace_all_inplace(output, "\x1b[[1;31m", "{1}");
+	replace_all_inplace(output, "\x1b[[1;32m", "{2}");
+	replace_all_inplace(output, "\x1b[[1;33m", "{3}");
+	replace_all_inplace(output, "\x1b[[1;34m", "{4}");
+	replace_all_inplace(output, "\x1b[[1;35m", "{5}");
+	replace_all_inplace(output, "\x1b[[1;36m", "{6}");
+	replace_all_inplace(output, "\x1b[[1;37m", "{7}");
+}
 
 /**********************************************/
 /* check actions                              */
 /**********************************************/
-void check_all_actions(char *line1)
+void check_all_actions(char *line1, bool multiline)
 {
-    // Have to remove all ESC characters before parsing 
-    // But how ??
-    static char temp[512]=PROMPT_FOR_PW_TEXT;
-    char strng[BUFFER_SIZE];
-    char line[4096];
+    static char temp[512] = PROMPT_FOR_PW_TEXT;
+
+    static char strng[BUFFER_SIZE*32];
+	static char line[BUFFER_SIZE*2*32];
+
+	static char colored_ansi[BUFFER_SIZE*2*32];
+	static char colored_smaug[BUFFER_SIZE*2*32];
+	static char colored_sow[BUFFER_SIZE*2*32];
+	
+	canonize_ansi_codes(line1, colored_ansi, sizeof(colored_ansi) - 1);
+	colored_smaug[0] = 0;
+	colored_sow[0] = 0;
+
     char* ptr = line1;
     char* res = line;
     while (*ptr)  {
@@ -261,7 +479,7 @@ void check_all_actions(char *line1)
 
     // Do check 
 
-    if( check_one_action(line, temp)/*!strnicmp(line, temp, strlen(temp))*/ ){
+    if( !multiline && check_one_action(line, temp) ){
         bPasswordEcho = FALSE;
     } else 
         bPasswordEcho = TRUE;
@@ -273,29 +491,50 @@ void check_all_actions(char *line1)
     while (ind  != ActionList.end() ) {
         // CActionPtr pac = *ind;
         ACTION* pac = *ind;
-        if(pac->m_pGroup->m_bEnabled && !pac->m_bDeleted && check_one_action(line, pac )) {
-            char buffer[BUFFER_SIZE];
-            prepare_actionalias((char*)pac->m_strRight.data(), buffer);
-            if(echo ) { 
-                sprintf(strng, rs::rs(1008), buffer);
-                tintin_puts2(strng);
-            }
-            parse_input(buffer);
+        if(pac->m_pGroup->m_bEnabled && !pac->m_bDeleted && pac->m_bMultiline == (multiline ? TRUE : FALSE)) {
+			char *input;
 
-            if ( bDroppedLine ) {
-                line1[0] = '.';
-                line1[1] = 0;
-                return;
-            }
-//* en
-//            if ( !bMultiAction ) 
-            if ( !bMultiAction && !bContinuedAction) 
-//* /en
-                return;
-//* en
-			bContinuedAction = FALSE;
-//* /en
-        }
+			switch (pac->m_InputType) {
+			default:
+			case ACTION::Action_TEXT:
+				input = line;
+				break;
+			case ACTION::Action_RAW:
+				input = line1;
+				break;
+			case ACTION::Action_ANSI:
+				input = colored_ansi;
+				break;
+			case ACTION::Action_SMAUG:
+				if (!colored_smaug[0])
+					translate_to_smaug(colored_ansi, colored_smaug);
+				input = colored_smaug;
+				break;
+			case ACTION::Action_SOW:
+				if (!colored_sow[0])
+					translate_to_sow(colored_ansi, colored_sow);
+				input = colored_sow;
+				break;
+			}
+
+			if (check_one_action(input, pac)) {
+				char buffer[BUFFER_SIZE];
+				prepare_actionalias((char*)pac->m_strRight.data(), buffer, sizeof(buffer));
+				if(echo ) { 
+					sprintf(strng, rs::rs(1008), buffer);
+					tintin_puts2(strng);
+				}
+				parse_input(buffer, TRUE);
+				if ( bDroppedLine ) {
+					line1[0] = '.';
+					line1[1] = 0;
+					return;
+				}
+				if ( !bMultiAction && !bContinuedAction) 
+					return;
+				bContinuedAction = FALSE;
+			}
+		}
         ind++;
      }
    
@@ -339,7 +578,7 @@ int check_one_action(char *line, ACTION* action)
     if ( action->m_strRegex.length () == 0  ) {
         char left[BUFFER_SIZE];
         if ( action->m_bRecompile ) 
-            substitute_myvars((char*)action->m_strLeft.data(),left);
+            substitute_myvars((char*)action->m_strLeft.data(),left, sizeof(left));
         
         int i; 
         if (check_a_action(line,action->m_bRecompile ? left: (char*)action->m_strLeft.data())) {
@@ -358,7 +597,8 @@ int check_one_action(char *line, ACTION* action)
     int captured = pcre_exec(action->m_pPcre , action->m_pExtra , 
         line, strlen(line), 0, 0, offsets, 33);
     if ( captured > 0 ) { // copy strings to vars[] array
-        for ( int i = 0 ; i < 10 ; i++ ) 
+		int i;
+        for ( i = 0 ; i < 10 ; i++ ) 
             vars[i][0] = 0;
 
         for ( i = 1 ; i < captured ; i++ ) {
@@ -384,7 +624,7 @@ int check_a_action(char *line, char *action)
   for (i=0; i<10; i++) var_len[i]=-1;
   flag_anchor=FALSE;
   lptr=line;
-  substitute_myvars(action,result);
+  substitute_myvars(action,result, sizeof(result));
   tptr=result;
   if(*tptr=='^') {
     tptr++;
@@ -481,7 +721,7 @@ void DLLEXPORT SetActionText(ACTION* pac, char* text)
 
 }
 
-PACTION DLLEXPORT SetAction(char* name, char* text, int priority, char* group) 
+PACTION DLLEXPORT SetAction(ACTION::ActionType type, char* name, char* text, int priority, char* group) 
 {
     ACTION* pac = new ACTION;
 
@@ -489,6 +729,7 @@ PACTION DLLEXPORT SetAction(char* name, char* text, int priority, char* group)
         delete pac;
         return NULL;
     }
+	pac->m_InputType = type;
     pac->m_strRight = text;
     pac->m_nPriority = priority;
     pac->SetGroup(group);

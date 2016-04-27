@@ -81,6 +81,10 @@ public:
 
 
     int m_nYsize, m_nCharX;
+	BOOL m_bRectangleSelection;
+	BOOL m_bRemoveESCSelection;
+	BOOL m_bLineWrap;
+	BOOL m_bShowHiddenText;
     void RecalcCharSize();
 
     // COLOR SUPPORT

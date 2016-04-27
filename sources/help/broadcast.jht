@@ -1,0 +1,6 @@
+#broadcast {text}
+  sends text to all JMC instances running on the 
+  current machine or in current local network (depending 
+  on user setting) and using same port number
+  (see "Options -> Common -> Broadcast messaging")
+  

@@ -74,7 +74,7 @@ unsigned long __stdcall systemexec_thread(void * pParam)
         msg[nr] = '\0';
 
         EnterCriticalSection(&secSystemExec);
-        DirectOutputFunction(msg, 0);
+		tintin_puts2(msg);
         LeaveCriticalSection(&secSystemExec);
     }
     CloseHandle(psi->m_hRead);

@@ -25,6 +25,7 @@ CJMCActionsPage::CJMCActionsPage() : CGroupedPage(CJMCActionsPage::IDD, IDS_ACTI
 	m_strText = _T("");
 	m_strGroup = _T("");
 	m_nPriority = -1;
+	m_nInputType = -1;
 	//}}AFX_DATA_INIT
     m_bNewItem = FALSE;
 }
@@ -44,6 +45,7 @@ void CJMCActionsPage::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_TEXT, m_strText);
 	DDX_CBString(pDX, IDC_GRP, m_strGroup);
 	DDX_CBIndex(pDX, IDC_PRIORITY, m_nPriority);
+	DDX_CBIndex(pDX, IDC_ACTION_TYPE, m_nInputType);
 	//}}AFX_DATA_MAP
 }
 
@@ -58,6 +60,7 @@ BEGIN_MESSAGE_MAP(CJMCActionsPage, CPropertyPage)
 	ON_BN_CLICKED(IDC_REMOVE, OnRemove)
 	ON_EN_KILLFOCUS(IDC_NAME, OnKillfocusName)
 	ON_CBN_SELCHANGE(IDC_PRIORITY, OnSelchangePriority)
+	ON_CBN_SELCHANGE(IDC_ACTION_TYPE, OnSelchangeInputType)
 	ON_EN_CHANGE(IDC_NAME, OnChangeName)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -88,7 +91,9 @@ BOOL CJMCActionsPage::OnInitDialog()
     m_cActionsList.InsertColumn (2 , t , LVCFMT_LEFT , 100 );
     t.LoadString(IDS_TP_PRIORITY_COL);
     m_cActionsList.InsertColumn (3 , t , LVCFMT_LEFT , 30 );
-
+	t.LoadString(IDS_TP_INPUTTYPE_COL);
+    m_cActionsList.InsertColumn (4 , t , LVCFMT_LEFT , 70 );
+	
     m_cActionsList.SetImageList(&m_ImageList, LVSIL_SMALL);
     
 
@@ -133,18 +138,21 @@ void CJMCActionsPage::SetControls()
         GetDlgItem(IDC_TEXT)->EnableWindow(FALSE);
         GetDlgItem(IDC_REMOVE)->EnableWindow(FALSE);
         GetDlgItem(IDC_PRIORITY)->EnableWindow(FALSE);
+		GetDlgItem(IDC_ACTION_TYPE)->EnableWindow(FALSE);
         m_cGroup.EnableWindow (FALSE);
     } else {
         GetDlgItem(IDC_NAME)->EnableWindow(TRUE);
         GetDlgItem(IDC_TEXT)->EnableWindow(TRUE);
         GetDlgItem(IDC_REMOVE)->EnableWindow(TRUE);
         GetDlgItem(IDC_PRIORITY)->EnableWindow(TRUE);
+		GetDlgItem(IDC_ACTION_TYPE)->EnableWindow(TRUE);
         m_cGroup.EnableWindow (TRUE);
         PACTION pAct = (PACTION)m_cActionsList.GetItemData(pos);
         m_strName = pAct->m_strLeft.data();
         m_strText = pAct->m_strRight.data();
         m_cGroup.SelectGroup (pAct->m_pGroup );
         m_nPriority = pAct->m_nPriority ;
+		m_nInputType = (int)pAct->m_InputType;
     }
     UpdateData(FALSE);
 }
@@ -178,6 +186,12 @@ int CJMCActionsPage::AddItem(void* p)
     lvi.iSubItem = 3;
     lvi.mask = LVIF_TEXT ;
     lvi.pszText  = buff;
+    m_cActionsList.SetItem (&lvi);
+    m_cActionsList.SetItemData(ind, (DWORD)p);
+
+	lvi.iSubItem = 4;
+    lvi.mask = LVIF_TEXT ;
+    lvi.pszText  = (LPSTR)act_type_to_str((int)pAct->m_InputType);
     m_cActionsList.SetItem (&lvi);
     m_cActionsList.SetItemData(ind, (DWORD)p);
 
@@ -295,7 +309,7 @@ void CJMCActionsPage::OnKillfocusName()
             return;
         }
 */
-        PACTION pAct = SetAction((LPSTR)(LPCSTR)m_strName, "", 5, NULL );
+        PACTION pAct = SetAction((ACTION::ActionType)m_nInputType, (LPSTR)(LPCSTR)m_strName, "", 5, NULL );
         if ( !pAct ) 
             return;
         int i = AddItem(pAct);
@@ -333,6 +347,25 @@ void CJMCActionsPage::OnSelchangePriority()
     lvi.iSubItem = 3;
     lvi.mask = LVIF_TEXT ;
     lvi.pszText  = itoa(m_nPriority, buff, 10);
+    m_cActionsList.SetItem (&lvi);
+}
+
+void CJMCActionsPage::OnSelchangeInputType() 
+{
+    UpdateData();
+    int pos = m_cActionsList.GetNextItem(-1, LVNI_SELECTED);
+    ASSERT(pos >= 0 );
+    PACTION pAct = (PACTION )m_cActionsList.GetItemData(pos);
+    ASSERT(pAct);
+	pAct->m_InputType = (ACTION::ActionType)m_nInputType;
+    // SetAction((LPSTR)pAct->m_strLeft.data(), (LPSTR)(LPCSTR)m_strText, m_nPriority, NULL);
+
+    LV_ITEM lvi;
+    ZeroMemory(&lvi , sizeof(lvi));
+    lvi.iItem = pos;
+	lvi.iSubItem = 4;
+    lvi.mask = LVIF_TEXT ;
+    lvi.pszText  = (LPSTR)act_type_to_str((int)pAct->m_InputType);
     m_cActionsList.SetItem (&lvi);
 }
 

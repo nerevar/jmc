@@ -10,7 +10,7 @@
 		a {text-decoration: underline; color: #88f;} a:visited {color: #88f;} a:hover {color: #f88;}
         i {font-style: normal;color: #ccc;}
         i.l {color: #fff;}
-        .bl{color:#555} .l.bl{color:#888} .b_bl{background-color:#555}
+        .bl{color:#555} .l.bl{color:#888} .b_bl{background-color:#000}
         .r {color:#c00} .l.r {color:#f00} .b_r {background-color:#c00}
         .g {color:#0c0} .l.g {color:#0f0} .b_g {background-color:#0c0}
         .y {color:#cc0} .l.y {color:#ff0} .b_y {background-color:#cc0}
@@ -94,13 +94,28 @@
                     var time = parseInt(match[1]);
                     if (!isNaN(time))
                         this.frames.push({
-                            "id": els[i].id, 
+                            "el": els[i], 
                             "time_ms": time,
                             "top": els[i].offsetTop - log_offset + line_height
                         });
                 }
             }
             this.frames.sort(function(a,b) { return a.time_ms - b.time_ms; });
+            if (this.frames.length > 0) {
+                var t0 = this.frames[0].time_ms;
+                for (var i = 0; i < this.frames.length; i++)
+                    this.frames[i].time_ms -= t0;
+            }
+        },
+        
+        checkInitialized: function() {
+            if (this.area == null) {
+                this.area = document.getElementById("log_area");
+                this.speed = document.getElementById("play_speed");
+                this.time = document.getElementById("log_time");
+            }
+            if (this.frames.length == 0)
+                this.loadFrames();
         },
         
         duration: function() {
@@ -169,6 +184,7 @@
         },
         
         setLogTimeToPosition: function() {
+            this.checkInitialized();
             var pos = this.area.scrollTop + this.area.offsetHeight;
             var index = this.frameByPosition(pos);
             if (index < this.frames.length)
@@ -231,13 +247,7 @@
         },
         
         start: function() {
-            if (this.area == null) {
-                this.area = document.getElementById("log_area");
-                this.speed = document.getElementById("play_speed");
-                this.time = document.getElementById("log_time");
-            }
-            if (this.frames.length == 0)
-                this.loadFrames();
+            this.checkInitialized();
             if (this.duration() == 0)
                 return false;
             
@@ -283,4 +293,4 @@
 <option value="10.0">x10.0
 </select>
 
-<div id="log_area" style="overflow: scroll; height: 80ex; width: 140ex; text-align: left" onclick="if(!player.pause()) player.start();">
+<div id="log_area" style="resize: both; overflow: scroll; height: 80ex; width: 140ex; text-align: left" onclick="if(!player.pause()) {player.start();};" onscroll="if(player.started == null || player.timerid == null) {player.setLogTimeToPosition();};">

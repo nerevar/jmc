@@ -109,25 +109,18 @@ static void ParseAnsiValues (char* AnsiStr, CString* pLastESC)
 
 static void AddToOutList(char* str, int wndCode)
 {
-    char  strAdd[BUFFER_SIZE];
+    char  strAdd[BUFFER_SIZE+32];
 
     CStringList* pList;
     CString* pLastEsc;
     int * pCount ;
     int CharSize ;
     if ( wndCode) {
-//vls-begin// multiple output
-//        pList = &pDoc->m_strOutoputTempList ;
-//        pLastEsc = &pStrLastUpdateESC ;
-//        pCount = &pDoc->m_nOutputUpdateCount ;
-//        CharSize = pDoc->m_nOutWindowCharsSize ;
         wndCode = wndCode > MAX_OUTPUT ? 0 : wndCode-1;
         pList = &(pDoc->m_strOutputTempList[wndCode]);
         pLastEsc = &pStrOutputLastESC[wndCode];
         pCount = &(pDoc->m_nOutputUpdateCount[wndCode]);
         CharSize = pDoc->m_nOutputWindowCharsSize[wndCode];
-
-//vls-end//
     }  else {
         pList = &pDoc->m_strTempList;
         pLastEsc = &pStrLastESC ;
@@ -135,33 +128,82 @@ static void AddToOutList(char* str, int wndCode)
         CharSize = pDoc->m_nWindowCharsSize ;
     }
 
-
-
     CString strTail;
 	if ( !pList->GetCount() ) 
 		pList->AddTail("");
 
 	strTail = pList->GetTail();
-	
-    BOOL bSetTail = FALSE;
+
+	int len, maxlength = sizeof(strAdd) - 1;
+
+	bool set_tail = false;
+	bool user_input = false,
+		 jmc_message = false;
+
+	if (str[0] == 0x2) {
+		jmc_message = true;
+		str++;
+		if (str[0] == 0x1) {
+			user_input = true;
+			str++;
+		}
+	}
 
     int TailLen = strTail.GetLength();
-    if ( TailLen && strTail[TailLen-1] != '\n' /*&& strTail[TailLen-1] != '\r' */) {
-        strcpy(strAdd , (LPCSTR)strTail);
-        strcat(strAdd, str);
-        bSetTail = TRUE;
-    }
-    else {
-        strcpy(strAdd, (LPCSTR)*pLastEsc);
-        strcat(strAdd, str);
-    }
+	bool uncomplete_line = TailLen && (strTail[TailLen-1] != '\n') && (strTail[TailLen-1] != 0x1);
+	bool prompt_line = TailLen && (strTail[TailLen-1] == 0x1);
+	bool copy_tail = false;
+
+	if (uncomplete_line) {
+		if (user_input) {
+			//????
+			set_tail = true;
+		} else if (jmc_message) {
+			pList->InsertBefore(pList->GetTailPosition(), str);
+			*pCount = *pCount + 1;
+			return;
+		} else {
+			set_tail = true;
+		}
+	} else if (prompt_line) {
+		TailLen--; //suppress 0x1 char
+		if (user_input) {
+			set_tail = true;
+			copy_tail = true;
+		} else {
+			strTail.Replace((char)0x1, (char)'\n');
+			set_tail = false;
+		}
+	}
+
+    if (copy_tail) {
+		len = TailLen;
+		if ( len > maxlength )
+			len = maxlength;
+		strncpy(strAdd , (LPCSTR)strTail, len);
+		strAdd[len] = '\0';
+		maxlength -= len;
+    } else {
+		len = strlen((LPCSTR)*pLastEsc);
+		if ( len > maxlength )
+			len = maxlength;
+		strncpy(strAdd , (LPCSTR)*pLastEsc, len);
+		strAdd[len] = '\0';
+		maxlength -= len;
+	}
+	
+	len = strlen(str);
+	if ( len > maxlength )
+		len = maxlength;
+    strncat(strAdd, str, len);
+	maxlength -= len;
 
     // Now we are ready to parse string, split it to few strings to fit to window etc.
     // Lets start
     char AllANSIFromCurrString[BUFFER_SIZE] = "";
     char* src = strAdd;
     char* ansi = AllANSIFromCurrString;
-    char OutputBuffer[BUFFER_SIZE] = "";
+    char OutputBuffer[BUFFER_SIZE+32] = "";
     char* dest = OutputBuffer;
     int OutTextLen = 0;
 
@@ -170,12 +212,12 @@ static void AddToOutList(char* str, int wndCode)
         case 0x1B:
             // Now skip ansi and save it to AllANSIFromCurrString
             do {
-                *ansi++ = *src;
+				*ansi++ = *src;
                 *dest++ = *src++;
             } while ( *src && *src != 'm' ) ;
-            *ansi++ = *src;
+			*ansi++ = *src;
+			*ansi = 0;
             *dest++ = *src;
-            *ansi = 0;
             // Ansi skipped
             if ( *src ) 
                 break;
@@ -183,12 +225,14 @@ static void AddToOutList(char* str, int wndCode)
             // End of line - time to do all save operations 
             *dest = 0;
             // Buffer filled , now parse ansi and save values
-            ParseAnsiValues(AllANSIFromCurrString, pLastEsc);
-            if ( bSetTail ) {
+			if (src > strAdd && !user_input)
+				ParseAnsiValues(AllANSIFromCurrString, pLastEsc);
+            if (set_tail) {
                 pList->SetAt(pList->GetTailPosition(), OutputBuffer);
-                bSetTail = FALSE;
-            }
-            else {
+                set_tail = false;
+				if (*pCount == 0)
+					*pCount = 1;
+            } else {
                 pList->AddTail(OutputBuffer);
                 *pCount = *pCount + 1;
             }
@@ -197,35 +241,10 @@ static void AddToOutList(char* str, int wndCode)
             // Copy character to OutputBuffer and watch for m_nWindowCharsSize 
             *dest++ = *src;
             OutTextLen++;
-            // check for size 
-            if ( OutTextLen >= CharSize ) {
-                // Save to list and reinit pointers
-                *dest++ = '\n';
-                *dest = 0;
-                if ( bSetTail ) {
-                    pList->SetAt(pList->GetTailPosition(), OutputBuffer);
-                    bSetTail = FALSE;
-                }
-                else {
-                    pList->AddTail(OutputBuffer);
-                    *pCount = *pCount + 1;
-                }
-                ParseAnsiValues(AllANSIFromCurrString, pLastEsc);
-                strcpy(OutputBuffer, (LPCSTR)*pLastEsc);
-                dest = OutputBuffer + pLastEsc->GetLength();
-                ansi = AllANSIFromCurrString;
-                *ansi = 0;
-                OutTextLen = 0;
-            }
             break;
         };
     } while (*src++ ) ;
 }
-
-
-// n - A   \r\n !!!!!
-// r - D
-
 
 static void __stdcall OutTextFrom(char* str, int wndCode) 
 {
@@ -242,25 +261,28 @@ static void __stdcall OutTextFrom(char* str, int wndCode)
         pSec->Lock();
         // now i have to split buffer to few strings
         char* src = str;
-        char buff[BUFFER_SIZE];
+        char buff[BUFFER_SIZE+32];
         char* dest = buff;
+		int maxlength = sizeof(buff);
         buff[0] = 0;
         do {
-            if ( /**src == '\r' || */*src == '\n') {
-                *dest++ = *src;
+            if ( *src == '\n' ) {
+				if ( maxlength > 1 ) {
+					*dest++ = *src;
+					--maxlength;
+				}
                 *dest = 0;
                 AddToOutList(buff, wndCode);
                 dest = buff;
-            } else 
-                if ( *src == 0 ) {
-                    *dest = 0;
-                    if ( buff[0] ) {
-                        AddToOutList(buff, wndCode);
-                    }
-                }
-                else 
-                    if (*src != '\r') 
-                        *dest++ = *src;
+				maxlength = sizeof(buff);
+            } else if ( *src == 0 ) {
+				*dest = 0;
+                if ( buff[0] )
+					AddToOutList(buff, wndCode);
+            } else if (maxlength > 1) {
+				*dest++ = *src;
+				--maxlength;
+			}
         } while (*src++ ) ;
 
         if ( pMainWnd ) 
@@ -353,6 +375,11 @@ unsigned long __stdcall ClientThread(void * pParam)
             bLunchDebuger = FALSE;
         }
 
+		if ( pMainWnd ) {
+			pMainWnd->PostMessage (WM_COMMAND, ID_OUTPUT_TEXT_ADDED, 0);
+			pMainWnd->PostMessage (WM_COMMAND, ID_DRAW_TEXT_ADDED, 0);
+		}
+
         ReadMud();
     }
 }
@@ -401,7 +428,7 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
     }
 //vls-end//
 
-    pStrLastESC = 0x1B;
+    pStrLastESC = "\x1B";
     pStrLastESC += "[0m";
 
     m_bFrozen = FALSE;
@@ -430,8 +457,18 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
     bAutoReconnect = ::GetPrivateProfileInt("Options" , "AutoReconnect" , FALSE , szGLOBAL_PROFILE);
     cCommandChar = m_cCommandChar = (char)::GetPrivateProfileInt("Options" , "CommandChar" , '#' , szGLOBAL_PROFILE);
 
+	wBCastUdpPort = ::GetPrivateProfileInt("Options" , "BroadCastUdpPort" , 8326 , szGLOBAL_PROFILE);
+	bBCastFilterIP = ::GetPrivateProfileInt("Options" , "BroadCastFilterIP" , TRUE , szGLOBAL_PROFILE);
+	bBCastFilterPort = ::GetPrivateProfileInt("Options" , "BroadCastFilterPort" , TRUE , szGLOBAL_PROFILE);
+	reopen_bcast_socket();
+
     m_nScrollSize = ::GetPrivateProfileInt("Options" , "Scroll" , 300, szGLOBAL_PROFILE);
     m_bSplitOnBackscroll = ::GetPrivateProfileInt("Options" , "SplitOnBackscroll" , 1, szGLOBAL_PROFILE);
+
+	m_bRectangleSelection = ::GetPrivateProfileInt("Options" , "RectangleSelection" , 0, szGLOBAL_PROFILE);
+	m_bRemoveESCSelection = ::GetPrivateProfileInt("Options" , "RemoveESCSelection" , 1, szGLOBAL_PROFILE);
+	m_bLineWrap = ::GetPrivateProfileInt("Options" , "LineWrap" , 1, szGLOBAL_PROFILE);
+	m_bShowHiddenText = ::GetPrivateProfileInt("Options" , "ShowHiddenText" , 1, szGLOBAL_PROFILE);
 
     nScripterrorOutput  = ::GetPrivateProfileInt("Script" , "ErrOutput", 0 , szGLOBAL_PROFILE);
 
@@ -506,6 +543,15 @@ CSmcDoc::~CSmcDoc()
     ::WritePrivateProfileInt("Options" , "SplitOnBackscroll" , m_bSplitOnBackscroll, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Script" , "AllowDebug" ,bAllowDebug  , szGLOBAL_PROFILE) ;
 
+	::WritePrivateProfileInt("Options" , "BroadCastUdpPort" , wBCastUdpPort , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt("Options" , "BroadCastFilterIP" , bBCastFilterIP , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt("Options" , "BroadCastFilterPort" , bBCastFilterPort , szGLOBAL_PROFILE);
+
+	::WritePrivateProfileInt("Options" , "RectangleSelection" , m_bRectangleSelection , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt("Options" , "RemoveESCSelection" , m_bRemoveESCSelection , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt("Options" , "LineWrap" , m_bLineWrap , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt("Options" , "ShowHiddenText", m_bShowHiddenText , szGLOBAL_PROFILE);
+
     ::WritePrivateProfileInt("Script" , "ErrOutput", nScripterrorOutput , szGLOBAL_PROFILE);
 
     bExit = TRUE;
@@ -577,13 +623,6 @@ BOOL CSmcDoc::OnNewDocument()
 	m_strSaveCommand = AfxGetApp()->GetProfileString("Options" , "AutoSaveCommand" , "");
 	CString Delimiter = AfxGetApp()->GetProfileString("Options" , "CommandDelimiter" , ";");
 	cCommandDelimiter = Delimiter[0];
-
-
-    CMainFrame* pFrm = (CMainFrame*)AfxGetMainWnd();
-    ASSERT_KINDOF(CMainFrame , pFrm);
-
-    pFrm->m_editBar.m_nCursorPosWhileListing = AfxGetApp()->GetProfileInt("Main" , "CursorWileList" , 1);
-    pFrm->m_editBar.m_nMinStrLen = AfxGetApp()->GetProfileInt("Main", "MinStrLen" , 2);
 
     // Load ANSi settings 
 	bRMASupport = AfxGetApp()->GetProfileInt("ANSI" , "RMAsupport" , 0);
@@ -855,13 +894,23 @@ void CSmcDoc::OnOptionsColors()
     }
 }
 
+static DWORD lastDrawTickCount = 0;
 void CSmcDoc::OnDrawTextAdded()
 {
     if ( m_bFrozen ) 
         return;
+
+	if ( !m_nUpdateCount && !m_bClearContents )
+		return;
+	
+	DWORD now = GetTickCount();
+	if( now - lastDrawTickCount < 20)
+		return;
+	lastDrawTickCount = now;
+
     m_UpdateSection.Lock();
     UpdateAllViews(NULL, TEXT_ARRIVED, NULL );
-    m_nUpdateCount =0;
+    m_nUpdateCount = 0;
 	m_bClearContents = FALSE;
     CString str = m_strTempList.GetTail();
     m_strTempList.RemoveAll ();
@@ -869,26 +918,13 @@ void CSmcDoc::OnDrawTextAdded()
     m_UpdateSection.Unlock();
 }
 
-//vls-begin// multiple output
-//void CSmcDoc::OnOutputTextAdded()
-//{
-//    if ( m_bFrozen ) 
-//        return;
-//    m_UpdateOutputSection.Lock();
-//    pMainWnd->m_coolBar.m_wndAnsi.OnUpdate(TEXT_ARRIVED);
-//    m_nOutputUpdateCount =0;
-//    CString str = m_strOutoputTempList.GetTail();
-//    m_strOutoputTempList.RemoveAll ();
-//    m_strOutoputTempList.AddTail(str);
-//    m_UpdateOutputSection.Unlock();
-//}
 void CSmcDoc::OnOutputTextAdded()
 {
     if ( m_bFrozen ) 
         return;
 
     for (int i = 0; i < MAX_OUTPUT; i++) {
-        if (m_strOutputTempList[i].GetCount() > 0) {
+        if (m_bClearOutputContents[i] || m_nOutputUpdateCount[i] > 0) {
             m_OutputUpdateSection[i].Lock();
             pMainWnd->m_coolBar[i].m_wndAnsi.OnUpdate(TEXT_ARRIVED);
             m_nOutputUpdateCount[i] = 0;
@@ -900,7 +936,6 @@ void CSmcDoc::OnOutputTextAdded()
         }
     }
 }
-//vls-end//
 
 void CSmcDoc::OnPause() 
 {

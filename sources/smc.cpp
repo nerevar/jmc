@@ -280,7 +280,8 @@ BOOL WritePrivateProfileBinary(LPCTSTR lpszSection, LPCTSTR lpszEntry,
 	ASSERT(lpszSection != NULL);
 	// convert to string and write out
 	LPTSTR lpsz = new TCHAR[nBytes*2+1];
-	for (UINT i = 0; i < nBytes; i++)
+	UINT i;
+	for (i = 0; i < nBytes; i++)
 	{
 		lpsz[i*2] = (TCHAR)((pData[i] & 0x0F) + 'A'); //low nibble
 		lpsz[i*2+1] = (TCHAR)(((pData[i] >> 4) & 0x0F) + 'A'); //high nibble

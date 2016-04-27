@@ -3,6 +3,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 
+#include <vector>
 
 extern CCriticalSection InputSection;
 extern CString strInput;
@@ -23,11 +24,12 @@ public:
     int      m_nCurrentBg, m_nCurrentFg;
     BOOL     m_bAnsiBold; 
     CStringList m_strList;
+	std::vector<int> m_LineCountsList;
     void DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int StringPos = 0);
 
 
 protected:
-    int m_nPageSize, m_nLastPageSize;
+    int m_nPageSize, m_nLastPageSize, m_nLineWidth;
 
     int m_nStartSelectX, m_nStartSelectY, m_nEndSelectX, m_nEndSelectY; // Selection while grabbing screen
     int m_nStartTrackX, m_nStartTrackY, m_nEndTrackX, m_nEndTrackY; // Tracking positions of mouse
@@ -35,6 +37,8 @@ protected:
     int m_nYDiff; // Y difference between page size of window size
 
 	BOOL m_bSelected;
+
+	void ConvertCharPosition(int TextRow, int TextCol, int *LineNum, int *CharPos);
 
     void SetScrollSettings(BOOL bResetPosition = TRUE);
     void RedrawOneLine(CDC* pDC, int LineNum);

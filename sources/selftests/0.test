@@ -1,0 +1,38 @@
+##    SIMPLE CHECKS OF BASIC FUNCTIONALITY: 
+## alias, variable, loop, if, math
+
+#message variable on
+
+## alias, variable
+#var TestVar {abcd0123 qwerty ! asd . zxc ? poiuy}
+#alias {setVar} {#var %1 {%%2}}
+setVar TestVar2 {abcd0123 qwerty ! asd . zxc ? poiuy}
+assertEqual BASIC_ALIAS_VARIABLE TestVar TestVar2
+setVar TestVar2 {abcd0123 qwerty ! asd , zxc ? poiuy}
+assertNotEqual BASIC_ALIAS_VARIABLE testVar TestVar2
+
+## loop, math
+#var S1 0
+#loop {0, 10} {#math S1 {$S1 + %%0}}
+#var SCorrect 55
+assertEqual BASIC_LOOP_MATH S1 SCorrect
+
+## recursive alias, if, math
+#var S2 0
+#var i 0
+#alias {SumRun} {#math S2 {$S2 + $i}; #math i {$i + 1}; #if {$i <= 10} {SumRun} {}}
+SumRun
+assertEqual BASIC_RECALIAS_IF_MATH S2 SCorrect
+
+## recursive alias, if, math, Args
+#alias {Sum} {#math S3 {$S3 + %%1}; #if {%%1 > 0} {#math NextI {%%%1 - 1}; Sum {$NextI}} {}}
+#var S3 0
+Sum 10
+assertEqual BASIC_RECALIAS_IF_MATH_ArgS S3 SCorrect
+
+## loops with variable number of cycles
+#alias SumUp {#var S4 0; #loop {0, %%1} {#math S4 {$S4 + %%0}}}
+SumUp 10
+assertEqual BASIC_LOOP_MATH_ArgS S4 SCorrect
+
+## TODO: complex test with combination of alias, loop, math, if, Args

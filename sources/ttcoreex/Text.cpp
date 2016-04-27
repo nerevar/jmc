@@ -105,8 +105,8 @@ void spit_command(char *arg)
 		    for(cptr1=buffer;*cptr1&&*cptr1!='\n';cptr1++);
 			*cptr1='\0';
             sprintf(vars[0], "%s", buffer);
-            substitute_vars(spformat,cbuffer);
-    parse_input(cbuffer);
+            substitute_vars(spformat,cbuffer, sizeof(cbuffer));
+    parse_input(cbuffer, TRUE);
   }
   fclose(myfile);
   if(!bSilent)
@@ -158,7 +158,7 @@ void grab_command(char *arg)
 	  wn = TRUE;
 	  needLine = atoi(arg1);
   }
-  else if(!strcmpi(arg1,lastGrab))
+  else if(!_strcmpi(arg1,lastGrab))
 	  needLine = lastLine+1;
   else
   {
@@ -199,8 +199,8 @@ void grab_command(char *arg)
 		    for(cptr=buffer;*cptr&&*cptr!='\n';cptr++);
 			*cptr='\0';
             sprintf(vars[0], "%s", buffer);
-            substitute_vars(wn?arg3:arg2,result);
-			parse_input(result);
+            substitute_vars(wn?arg3:arg2,result, sizeof(result));
+			parse_input(result, TRUE);
 			break;
 	}
   }

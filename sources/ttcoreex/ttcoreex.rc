@@ -6085,7 +6085,7 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    1002                    " {%s}              {%s} Priority              %d [%s]"
+    1002                    " {%s} {%s} Priority: %d [%s]"
     1003                    "#Actions:"
     1004                    "#Action doesn't exist."
     1005                    "#Now on string {%s} will be executed {%s} @ {%d}"
@@ -6321,7 +6321,7 @@ BEGIN
     1210                    "Not enough memory to 'dup'."
     1211                    "ERROR: %s (%d)"
     1212                    "#Variables:"
-    1213                    " {%s} == {%s}\033[0;37m"
+    1213                    " {%s} == {%s}"
     1215                    "#   $%s set to {%s}"
 END
 
@@ -6382,6 +6382,27 @@ BEGIN
     1260                    "#FORMAT: #wdock <widnow> [disable|left|top|right|bottom]"
     1261                    "#FORMAT: #wclear <window>"
     1262                    "#Error: can't open file %s"
+    1263                    "#Error: broadcast socket is not opened"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    1264                    "#Error: broadcast sent %d byte(s) instead of %d."
+    1265                    "#random seed: %lu"
+    1266                    "#compression is enabled"
+    1267                    "#compression is disabled"
+    1268                    "#Currently proxy is disabled"
+    1269                    "#Current proxy settings: [%s] %d.%d.%d.%d:%d, user: %s, password: %s"
+    1270                    "#Proxy is disabled"
+    1271                    "#Can't open proxy-list"
+    1272                    "#Empty proxy-list"
+    1273                    "#Allowed types of proxy: socks4, socks5"
+    1274                    "#Wrong format of address, type 123.123.123.123 or 123.123.123.123:12345"
+    1275                    "#Selected proxy: [%s] %d.%d.%d.%d:%d, user: %s, password: %s"
+    1276                    " %s {%s} {%s} Priority: %d [%s]"
+    1277                    "#Now on %s-string {%s} will be executed {%s} @ {%d}"
+    1278                    "#end-of-prompt sequence is disabled"
+    1279                    "#end-of-prompt sequence is set to ""%s"", replaced with ""%s"""
 END
 
 #endif    // English (U.S.) resources

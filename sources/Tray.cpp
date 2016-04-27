@@ -23,14 +23,14 @@ CTray::CTray(int nIconID, LPCTSTR szTip)
 	isInSysTray = FALSE;
 }
 
-CTray::add()
+BOOL CTray::add()
 {
 	isInSysTray = TRUE;
 
 	return Shell_NotifyIcon(NIM_ADD, &iconData);
 }
 
-CTray::remove()
+BOOL CTray::remove()
 {
 	isInSysTray = FALSE;
 

@@ -198,7 +198,7 @@ void do_one_high(char *line)
                 firstch_ptr++;
                 bAnchored = TRUE;
             }
-            prepare_actionalias(firstch_ptr, temp);
+            prepare_actionalias(firstch_ptr, temp, sizeof(temp));
             int pattern_len = strlen(temp);
             if ( pattern_len == 0 ) 
                 continue;

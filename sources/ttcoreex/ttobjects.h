@@ -37,9 +37,23 @@ public:
 
 class ALIAS : public GROUPED_NODE {
 public:
+	ALIAS();
+	~ALIAS();
+
     std::string m_strRight;
     std::string m_strLeft;
-    
+	std::string m_strRegex;
+	pcre* m_pPcre;
+	pcre_extra *m_pExtra;
+
+	BOOL m_bIgnoreCase;
+
+	BOOL m_bDeleted;
+	BOOL m_bRecompile;
+
+	BOOL SetLeft(char *left);
+	BOOL CreatePattern(char *left = NULL);
+	
 };
 typedef ALIAS* PALIAS;
 typedef ALIAS** PPALIAS;
@@ -55,7 +69,18 @@ public:
     pcre* m_pPcre;
     pcre_extra*  m_pExtra;
 
+	BOOL m_bMultiline, m_bIgnoreCase;
+
     BOOL m_bDeleted;
+
+	enum ActionType {
+		Action_TEXT = 0,
+		Action_RAW = 1,
+		Action_ANSI = 2,
+		Action_SMAUG = 3,
+		Action_SOW = 4
+	};
+	ActionType m_InputType;
 
     bool operator <(const ACTION*& y) const {
         return false; 
@@ -136,11 +161,11 @@ PALIAS DLLEXPORT GetAlias(char* name);
 // action operations 
 //void DLLEXPORT RemoveAction(char* name) ;
 BOOL DLLEXPORT RemoveAction(ACTION* pac);
-PACTION DLLEXPORT SetAction(char* name, char* text, int priority, char* group) ;
+PACTION DLLEXPORT SetAction(ACTION::ActionType type, char* name, char* text, int priority, char* group) ;
 void DLLEXPORT SetActionText(ACTION* pac, char* text) ;
+void DLLEXPORT SetActionPattern(PACTION pAct, LPCSTR strText);
 PPACTION DLLEXPORT GetActionsList(int* size); 
 PACTION DLLEXPORT GetAction(char* name);
-void DLLEXPORT SetActionPattern(PACTION pAct, LPCSTR strText);
 
 // hlight operations 
 void DLLEXPORT RemoveHlight(char* pattern) ;

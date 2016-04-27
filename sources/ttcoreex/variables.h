@@ -11,9 +11,22 @@ jmc_special_variable jmc_vars[JMC_SPECIAL_VARIABLES_NUM]={
 		   {"SECOND",&variable_value_second},
 		   {"MILLISECOND",&variable_value_millisecond},
 		   {"TIMESTAMP",&variable_value_timestamp},
+		   {"CLOCK",&variable_value_clock},
+		   {"CLOCKMS",&variable_value_clockms},
 		   
 		   {"INPUT",&variable_value_input},
 
-		   {"NOCOLOR", &variable_value_color_default}
+		   {"NOCOLOR", &variable_value_color_default},
+
+		   {"RANDOM", &variable_value_random},
+		   {"HOSTIP", &variable_value_hostip},
+		   {"HOSTPORT", &variable_value_hostport},
+
+		   {"EOP", &variable_value_eop},
+		   {"EOL", &variable_value_eol},
+		   {"ESC", &variable_value_esc},
+
+		   {"PING", &variable_value_ping},
+		   {"PINGPROXY", &variable_value_ping_proxy}
 	   };
 #endif

@@ -1,4 +1,3 @@
-
 #ifndef _TELNET_H_
 #define _TELNET_H_
 
@@ -12,6 +11,7 @@
 #define SOCKLINEMODE 		00400   /* do telnet LINEMODE negotiation (not used) */
 #define SOCKTELNET   		01000   /* server supports telnet protocol (not used) */
 #define SOCKPROMPT   		02000   /* last prompt was definitely a prompt */
+#define SOCKCOMPRESSING		04000	/* zlib compression (MCCP) is ON */
 
 #define TN_ECHO         0001    /* echo option */
 #define TN_SGA          0003    /* suppress GOAHEAD option */
@@ -22,6 +22,8 @@
 #define TN_NAWS         0037    /* not used */
 #define TN_TSPEED       0040    /* not used */
 #define TN_LINEMODE     0042    /* not used */
+#define TN_COMPRESS		0125
+#define TN_COMPRESS2	0126
 
 #define TN_EOR          0357    /* End-Of-Record */
 #define TN_SE           0360    /* not used */
@@ -41,6 +43,9 @@
 #define TN_DONT         0376    /* Stop ~ing!, or nack for WILL */
 #define TN_IAC          0377    /* telnet Is A Command character */
 
+#define ZLIB_DLL
+#include "zlib.h"
+#pragma comment(lib,"zlib.lib")
 
 #endif // _TELNET_H_
 

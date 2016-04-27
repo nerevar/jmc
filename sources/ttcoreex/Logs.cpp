@@ -28,6 +28,8 @@ static int new_attrib = attrib;
 static int new_tcolor = tcolor;
 static int new_bcolor = bcolor;
 
+static string current_css_class = "";
+
 DWORD lastTicker = 0;
 DWORD firstTicker = 0;
 
@@ -189,7 +191,8 @@ BOOL StartMainLog(char* logName, BOOL logMode, BOOL logHTML)
 		}
 
 		log(html_header);
-		log(TAG_OPEN);
+		//log(TAG_OPEN);
+		current_css_class = "";
     }
 
 	return TRUE;
@@ -346,7 +349,6 @@ void stripDefaultColorDuplicates(string &strInput) {
     }
 }
 
-
 string processHTML(string strInput)
 {
 	string strOutput = "";
@@ -369,55 +371,73 @@ string processHTML(string strInput)
 			close_timestamp_tag = TRUE;
 		}
 	}
+	
+	string::size_type pos = 0, processed = 0;
+	string::size_type posEscEnd, posSpace;
+	string next_css_class = current_css_class, outputted_css_class = "";
 
-	strOutput += strInput;
+	BOOL tag_opened = FALSE;
+	string text = "";
+	while (processed < strInput.length()) {
+		pos = strInput.find("\x1B[", processed);
 
-	stripRMA(strOutput);
+		if (pos != string::npos) {
+			posEscEnd = strInput.find("m", pos);
 
-	stripDefaultColorDuplicates(strOutput);
+			if (posEscEnd != string::npos) {
+				posSpace = 0;
 
-	string::size_type pos = 0;
-    while ( ( pos = strOutput.find("\x1B[", pos) ) != string::npos ) {
-		string::size_type 
-			posEscEnd = strOutput.find("m", pos),
-			posSpace = 0;
+				string params = strInput.substr(pos + 2, posEscEnd - pos - 2);
 
-		string params = strOutput.substr(pos + 2, posEscEnd - pos - 2);
+				// replace spaces to ";"
+				while ( ( posSpace = params.find(" ", posSpace) ) != string::npos ) {
+					params.replace(posSpace, 1, ";");
+				}
 
-		// replace spaces to ";"
-		while ( ( posSpace = params.find(" ", posSpace) ) != string::npos ) {
-			params.replace(posSpace, 1, ";");
-		}
+				// parse params string to vector
+				vector<int> paramsList = processParams(params);
 
-		// parse params string to vector
-		vector<int> paramsList = processParams(params);
+				next_css_class = "";
+				// for each parameter add css class
+				vector<int>::iterator itr;
+				for(itr = paramsList.begin(); itr != paramsList.end(); itr++) {
+					string newCSS = getCSSClass(*itr);
 
-		string 
-			css_class = "",
-			html_tags = "";
-
-		// for each parameter add css class
-		vector<int>::iterator itr;
-		for(itr = paramsList.begin(); itr != paramsList.end(); itr++) {
-			string newCSS = getCSSClass(*itr);
-
-			if (newCSS.length() > 0) {
-				if (css_class.length() > 0) (css_class += " ");
-				css_class += newCSS;
+					if (newCSS.length() > 0) {
+						if (next_css_class.length() > 0) (next_css_class += " ");
+						next_css_class += newCSS;
+					}
+				}
+			} else { //unknown escape sequense: skip to the end of line
+				next_css_class = current_css_class;
+				processed = pos = posEscEnd = strInput.length();
 			}
+		} else {
+			next_css_class = current_css_class;
+			pos = posEscEnd = strInput.length();
 		}
+
+		text = strInput.substr(processed, pos - processed);
+		stripRMA(text);
+		if (text.length() > 0) {
+			if (outputted_css_class != current_css_class || !tag_opened) {
+				if (tag_opened)
+					strOutput += TAG_CLOSE;
+				if (current_css_class.length() > 0)
+					strOutput += string("<") + HTML_TAG + string(" class=\"") + current_css_class + string("\"") + string(">");
+				else 
+					strOutput += TAG_OPEN;
+				outputted_css_class = current_css_class;
+				tag_opened = TRUE;
+			}
+			strOutput += text;
+		}
+		processed = posEscEnd + 1;
 		
-		html_tags += TAG_CLOSE;
-
-		// create html entity
-		if (css_class.length() > 0)
-			html_tags += string("<") + HTML_TAG + string(" class=\"") + css_class + string("\"") + string(">");
-		else 
-			html_tags += TAG_OPEN;
-
-		// replace source escape sequence to html entity
-		strOutput.replace(pos, posEscEnd - pos + 1, html_tags);
+		current_css_class = next_css_class;
     }
+	if (tag_opened)
+		strOutput += TAG_CLOSE;
 
 	if (close_timestamp_tag == TRUE) {
 		strOutput += "</div>";
@@ -542,8 +562,8 @@ void logadd_command(char *arg)
 
 	get_arg_in_braces(arg, arg, WITH_SPACES);
 
-    substitute_vars(arg,tmp);
-    substitute_myvars(tmp,msg);
+    substitute_vars(arg,tmp, sizeof(tmp));
+    substitute_myvars(tmp,msg, sizeof(msg));
     strcat(msg, "\n");
 
 	log(msg);

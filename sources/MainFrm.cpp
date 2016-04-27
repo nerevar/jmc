@@ -293,6 +293,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_MESSAGE(WM_USER+655, OnUpdStat5)
 //*/en
 
+	ON_MESSAGE(WM_USER+680, OnUpdPing)
+
 	// sysTray command
     ON_MESSAGE(WM_USER+701, OnTrayMessage)
 
@@ -537,6 +539,13 @@ void CMainFrame::OnOptionsOptions()
     pg1.m_bSplitOnBackscroll = pDoc->m_bSplitOnBackscroll;
 	pg1.m_bMinimizeToTray = bMinimizeToTray;
     pg1.m_nTrigDelay = MoreComingDelay;
+	pg1.m_wBCastUdpPort = wBCastUdpPort;
+	pg1.m_bBCastLocalIP = bBCastFilterIP;
+	pg1.m_bBCastSamePort = bBCastFilterPort;
+	pg1.m_bLineWrap = pDoc->m_bLineWrap;
+	pg1.m_bSelectRect = pDoc->m_bRectangleSelection;
+	pg1.m_bRemoveESC = pDoc->m_bRemoveESCSelection;
+	pg1.m_bShowHidden = pDoc->m_bShowHiddenText;
 
 
     // Fill subst params
@@ -607,6 +616,18 @@ void CMainFrame::OnOptionsOptions()
         pDoc->m_bSplitOnBackscroll = pg1.m_bSplitOnBackscroll;
         if ( !pg1.m_bSplitOnBackscroll ) 
             OnUnsplit();
+		if( wBCastUdpPort != pg1.m_wBCastUdpPort ||
+			bBCastFilterIP != pg1.m_bBCastLocalIP ||
+			bBCastFilterPort != pg1.m_bBCastSamePort ) {
+			wBCastUdpPort = pg1.m_wBCastUdpPort;
+			bBCastFilterIP = pg1.m_bBCastLocalIP;
+			bBCastFilterPort = pg1.m_bBCastSamePort;
+			reopen_bcast_socket();
+		}
+		pDoc->m_bLineWrap = pg1.m_bLineWrap;
+		pDoc->m_bRectangleSelection = pg1.m_bSelectRect;
+		pDoc->m_bRemoveESCSelection = pg1.m_bRemoveESC;
+		pDoc->m_bShowHiddenText = pg1.m_bShowHidden;
 
          MoreComingDelay =pg1.m_nTrigDelay;
 
@@ -711,7 +732,15 @@ void CMainFrame::OnUpdateInfo1(CCmdUI* pUI)
     EnterCriticalSection(&secStatusSection);
     if ( m_strInfo1 != strInfo1  ) {
         m_strInfo1 = strInfo1;
-        m_wndStatusBar.GetStatusBarCtrl ().SetText(strInfo1, NUM_INDICATOR_INFO1, SBT_OWNERDRAW );
+
+		int Width = m_strInfo1.GetLength() * pDoc->m_nCharX;
+		UINT Style, ID;
+		int Size;
+		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO1 , ID, Style, Size);
+		if ( Size < Width )
+			m_wndStatusBar.SetPaneInfo(NUM_INDICATOR_INFO1, ID, Style, Width);
+
+        m_wndStatusBar.GetStatusBarCtrl ().SetText(m_strInfo1, NUM_INDICATOR_INFO1, SBT_OWNERDRAW );
     }
     LeaveCriticalSection(&secStatusSection);
 }
@@ -719,9 +748,18 @@ void CMainFrame::OnUpdateInfo1(CCmdUI* pUI)
 void CMainFrame::OnUpdateInfo2(CCmdUI* pUI)
 {
     EnterCriticalSection(&secStatusSection);
-    if ( m_strInfo2 != strInfo2  ) {
+    if ( m_strInfo2 != strInfo2  ) 
+	{
         m_strInfo2 = strInfo2;
-        m_wndStatusBar.GetStatusBarCtrl ().SetText(strInfo2, NUM_INDICATOR_INFO2, SBT_OWNERDRAW );
+
+		int Width = m_strInfo2.GetLength() * pDoc->m_nCharX;
+		UINT Style, ID;
+		int Size;
+		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO2 , ID, Style, Size);
+		if ( Size < Width )
+			m_wndStatusBar.SetPaneInfo(NUM_INDICATOR_INFO2, ID, Style, Width);
+
+        m_wndStatusBar.GetStatusBarCtrl ().SetText(m_strInfo2, NUM_INDICATOR_INFO2, SBT_OWNERDRAW );
     }
     LeaveCriticalSection(&secStatusSection);
 }
@@ -731,7 +769,15 @@ void CMainFrame::OnUpdateInfo3(CCmdUI* pUI)
     EnterCriticalSection(&secStatusSection);
     if ( m_strInfo3 != strInfo3  ) {
         m_strInfo3 = strInfo3;
-        m_wndStatusBar.GetStatusBarCtrl ().SetText(strInfo3, NUM_INDICATOR_INFO3, SBT_OWNERDRAW );
+
+		int Width = m_strInfo3.GetLength() * pDoc->m_nCharX;
+		UINT Style, ID;
+		int Size;
+		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO3 , ID, Style, Size);
+		if ( Size < Width )
+			m_wndStatusBar.SetPaneInfo(NUM_INDICATOR_INFO3, ID, Style, Width);
+
+        m_wndStatusBar.GetStatusBarCtrl ().SetText(m_strInfo3, NUM_INDICATOR_INFO3, SBT_OWNERDRAW );
     }
     LeaveCriticalSection(&secStatusSection);
 }
@@ -741,7 +787,15 @@ void CMainFrame::OnUpdateInfo4(CCmdUI* pUI)
     EnterCriticalSection(&secStatusSection);
     if ( m_strInfo4 != strInfo4  ) {
         m_strInfo4 = strInfo4;
-        m_wndStatusBar.GetStatusBarCtrl ().SetText(strInfo4, NUM_INDICATOR_INFO4, SBT_OWNERDRAW );
+
+		int Width = m_strInfo4.GetLength() * pDoc->m_nCharX;
+		UINT Style, ID;
+		int Size;
+		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO4 , ID, Style, Size);
+		if ( Size < Width )
+			m_wndStatusBar.SetPaneInfo(NUM_INDICATOR_INFO4, ID, Style, Width);
+
+        m_wndStatusBar.GetStatusBarCtrl ().SetText(m_strInfo4, NUM_INDICATOR_INFO4, SBT_OWNERDRAW );
     }
     LeaveCriticalSection(&secStatusSection);
 }
@@ -751,7 +805,15 @@ void CMainFrame::OnUpdateInfo5(CCmdUI* pUI)
     EnterCriticalSection(&secStatusSection);
     if ( m_strInfo5 != strInfo5  ) {
         m_strInfo5 = strInfo5;
-        m_wndStatusBar.GetStatusBarCtrl ().SetText(strInfo5, NUM_INDICATOR_INFO5, SBT_OWNERDRAW );
+
+		int Width = m_strInfo5.GetLength() * pDoc->m_nCharX;
+		UINT Style, ID;
+		int Size;
+		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO5 , ID, Style, Size);
+		if ( Size < Width )
+			m_wndStatusBar.SetPaneInfo(NUM_INDICATOR_INFO5, ID, Style, Width);
+
+        m_wndStatusBar.GetStatusBarCtrl ().SetText(m_strInfo5, NUM_INDICATOR_INFO5, SBT_OWNERDRAW );
     }
     LeaveCriticalSection(&secStatusSection);
 }
@@ -1168,7 +1230,7 @@ LONG CMainFrame::OnTabAdded( UINT wParam, LONG lParam)
     POSITION pos = pDoc->m_lstTabWords.GetHeadPosition ();
     while (pos ) {
         CString str = pDoc->m_lstTabWords.GetAt(pos);
-        if ( !strcmpi(p, str) ){
+        if ( !_strcmpi(p, str) ){
             pDoc->m_lstTabWords.RemoveAt (pos);
             break;
         }
@@ -1191,7 +1253,7 @@ LONG CMainFrame::OnTabDeleted( UINT wParam, LONG lParam)
     POSITION pos = pDoc->m_lstTabWords.GetHeadPosition ();
     while (pos ) {
         CString str = pDoc->m_lstTabWords.GetAt(pos);
-        if ( !strcmpi(p, str) ){
+        if ( !_strcmpi(p, str) ){
             pDoc->m_lstTabWords.RemoveAt (pos);
             break;
         }
@@ -1275,44 +1337,100 @@ LONG CMainFrame::OnCleanInput(UINT wParam, LONG lParam)
 
 LONG CMainFrame::OnUpdStat1(UINT wParam, LONG lParam)
 {
-	char bf[BUFFER_SIZE];strcpy(bf,strInfo1);
+	/*char bf[BUFFER_SIZE];strcpy(bf,strInfo1);
 	strcpy(strInfo1,"?");CMainFrame::OnUpdateInfo1(NULL);
-	strcpy(strInfo1,bf); CMainFrame::OnUpdateInfo1(NULL);
+	strcpy(strInfo1,bf); 
+	*/
+	CMainFrame::OnUpdateInfo1(NULL);
 
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat2(UINT wParam, LONG lParam)
 {
-	char bf[BUFFER_SIZE];strcpy(bf,strInfo2);
+	/*char bf[BUFFER_SIZE];strcpy(bf,strInfo2);
 	strcpy(strInfo2,"?");CMainFrame::OnUpdateInfo2(NULL);
-	strcpy(strInfo2,bf); CMainFrame::OnUpdateInfo2(NULL);
+	strcpy(strInfo2,bf);*/ 
+	CMainFrame::OnUpdateInfo2(NULL);
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat3(UINT wParam, LONG lParam)
 {
-	char bf[BUFFER_SIZE];strcpy(bf,strInfo3);
+	/*char bf[BUFFER_SIZE];strcpy(bf,strInfo3);
 	strcpy(strInfo3,"?");CMainFrame::OnUpdateInfo3(NULL);
-	strcpy(strInfo3,bf); CMainFrame::OnUpdateInfo3(NULL);
+	strcpy(strInfo3,bf); */
+	CMainFrame::OnUpdateInfo3(NULL);
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat4(UINT wParam, LONG lParam)
 {
-	char bf[BUFFER_SIZE];strcpy(bf,strInfo4);
+	/*char bf[BUFFER_SIZE];strcpy(bf,strInfo4);
 	strcpy(strInfo4,"?");CMainFrame::OnUpdateInfo4(NULL);
-	strcpy(strInfo4,bf); CMainFrame::OnUpdateInfo4(NULL);
+	strcpy(strInfo4,bf); */
+	CMainFrame::OnUpdateInfo4(NULL);
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat5(UINT wParam, LONG lParam)
 {
-	char bf[BUFFER_SIZE];strcpy(bf,strInfo5);
+	/*char bf[BUFFER_SIZE];strcpy(bf,strInfo5);
 	strcpy(strInfo5,"?");CMainFrame::OnUpdateInfo5(NULL);
-	strcpy(strInfo5,bf); CMainFrame::OnUpdateInfo5(NULL);
+	strcpy(strInfo5,bf); */
+	CMainFrame::OnUpdateInfo5(NULL);
 	return 1;
 }
+
+LONG CMainFrame::OnUpdPing(UINT wParam, LONG lParam)
+{
+	int mud_ping = (int)wParam;
+	int proxy_ping = (int)lParam;
+	static char mud_buf[64], proxy_buf[64], msg_buf[128];
+
+	switch(mud_ping) {
+	case -3:
+		sprintf(mud_buf, "ping error");
+		break;
+	case -2:
+		sprintf(mud_buf, "no connection");
+		break;
+	case -1:
+		sprintf(mud_buf, "PING TIMEOUT");
+		break;
+	case 0:
+		sprintf(mud_buf, "ping <1 ms");
+		break;
+	default:
+		sprintf(mud_buf, "ping %d ms", mud_ping);
+		break;
+	}
+
+	switch(proxy_ping) {
+	case -3:
+		sprintf(proxy_buf, " (proxy: error)");
+		break;
+	case -2:
+		sprintf(proxy_buf, "");
+		break;
+	case -1:
+		sprintf(proxy_buf, " (proxy: TIMEOUT)");
+		break;
+	case 0:
+		sprintf(proxy_buf, " (proxy: <1 ms)");
+		break;
+	default:
+		sprintf(proxy_buf, " (proxy: %d ms)", proxy_ping);
+		break;
+	}
+
+	sprintf(msg_buf, "%s%s", mud_buf, proxy_buf);
+
+	m_wndStatusBar.SetPaneText(0, msg_buf);
+	
+	return 1;
+}
+
 
 LONG CMainFrame::OnDockOutput(UINT wParam, LONG lParam)
 {

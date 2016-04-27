@@ -5,17 +5,19 @@
 #include <io.h>
 #include <string>
 
+#include "Proxy.h"
+
 //vls-begin// base dir
 char DLLEXPORT szBASE_DIR[MAX_PATH];
 char DLLEXPORT szSETTINGS_DIR[MAX_PATH];
 
 struct completenode *complete_head;
+void prepare_for_write(char *command, const char *type, char *left, char *right, char *pr, char* group, char *result);
 void prepare_for_write(char *command, char *left, char *right, char *pr, char* group, char *result);
 
 //* en
 BOOL bSosExact = FALSE;
 //*/en
-
 
 /***********************************/
 /* read and execute a command file */
@@ -33,15 +35,17 @@ static void process_file(FILE* pfile)
         for(cptr=buffer; *cptr && *cptr!='\n'; cptr++);
         *cptr='\0';
         if ( *buffer  ) 
-            parse_input(buffer); 
+            parse_input(buffer, TRUE); 
     }
 //vls-begin// script files
     ResetEvent(eventReadingConfig);
-    if (WaitForSingleObject(eventReadingHasUse, 0) == WAIT_OBJECT_0)
+    if (WaitForSingleObject(eventReadingHasUse, 0) == WAIT_OBJECT_0) {
         PostMessage(hwndMAIN, WM_USER+300, 0, 0);
-    else if(WaitForSingleObject(eventReadingFirst, 0) != WAIT_OBJECT_0)
-        PostMessage(hwndMAIN, WM_USER+300, 0, 0);
-    SetEvent(eventReadingFirst);
+    } else if(WaitForSingleObject(eventReadingFirst, 0) != WAIT_OBJECT_0) {
+		//scripts are reloaded on opening profile (OnNewDocument())
+		//so we don't need to reload them once again immediately
+        //PostMessage(hwndMAIN, WM_USER+300, 0, 0);
+    } SetEvent(eventReadingFirst);
     LeaveCriticalSection(&secReadingConfig);
 //vls-end//
 }
@@ -125,7 +129,7 @@ void read_command(char *arg)
 void write_command(char *arg)
 {
     FILE *myfile, *globfile;
-    char buffer[BUFFER_SIZE], filename[BUFFER_SIZE], group[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE + MAX_VARNAME_LENGTH + 128], filename[BUFFER_SIZE], group[BUFFER_SIZE];
     struct listnode *nodeptr;
     int i;
     CGROUP* grp ;
@@ -293,8 +297,13 @@ void write_command(char *arg)
             ACTION* pac = *aind;
             if ( !pac->m_bDeleted ) {
                 char buff[32];
-                prepare_for_write("action", (char*)pac->m_strLeft.data(), (char*)pac->m_strRight.data(), 
-                    itoa(pac->m_nPriority, buff, 10) , (char*)pac->m_pGroup->m_strName.data() , buffer);
+                prepare_for_write("action", 
+					act_type_to_str((int)pac->m_InputType),
+					(char*)pac->m_strLeft.data(), 
+					(char*)pac->m_strRight.data(), 
+                    itoa(pac->m_nPriority, buff, 10) , 
+					(char*)pac->m_pGroup->m_strName.data() , 
+					buffer);
                 fputs(buffer, pac->m_pGroup->m_bGlobal ? globfile : myfile);
             }
             aind++;
@@ -405,10 +414,6 @@ void write_command(char *arg)
         // write ticksize now 
         sprintf(buffer , "%cticksize %d\n" , cCommandChar , tick_size );
         fputs(buffer, myfile);
-
-
-        fclose(myfile);
-        fclose(globfile);
         
     } else {
         if((myfile=fopen(filename, "a"))==NULL) {
@@ -435,8 +440,13 @@ void write_command(char *arg)
             ACTION* pac = *aind;
             char buff[32];
             if ( pac->m_pGroup == grp && !pac->m_bDeleted ) {
-                prepare_for_write("action", (char*)pac->m_strLeft.data(), (char*)pac->m_strRight.data(), 
-                    itoa(pac->m_nPriority, buff, 10) , (char*)pac->m_pGroup->m_strName.data() , buffer);
+                prepare_for_write("action", 
+					act_type_to_str((int)pac->m_InputType),
+					(char*)pac->m_strLeft.data(), 
+					(char*)pac->m_strRight.data(), 
+                    itoa(pac->m_nPriority, buff, 10) , 
+					(char*)pac->m_pGroup->m_strName.data() , 
+					buffer);
                 fputs(buffer, myfile);
             }
             aind++;
@@ -466,18 +476,66 @@ void write_command(char *arg)
             hotind++;
         }
 //vls-end//
-
-        fclose(myfile);
     }
+
+	//save proxy settings
+	if (!ulProxyAddress) {
+		prepare_for_write("proxy", "disable", "", "", "", buffer);
+	} else {
+		char addr[BUFFER_SIZE];
+		if (dwProxyPort)
+			sprintf(addr, "%d.%d.%d.%d:%d", 
+				(ulProxyAddress >> 24) & 0xff, 
+				(ulProxyAddress >> 16) & 0xff, 
+				(ulProxyAddress >>  8) & 0xff, 
+				(ulProxyAddress >>  0) & 0xff,
+				dwProxyPort);
+		else
+			sprintf(addr, "%d.%d.%d.%d", 
+				(ulProxyAddress >> 24) & 0xff, 
+				(ulProxyAddress >> 16) & 0xff, 
+				(ulProxyAddress >>  8) & 0xff, 
+				(ulProxyAddress >>  0) & 0xff);
+		prepare_for_write("proxy", 
+			(dwProxyType == PROXY_SOCKS4) ? "socks4" : "socks5",
+			addr,
+			sProxyUserName,
+			sProxyUserPassword,
+			buffer);
+	}
+	fputs(buffer, myfile);
+
+	//save mccp settings
+	if (bMCCPEnabled)
+		prepare_for_write("mccp", "on", "", "", "", buffer);
+	else
+		prepare_for_write("mccp", "off", "", "", "", buffer);
+	fputs(buffer, myfile);
+
+	//save end-of-prompt char settings
+	if (!bPromptEndEnabled) {
+		prepare_for_write("promptend", "disable", "", "", "", buffer);
+	} else {
+		prepare_for_write("promptend", (char*)strPromptEndSequence, (char*)strPromptEndReplace, "", "", buffer);
+	}
+	fputs(buffer, myfile);
+
+    fclose(myfile);
+	fclose(globfile);
+
     tintin_puts2(rs::rs(1046));
 }
 
-void prepare_for_write(char *command, char *left, char *right, char *pr, char* group, char *result)
+void prepare_for_write(char *command, const char *type, char *left, char *right, char *pr, char* group, char *result)
 {
   /* char tmpbuf[BUFFER_SIZE]; */
   *result=cCommandChar;
   *(result+1)='\0';
   strcat(result, command);
+  if (type) {
+	  strcat(result, " ");
+	  strcat(result, type);
+  }
   strcat(result, " {");
   strcat(result, left);
   strcat(result, "}");
@@ -497,6 +555,11 @@ void prepare_for_write(char *command, char *left, char *right, char *pr, char* g
     strcat(result, "}");
   }
   strcat(result,"\n");
+}
+
+void prepare_for_write(char *command, char *left, char *right, char *pr, char* group, char *result)
+{
+  prepare_for_write(command, NULL, left, right, pr, group, result);
 }
 
 void prepare_quotes(char *string)

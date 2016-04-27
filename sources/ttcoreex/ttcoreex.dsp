@@ -226,6 +226,10 @@ SOURCE=.\telnet.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\Proxy.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Text.cpp
 # End Source File
 # Begin Source File
@@ -296,6 +300,10 @@ SOURCE=.\StdAfx.h
 # Begin Source File
 
 SOURCE=.\telnet.H
+# End Source File
+# Begin Source File
+
+SOURCE=.\Proxy.H
 # End Source File
 # Begin Source File
 

@@ -1,0 +1,14 @@
+#wclear 0
+#wshow 0 show
+#wdock 0 top
+#killall
+
+#alias {assertEqual} {#strcmp {$%%2} {$%%3} {#output {[OK] %%%1:  %%%2 == %%%3}} {#output {[FAIL] %%%1:  %%%2 ($%%%2) should be equal to %%%3 ($%%%3)}}} {default}
+#alias {assertNotEqual} {#strcmp {$%%2} {$%%3} {#output {[FAIL] %%%1:  %%%2 should not be equal to %%%3 ($%%%3)}} {#output {[OK] %%%1:  %%%2 ($%%%2) =/= %%%3 ($%%%3)}}} {default}
+#alias {assertLess} {#if {$%%2 < $%%3} {#output {[OK] %%%1:  %%%2 ($%%%2) < %%%3 ($%%%3)}} {#output {[FAIL] %%%1:  %%%2 ($%%%2) should be less than %%%3 ($%%%3)}}} {default}
+
+#alias {runTest} {#output {Running test: $TestNum.test}; #read $TestsPath/$TestNum.test; #math TestNum {$TestNum+1}; #if {$TestNum < $NTests} {runTest} {}} {default}
+#alias {runtests} {#var TestNum 0; #math NTests {$MaxTestNum + 1}; runTest} {default}
+
+#variable {TestsPath} {./selftests}
+#variable {MaxTestNum} {5}

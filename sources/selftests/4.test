@@ -1,0 +1,30 @@
+##   CHECK REGEXPS IN ALIASES
+
+#alias {/^(\S+) testme PCRE ([^w]*)/} {#var Arg1 {%%0}; #var Arg2 {%%1}}
+#var CorrectArg1 {wow}
+#var CorrectArg2 {tratata da}
+
+wow testme PCRE tratata da
+assertEqual TEST_REGEXP_ALIAS Arg1 CorrectArg1
+assertEqual TEST_REGEXP_ALIAS Arg2 CorrectArg2
+
+wow testme PCRE tratata dawssdferg
+assertEqual TEST_REGEXP_ALIAS Arg1 CorrectArg1
+assertEqual TEST_REGEXP_ALIAS Arg2 CorrectArg2
+
+ wddow testme PCRE trafgtata da
+assertEqual TEST_REGEXP_ALIAS Arg1 CorrectArg1
+assertEqual TEST_REGEXP_ALIAS Arg2 CorrectArg2
+
+#alias {/(\S+) testme2 PCRE ([^w]*)/} {#var Arg1 {%%0}; #var Arg2 {%%1}}
+currumba wow testme2 PCRE tratata da
+assertEqual TEST_REGEXP_ALIAS Arg1 CorrectArg1
+assertEqual TEST_REGEXP_ALIAS Arg2 CorrectArg2
+
+currumba wow testme2 PCRE tratata dawssdferg
+assertEqual TEST_REGEXP_ALIAS Arg1 CorrectArg1
+assertEqual TEST_REGEXP_ALIAS Arg2 CorrectArg2
+
+ wow testme2 PCRE tratata da
+assertEqual TEST_REGEXP_ALIAS Arg1 CorrectArg1
+assertEqual TEST_REGEXP_ALIAS Arg2 CorrectArg2

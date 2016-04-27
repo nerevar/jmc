@@ -57,23 +57,32 @@ void alias_command(char *arg)
     arg=get_arg_in_braces(arg, group, STOP_SPACES);
 
     // check for ' ' in left side
-    char* ptr = left;
-    while ( *ptr && *ptr != ' ') 
-        ptr++;
-    *ptr = 0;
+	if (*left != '/') {
+		char* ptr = left;
+		while ( *ptr && *ptr != ' ') 
+			ptr++;
+		*ptr = 0;
+	}
 
     ALIAS_INDEX ind = AliasList.find(left);
     ALIAS* pal;
+	BOOL bNew = FALSE;
     if ( ind == AliasList.end() ) {
         pal= new ALIAS;
+		bNew = TRUE;
     } else {
         pal = ind->second;
     }
 
+	if ( !pal->SetLeft (left) ) {
+        if ( bNew ) {
+            delete pal;
+        }
+        return;
+    }
+    pal->m_strRight = right;
     pal->SetGroup(group);
 
-    pal->m_strRight = right;
-    pal->m_strLeft = left;
     AliasList[left] = pal;
 
     if (mesvar[MSG_ALIAS]) {
@@ -95,8 +104,9 @@ void unalias_command(char *arg)
     ALIAS_INDEX ind = AliasList.begin();
 
     while (ind  != AliasList.end() ) {
-        if ( match(left, (char*)ind->first.data()) ){
-            ALIAS* pal = ind->second;
+		ALIAS* pal = ind->second;
+		if ( ((pal->m_strRegex.length() > 0) && !strcmp(left, (char*)pal->m_strLeft.data())) ||
+             (match(left, (char*)ind->first.data())) ) {
             if (mesvar[MSG_ALIAS]) {
                 sprintf(result, rs::rs(1013), (char*)ind->first.data());
                 tintin_puts2(result);
@@ -131,7 +141,9 @@ PALIAS DLLEXPORT SetAlias(char* name, char* text, char* group)
     ALIAS* pal;
     if ( ind == AliasList.end() ) {
         pal= new ALIAS;
-        pal->m_strLeft = name;
+		if ( !pal->SetLeft (name) ) {
+			pal->m_strLeft = name;
+		}
     } else {
         pal = ind->second;
     }

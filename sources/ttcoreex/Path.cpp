@@ -169,7 +169,7 @@ void return_command(char*arg)
       while (ln->next) (ln=ln->next);
       strcpy(command, ln->right);
       return_flag=FALSE;	/* temporarily turn off path tracking */
-      parse_input(command);
+      parse_input(command, TRUE);
       return_flag=TRUE;		/* restore path tracking */
       deletenode_list(common_path, ln);
     } else tintin_puts2(rs::rs(1156));
@@ -274,7 +274,7 @@ void race_command(char *arg)
    	  	  char cbuffer[BUFFER_SIZE];
 
             sprintf(vars[0], "%s", race_last);
-            substitute_myvars(race_format,cbuffer);
+            substitute_myvars(race_format,cbuffer, sizeof(cbuffer));
 		 parse_input(cbuffer);
 	}
 	else

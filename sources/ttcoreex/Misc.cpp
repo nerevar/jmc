@@ -4,6 +4,8 @@
 #include "JmcObj.h"
 #include "cmds.h"
 
+#include <time.h>
+
 //-------------------------
 //* en
 BOOL bDaaMessage = FALSE;
@@ -20,6 +22,12 @@ sTimer sTimers[sTimersV];
 
 extern DIRECT_OUT_FUNC DirectOutputFunction;
 extern CLEAR_WINDOW_FUNC ClearWindowFunction;
+
+extern SOCKET BCASTSocket;
+extern WORD DLLEXPORT wBCastUdpPort;
+
+extern char LoopBackBuffer[BUFFER_SIZE];
+extern LoopBackCount;
 
 /****************************/
 /* the cr command           */
@@ -46,7 +54,7 @@ void verbatim_command(char * arg)
     if ( *flag == 0 ) 
         verbatim=!verbatim;
     else {
-        if ( !strcmpi(flag, "on" ) )
+        if ( !_strcmpi(flag, "on" ) )
             verbatim = TRUE;
         else 
             verbatim = FALSE;
@@ -115,7 +123,7 @@ void echo_command(char* arg)
     if ( *flag == 0 ) 
         echo=!echo;
     else {
-        if ( !strcmpi(flag, "on" ) )
+        if ( !_strcmpi(flag, "on" ) )
             echo= TRUE;
         else 
             echo= FALSE;
@@ -143,7 +151,7 @@ void ignore_command(char* arg)
     if ( *flag == 0 ) 
         ignore=!ignore;
     else {
-        if ( !strcmpi(flag, "on" ) )
+        if ( !_strcmpi(flag, "on" ) )
             ignore = TRUE;
         else 
             ignore = FALSE;
@@ -170,7 +178,7 @@ void presub_command(char* arg)
     if ( *flag == 0 ) 
         presub=!presub;
     else {
-        if ( !strcmpi(flag, "on" ) )
+        if ( !_strcmpi(flag, "on" ) )
             presub= TRUE;
         else 
             presub= FALSE;
@@ -197,7 +205,7 @@ void togglesubs_command(char* arg)
     if ( *flag == 0 ) 
         togglesubs=!togglesubs;
     else {
-        if ( !strcmpi(flag, "on" ) )
+        if ( !_strcmpi(flag, "on" ) )
             togglesubs = TRUE;
         else 
             togglesubs = FALSE;
@@ -221,9 +229,9 @@ void showme_command(char *arg)
     arg=get_arg_in_braces(arg, right, WITH_SPACES);
 
     if ( !right[0] ) {  // no colors
-        prepare_actionalias(left,strng); 
+        prepare_actionalias(left,strng, sizeof(strng)); 
     } else {
-        prepare_actionalias(right,result); 
+        prepare_actionalias(right,result, sizeof(result)); 
         add_codes(result, strng, left);
     }
 
@@ -247,7 +255,13 @@ void loop_command(char* arg)
 	  a4 = 0;
 
   arg=get_arg_in_braces(arg,express, STOP_SPACES);
+
+  substitute_myvars(express, command, sizeof(command));
+  strcpy(express, command);
+
   arg=get_arg_in_braces(arg,command, WITH_SPACES);
+
+  
 
   if(isdigit(*express))
   {
@@ -304,7 +318,7 @@ void message_command(char *arg)
       if ( !*flag ) 
             mesvar[mestype]=!mesvar[mestype];
       else 
-          if ( !strcmpi(flag , "on" ) )
+          if ( !_strcmpi(flag , "on" ) )
               mesvar[mestype]=1;
           else 
               mesvar[mestype]=0;
@@ -334,7 +348,7 @@ void speedwalk_command(char* arg)
         speedwalk=!speedwalk;
     else {
 //* en//        if ( !strcmpi(flag, "on" ) )
-        if ( !strcmpi(arg, "on" ) )
+        if ( !_strcmpi(arg, "on" ) )
             speedwalk = TRUE;
         else 
             speedwalk = FALSE;
@@ -357,6 +371,7 @@ void zap_command(char *arg)
         CloseHandle(hConnThread);
         tintin_puts2(rs::rs(1114));
         MUDSocket = NULL;
+		memset(&MUDAddress, 0, sizeof(MUDAddress));
         return;
     }
     if ( MUDSocket == NULL ) {
@@ -452,7 +467,7 @@ void status_command(char* arg)
     };
 
     char buff[BUFFER_SIZE];
-    substitute_myvars (right, buff);
+    substitute_myvars (right, buff, sizeof(buff));
 
     EnterCriticalSection(&secStatusSection);
     if ( *color ) {
@@ -484,7 +499,7 @@ void tabadd_command(char* arg)
     PostMessage(hwndMAIN, WM_USER+200, 0, (LPARAM)hg);
     char msg[BUFFER_SIZE];
     sprintf(msg,rs::rs(1139), word);
-    tintin_puts(msg);
+    tintin_puts2(msg);
 
 }
 
@@ -505,7 +520,7 @@ void tabdel_command(char* arg)
     PostMessage(hwndMAIN, WM_USER+201, 0, (LPARAM)hg);
     char msg[BUFFER_SIZE];
     sprintf(msg,rs::rs(1141), word);
-    tintin_puts(msg);
+    tintin_puts2(msg);
 }
 
 //vls-begin// #quit
@@ -514,6 +529,125 @@ void quit_command(char *arg)
     PostMessage(hwndMAIN, WM_USER+400, 0, 0);
 }
 //vls-end//
+
+void loopback_command(char *arg)
+{
+	char result[BUFFER_SIZE], strng[BUFFER_SIZE];
+    
+	arg=get_arg_in_braces(arg, strng, WITH_SPACES);
+
+	prepare_actionalias(strng,result, sizeof(result)); 
+	
+	//tintin_puts(result);
+	int len = strlen(result);
+	if (LoopBackCount + len + 2 > sizeof(LoopBackBuffer))
+		len = sizeof(LoopBackBuffer) - LoopBackCount - 2;
+	memcpy(&LoopBackBuffer[LoopBackCount], result, len);
+	LoopBackCount += len;
+	LoopBackBuffer[LoopBackCount++] = '\n';
+	LoopBackBuffer[LoopBackCount] = '\0';
+}
+
+void broadcast_command(char *arg)
+{
+	if( BCASTSocket == INVALID_SOCKET ) {
+		tintin_puts2(rs::rs(1263));
+	} else {
+		char result[BUFFER_SIZE], strng[BUFFER_SIZE];
+    
+		arg=get_arg_in_braces(arg, strng, WITH_SPACES);
+
+		prepare_actionalias(strng,result, sizeof(result)); 
+
+        struct sockaddr_in local;
+
+        local.sin_family = AF_INET;
+		local.sin_addr.S_un.S_addr = htonl(INADDR_BROADCAST);
+        local.sin_port = htons(wBCastUdpPort);
+
+        int len = strlen(result), sent;
+        sent = sendto(BCASTSocket, result, len, 0, (const sockaddr*)&local, sizeof(local));
+        if(sent != len) {
+			char msg[BUFFER_SIZE];
+			sprintf(msg,rs::rs(1264), sent, len);
+			tintin_puts(msg);
+		}
+	}
+}
+
+void srandom_command(char *arg)
+{
+    char seed_str[BUFFER_SIZE];
+    
+    arg = get_arg_in_braces(arg, seed_str,  STOP_SPACES);
+	int seed;
+	if (strlen(seed_str) == 0) {
+		seed = (int)time(NULL);
+	} else {
+		seed = atoi(seed_str);
+	}
+
+	srand(seed);
+
+	char msg[BUFFER_SIZE];
+	sprintf(msg,rs::rs(1265), seed);
+	tintin_puts2(msg);
+}
+
+void random_command(char *arg)
+{
+	char var[BUFFER_SIZE], bound1[BUFFER_SIZE], bound2[BUFFER_SIZE], result[BUFFER_SIZE];
+	
+	arg = get_arg_in_braces(arg, var,  STOP_SPACES);
+	arg = get_arg_in_braces(arg, bound1, STOP_SPACES);
+	arg = get_arg_in_braces(arg, bound2, STOP_SPACES);
+  
+	substitute_vars(bound1, result, sizeof(result));
+	substitute_myvars(result, bound1, sizeof(bound1));
+
+	substitute_vars(bound2, result, sizeof(result));
+	substitute_myvars(result, bound2, sizeof(bound2));
+
+	int minval = 0, maxval = 100;
+
+	if (strlen(bound1) > 0 && strlen(bound2) > 0) {
+		minval = atoi(bound1);
+		maxval = atoi(bound2);
+	} else if (strlen(bound1) > 0) {
+		maxval = atoi(bound1);
+	}
+
+	int period = maxval - minval;
+	int val = minval;
+
+	if (period > 1) {
+		int rmax = RAND_MAX * RAND_MAX;
+		int max = (rmax / period) * period;
+		do {
+			val = rand() + RAND_MAX * rand();
+		} while (val >= max);
+		val %= period;
+		val += minval;
+	}
+
+	sprintf(result, "%d", val);
+
+    VAR_INDEX ind = VarList.find(var);
+    VAR* pvar;
+    if ( ind != VarList.end() ) {
+        pvar = ind->second;
+        pvar->m_strVal = result;
+    }
+    else {
+        pvar = new VAR(result);
+        VarList[var] = pvar;
+    }
+}
+
+void sync_command(char *arg)
+{
+	ReadMud();
+}
 
 void hidewindow_command(char *arg)
 {
@@ -638,8 +772,8 @@ void do_cycle(int b1, int b2, int step, int delay, char *command)
 	  while(flag==1) 
 	  {
         sprintf(vars[0], "%d", counter);
-        substitute_vars(command,result);
-        parse_input(result);
+        substitute_vars(command,result, sizeof(result));
+        parse_input(result, TRUE);
         if (b1<b2) {
           counter+=step;
           if (counter>b2)
@@ -726,11 +860,11 @@ void MultiSub_command(char* arg)
 
     if (*status) 
 	{
-        if(!strcmpi("on", status))
+        if(!_strcmpi("on", status))
             bMultiSub = TRUE;
         else 
 		{
-          if(!strcmpi("off", status))
+          if(!_strcmpi("off", status))
             bMultiSub = FALSE;
           else 
             bMultiSub = !bMultiSub;
@@ -768,7 +902,7 @@ void update_timers(int nTime)
 		  if(sTimers[i].delay>=sTimers[i].capacity)
 		  {
             sprintf(vars[0], "%d", sTimers[i].counter);
-            substitute_vars(sTimers[i].command,result);
+            substitute_vars(sTimers[i].command,result, sizeof(result));
 			parse_input(result);
 			sTimers[i].delay = 0;
             if (sTimers[i].startV<sTimers[i].endV) 
@@ -801,7 +935,7 @@ void break_timer_command(char *arg)
 	int tID = -1;
 	arg = get_arg_in_braces(arg, uid, STOP_SPACES);
 
-	if(!strcmpi(uid,"all"))
+	if(!_strcmpi(uid,"all"))
 	{
 	    char bf[BUFFER_SIZE];
 	    for(int i=0;i<sTimersV;i++)
@@ -814,7 +948,7 @@ void break_timer_command(char *arg)
 
 	if( isdigit(uid[0]))
 		tID = atoi(uid);
-	if( tID < 0 || tID > sTimersV)
+	if( tID < 0 || tID >= sTimersV)
 		return;
 	if(sTimers[tID].isActive)
  	   sTimers[tID].isActive = FALSE;
@@ -832,7 +966,7 @@ void continue_timer_command(char *arg)
 	int tID = -1;
 
 	arg = get_arg_in_braces(arg, uid, STOP_SPACES);
-	if(!strcmpi(uid,"all"))
+	if(!_strcmpi(uid,"all"))
 	{
 	    char bf[BUFFER_SIZE];
 	    for(int i=0;i<sTimersV;i++)
@@ -891,7 +1025,7 @@ void help_command(char* arg)
     if(!found) 
 	{
 		strcpy(buffer,"  \0");
-		for(i=0;i<JMC_CMDS_NUM;i++)
+		for(int i=0;i<JMC_CMDS_NUM;i++)
 		{
 			if(!((i+1)%8))
 				strcat(buffer,"\n  ");
@@ -904,7 +1038,7 @@ void help_command(char* arg)
 	    return;
 	}
 	tintin_puts2(rs::rs(1252));
-    sprintf(buffer,"{help/%s.jht} {#showme {-\?- %%0}} {s}",file);
+    sprintf(buffer,"{help/%s.jht} {%cshowme {-\?- %%0}} {s}",file, cCommandChar);
     spit_command(buffer);
     return;
 }
@@ -948,7 +1082,6 @@ void wclear_command(char *arg)
 
 	ClearWindowFunction(wnd + 1);
 }
-
 
 // these are commands for WM_COMMAND to winamp
 // you can add other easily
@@ -1001,8 +1134,8 @@ void winamp_command(char*arg)
     arg=get_arg_in_braces(arg, comm, STOP_SPACES);
     
 	char bf[BUFFER_SIZE];
-
-	for(int i=0;i<max_wamp;i++)
+	int i;
+	for(i=0;i<max_wamp;i++)
 		if(is_abrev(comm, wamp_cmds[i].id))
 		{
 			SendMessage(wamp,WM_COMMAND,40000+wamp_cmds[i].msg,0);

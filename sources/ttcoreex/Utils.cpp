@@ -22,7 +22,7 @@ int is_abrev(char *s1, char *s2)
 {
 //vls-begin// bugfix
 //    return(s1[0]==s2[0] && !strncmp(s2, s1, strlen(s1)));
-    return(s1[0]==s2[0] && !_strnicmp(s2, s1, strlen(s1)));
+    return(tolower(s1[0])==tolower(s2[0]) && !_strnicmp(s2, s1, strlen(s1)));
 //vls-end//
 }
 
@@ -46,8 +46,7 @@ char *mystrdup(char *s)
 /*************************************************/
 void syserr(char* msg)
 {
-  extern int errno, sys_nerr;
-  extern char *sys_errlist[];
+  extern int errno;
   char ErrMsg[256];
 
   sprintf(ErrMsg,rs::rs(1211),msg, errno);
@@ -57,11 +56,18 @@ void syserr(char* msg)
 
 string StrPrintfV(char* pszFormat, va_list marker)
 {
+	string data;
+	data.reserve(256);
+	while( _vsnprintf(&data[0], data.capacity(), pszFormat, marker) == -1 )
+           data.reserve(data.capacity() + 256);
+    return data;
+	/*
     vector<char> data;
         data.reserve(256);
     while( _vsnprintf(data.begin(), data.capacity(), pszFormat, marker) == -1 )
            data.reserve(data.capacity() + 256);
     return data.begin();
+	*/
 }
 
 string strprintf(char* pszFormat, ...)

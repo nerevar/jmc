@@ -16,8 +16,8 @@ void math_command(char *line)
   int i; 
   line=get_arg_in_braces(line, left,  STOP_SPACES);
   line=get_arg_in_braces(line, right, WITH_SPACES);
-  substitute_vars(right, result);
-  substitute_myvars(result, right);
+  substitute_vars(right, result, sizeof(result));
+  substitute_myvars(result, right, sizeof(right));
   i=eval_expression(right);
   sprintf(temp,"%d",i);
   
@@ -30,7 +30,7 @@ void math_command(char *line)
         pvar->m_strVal = temp;
     }
     else {
-        pvar = new VAR(right);
+        pvar = new VAR(temp);
         VarList[left] = pvar;
     }
 }
@@ -43,21 +43,17 @@ void if_command(char *line)
        temp[BUFFER_SIZE];
 
   line=get_arg_in_braces(line, if_expr, STOP_SPACES);
-      substitute_vars(if_expr,temp);substitute_myvars(temp,if_expr);
+      substitute_vars(if_expr,temp, sizeof(temp));substitute_myvars(temp,if_expr, sizeof(if_expr));
   line=get_arg_in_braces(line, if_then, WITH_SPACES);
-      substitute_vars(if_then,temp);substitute_myvars(temp,if_then);
+      substitute_vars(if_then,temp, sizeof(temp));substitute_myvars(temp,if_then, sizeof(if_then));
   line=get_arg_in_braces(line, if_else, WITH_SPACES);
-      substitute_vars(if_else,temp);substitute_myvars(temp,if_else);
-  if (eval_expression(if_expr)) {
-    parse_input(if_then); 
-  }
-  else{
-	  if(*if_else){
-		  parse_input(if_else);
-	  }
-  }
+      substitute_vars(if_else,temp, sizeof(temp));substitute_myvars(temp,if_else, sizeof(if_else));
 
 
+	char *to_parse = eval_expression(if_expr) ? if_then : if_else;
+	if( *to_parse && strlen(to_parse) ) {
+		parse_input(to_parse); 
+	}
 }
 
 
@@ -330,24 +326,23 @@ void strcmp_command(char *arg)
 		 temp[BUFFER_SIZE];
 
 	arg = get_arg_in_braces(arg, arg1, STOP_SPACES);
-	substitute_vars(arg1,temp);
-	substitute_myvars(temp,arg1);
+	substitute_vars(arg1,temp, sizeof(temp));
+	substitute_myvars(temp,arg1, sizeof(arg1));
 
 	arg = get_arg_in_braces(arg, arg2, STOP_SPACES);
-	substitute_vars(arg2,temp);
-	substitute_myvars(temp,arg2);
+	substitute_vars(arg2,temp, sizeof(temp));
+	substitute_myvars(temp,arg2, sizeof(arg2));
  
 	arg = get_arg_in_braces(arg, if_then, WITH_SPACES);
-    substitute_vars(if_then,temp);
-	substitute_myvars(temp,if_then);
+    substitute_vars(if_then,temp, sizeof(temp));
+	substitute_myvars(temp,if_then, sizeof(if_then));
 
 	arg = get_arg_in_braces(arg, if_else, WITH_SPACES);
-    substitute_vars(if_else,temp);
-	substitute_myvars(temp,if_else);
+    substitute_vars(if_else,temp, sizeof(temp));
+	substitute_myvars(temp,if_else, sizeof(if_else));
 
-	if( !strcmp(arg1, arg2) ) {
-		parse_input(if_then); 
-	} else if(*if_else) {
-		parse_input(if_else);
+	char *to_parse = !strcmp(arg1, arg2) ? if_then : if_else;
+	if( *to_parse && strlen(to_parse) ) {
+		parse_input(to_parse); 
 	}
 }

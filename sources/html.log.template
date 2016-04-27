@@ -10,7 +10,7 @@
 		a {text-decoration: underline; color: #88f;} a:visited {color: #88f;} a:hover {color: #f88;}
         i {font-style: normal;color: #ccc;}
         i.l {color: #fff;}
-        .bl{color:#555} .l.bl{color:#888} .b_bl{background-color:#555}
+        .bl{color:#555} .l.bl{color:#888} .b_bl{background-color:#000}
         .r {color:#c00} .l.r {color:#f00} .b_r {background-color:#c00}
         .g {color:#0c0} .l.g {color:#0f0} .b_g {background-color:#0c0}
         .y {color:#cc0} .l.y {color:#ff0} .b_y {background-color:#cc0}

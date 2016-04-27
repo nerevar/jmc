@@ -38,12 +38,26 @@ int verbatim=0;
 char E=27;
 
 HANDLE hConnThread;
+HANDLE hPingThread;
+DWORD dwPingThreadID;
 
 // ------ Importnant variables for global session ------
 struct listnode *common_subs;
 struct listnode *common_antisubs, *common_pathdirs, *common_path;
 
 SOCKET MUDSocket;
+sockaddr_in MUDAddress;
+
+LONG DLLEXPORT lPingMUD;
+LONG DLLEXPORT lPingProxy;
+
+SOCKET BCASTSocket;
+BOOL DLLEXPORT bBCastFilterIP = TRUE;
+BOOL DLLEXPORT bBCastFilterPort = TRUE;
+WORD DLLEXPORT wBCastUdpPort = 1024;
+
+char LoopBackBuffer[BUFFER_SIZE];
+int LoopBackCount = 0;
 
 char vars[10][BUFFER_SIZE]; /* the %0, %1, %2,....%9 variables */
 
@@ -67,6 +81,7 @@ int DLLEXPORT nScripterrorOutput; // 0 - msgbox, 1- window, 2- output
 BOOL DLLEXPORT bDisplayCommands = FALSE;
 BOOL DLLEXPORT bDisplayInput = TRUE;
 BOOL DLLEXPORT bMinimizeToTray = FALSE;
+UINT DLLEXPORT uBroadcastMessage = 0;
 
 char DLLEXPORT strInfo1[BUFFER_SIZE];
 char DLLEXPORT strInfo2[BUFFER_SIZE];
@@ -143,6 +158,33 @@ OBJECT_ENTRY(CLSID_JmcSite, CJmcSite)
 OBJECT_ENTRY(CLSID_JmcObj, CJmcObj)
 END_OBJECT_MAP()
 
+typedef struct {
+    unsigned char Ttl;                         // Time To Live
+    unsigned char Tos;                         // Type Of Service
+    unsigned char Flags;                       // IP header flags
+    unsigned char OptionsSize;                 // Size in bytes of options data
+    unsigned char *OptionsData;                // Pointer to options data
+} IP_OPTION_INFORMATION, * PIP_OPTION_INFORMATION;
+typedef struct {
+    DWORD Address;                             // Replying address
+    unsigned long  Status;                     // Reply status
+    unsigned long  RoundTripTime;              // RTT in milliseconds
+    unsigned short DataSize;                   // Echo data size
+    unsigned short Reserved;                   // Reserved for system use
+    void *Data;                                // Pointer to the echo data
+    IP_OPTION_INFORMATION Options;             // Reply options
+} IP_ECHO_REPLY, * PIP_ECHO_REPLY;
+typedef HANDLE (WINAPI* pfnHV)(VOID);
+typedef BOOL (WINAPI* pfnBH)(HANDLE);
+typedef DWORD (WINAPI* pfnDHDPWPipPDD)(HANDLE, DWORD, LPVOID, WORD,
+									   PIP_OPTION_INFORMATION, LPVOID, DWORD, DWORD); // evil, no?
+unsigned long __stdcall PingThread(void *pParam);
+
+static char multiline_buf[BUFFER_SIZE * 32];
+static int multiline_length = 0;
+
+static void process_incoming(char* buffer, BOOL FromServer = TRUE);
+
 /////////////////////////////////////////////////////////////////////////////
 // DLL Entry Point
 
@@ -192,6 +234,10 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
 
         _Module.Init(ObjectMap, hInstance, &LIBID_TTCOREEXLib);
         DisableThreadLibraryCalls(hInstance);
+
+		hPingThread = CreateThread(NULL, 0, &PingThread, NULL, 0, &dwPingThreadID);
+
+		last_line[0] = '\0';
     }
     else if (dwReason == DLL_PROCESS_DETACH){
 //vls-begin// multiple output
@@ -262,44 +308,29 @@ STDAPI DllUnregisterServer(void)
 
 // JMC functons starts here 
 
-static BOOL bReadingMud = FALSE;
-static char strIncomingResult[BUFFER_SIZE];
-static char* pIncomigResultPos;
-
 void tintin_puts2(char *cptr)
 {
-    if ( bReadingMud ) {
-        int n=strlen(cptr);
-        memcpy(pIncomigResultPos, cptr, n);
-        pIncomigResultPos+=n;
-        *pIncomigResultPos++= '\n';// *cpsource++;
-    } else {
-        char buff[BUFFER_SIZE];
-        strcpy ( buff , cptr);
-        strcat(buff, "\n");
-        DirectOutputFunction(buff, 0); // out to main wnd
-    }
+	char buff[BUFFER_SIZE + 3];
+	buff[0] = 0x2;
+	buff[1] = 0;
+    strcat(buff, cptr);
+    strcat(buff, "\n");
+    DirectOutputFunction(buff, 0); // out to main wnd
 }
 
-//vls-begin// multiple output
-//void tintin_puts3(char *cptr)
-// TODO: wnd
 void tintin_puts3(char *cptr, int wnd)
-//vls-end
 {
-    char buff[BUFFER_SIZE];
+    char buff[BUFFER_SIZE + 2];
 
     strcpy ( buff , cptr);
     strcat(buff, "\n");
 
-//vls-begin// multiple output
     if ( hOutputLogFile[wnd] ) {
 		log(wnd, processTEXT(string(cptr)));
 		log(wnd, "\n");
 	}
 
     DirectOutputFunction(buff, 1+wnd); // out to output window
-//vls-end//
 }
 
 void output_command(char* arg)
@@ -311,15 +342,13 @@ void output_command(char* arg)
     arg=get_arg_in_braces(arg, right, WITH_SPACES);
 
     if ( !right[0] ) {  // no colors
-        prepare_actionalias(left,strng); 
+        prepare_actionalias(left,strng, sizeof(strng)); 
     } else {
-        prepare_actionalias(right,result); 
+        prepare_actionalias(right,result, sizeof(result)); 
         add_codes(result, strng, left);
     }
-//vls-begin// multiple output
-//    tintin_puts3(strng);
+
     tintin_puts3(strng, 0);
-//vls-end//
 }
 
 
@@ -363,18 +392,20 @@ void write_line_mud(char *line)
 
 //* en
 //    if ( bDisplayInput ) {
-	char daaString[BUFFER_SIZE];
-    daaString[0] = '<';
-	for(int i=2;i<strlen(line);i++)
-		daaString[i-1]='*';
-    daaString[strlen(line)-1] = '>';
-	daaString[strlen(line)] = 0;
-	
+	char daaString[BUFFER_SIZE+2];
+	int daalen = 0;
+	if (bDaaMessage) {
+		daaString[daalen++] = '<';
+		for(int i = 0; i < strlen(line); i++)
+			daaString[daalen++]='*';
+		daaString[daalen++] = '>';
+	}
+	daaString[daalen] = 0;
 
     if(bDisplayInput && strlen(line)>0) 
 	{
         std::string str;
-        str = "\x1B[0;33m";
+        str = "\x01\x1B[0;33m";
 		str += bDaaMessage ? daaString : line;
         str += "\x1B[0m";
         tintin_puts2((char*)str.c_str());
@@ -405,13 +436,12 @@ void write_line_mud(char *line)
     }
 //vls-begin// bugfix
     if (buff)
-      free(buff);
+		free(buff);
 //vls-end//
 }
 
 
 static char strConnectAddress[128], strConnectPort[32];
-
 
 
 unsigned long __stdcall ConnectThread(void * pParam)
@@ -456,20 +486,23 @@ START1:
     sockaddr.sin_family=AF_INET;
 
 
+	reset_telnet_protocol();
+	multiline_length = 0;
+
     tintin_puts2(rs::rs(1189));
-    connectresult=connect(sock,(struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    connectresult=proxy_connect(sock,(struct sockaddr *)&sockaddr, sizeof(sockaddr));
 
     if(connectresult) {
-        closesocket(sock);
+        proxy_close(sock);
         switch(connectresult) {
         case WSAECONNREFUSED:
-            tintin_puts2(rs::rs(1190));
+            tintin_puts(rs::rs(1190));
             break;
         case WSAENETUNREACH:
-            tintin_puts2(rs::rs(1191));
+            tintin_puts(rs::rs(1191));
             break;
         default:
-            tintin_puts2(rs::rs(1192));
+            tintin_puts(rs::rs(1192));
         }
         if ( bAutoReconnect ) {
             Sleep(200);
@@ -480,9 +513,104 @@ START1:
     }
     if ( bConnectBeep ) 
         MessageBeep(MB_OK);
-    tintin_puts(rs::rs(1193));
     MUDSocket = sock;
+	MUDAddress = sockaddr;
     SetEvent(hConnectedEvent );
+	tintin_puts(rs::rs(1193));
+    return 0;
+}
+
+static unsigned short tcpip_checksum(const unsigned char *buffer, int length) {
+    unsigned long sum = 0, i;
+    for(i = 0; i < length - 1; i += 2)
+        sum += (((unsigned short)(buffer[i])) << 8) | (unsigned short)(buffer[i + 1]);
+    if(length & 1) {
+        sum += ((unsigned short)buffer[length - 1]) << 8;
+    }
+    while(sum >> 16UL)
+        sum = (sum & 0xffffUL) + (sum >> 16UL);
+    return ~((unsigned short)sum);
+}
+
+static int ping_single_host(unsigned long ipaddr, int timeout_ms)
+{
+	static HINSTANCE hIcmp = NULL;
+	static pfnHV pIcmpCreateFile = NULL;
+    static pfnBH pIcmpCloseHandle = NULL;
+    static pfnDHDPWPipPDD pIcmpSendEcho = NULL;
+	static HANDLE hIP = INVALID_HANDLE_VALUE;
+	static PIP_ECHO_REPLY pIpe = NULL;
+
+	static char acPingBuffer[64];
+
+	if (!ipaddr)
+		return -2;
+
+	if (!hIcmp) {
+		for (int i = 0; i < sizeof(acPingBuffer); i++)
+			acPingBuffer[i] = 'a' + (i % 24);
+		hIcmp = LoadLibrary("ICMP.DLL");
+	}
+	if (!hIcmp)
+		return -3;
+
+	if (!pIcmpCreateFile)
+		pIcmpCreateFile = (pfnHV)GetProcAddress(hIcmp, "IcmpCreateFile");
+	if (!pIcmpCloseHandle)
+		pIcmpCloseHandle = (pfnBH)GetProcAddress(hIcmp, "IcmpCloseHandle");
+	if (!pIcmpSendEcho)
+		pIcmpSendEcho = (pfnDHDPWPipPDD)GetProcAddress(hIcmp, "IcmpSendEcho");
+	if (!pIcmpCreateFile || !pIcmpCloseHandle || !pIcmpSendEcho)
+		return -3;
+	
+	// Open the ping service
+	if (hIP == INVALID_HANDLE_VALUE)
+		hIP = pIcmpCreateFile();
+	if (hIP == INVALID_HANDLE_VALUE)
+		return -3;
+
+	// Build ping packet
+	if (!pIpe)
+		pIpe = (PIP_ECHO_REPLY)GlobalAlloc(GMEM_FIXED | GMEM_ZEROINIT,
+			sizeof(IP_ECHO_REPLY) + sizeof(acPingBuffer));
+	if (!pIpe) 
+		return -3;
+
+	pIpe->Data = acPingBuffer;
+	pIpe->DataSize = sizeof(acPingBuffer);      
+							
+	// Send the ping packet
+	DWORD dwStatus = pIcmpSendEcho(hIP, ipaddr, acPingBuffer, sizeof(acPingBuffer), NULL, pIpe, 
+								   sizeof(IP_ECHO_REPLY) + sizeof(acPingBuffer), timeout_ms);
+	if (!dwStatus)
+		return -3;
+	
+	if (pIpe->Status && (pIpe->Status != 11000 /*IP_SUCCESS*/))
+		return -3;
+	if ((pIpe->Status == 11010 /*IP_REQ_TIMED_OUT*/) || (pIpe->Status == 11013 /*IP_TTL_EXPIRED_TRANSIT*/))
+		return -1;
+
+	return pIpe->RoundTripTime;
+}
+
+unsigned long __stdcall PingThread(void * pParam)
+{
+    CoInitialize ((void*)COINIT_MULTITHREADED);
+
+	int time_step_ms = 500;
+
+	for(;;) {
+		int t0 = GetTickCount();
+
+		lPingMUD = ping_single_host(MUDAddress.sin_addr.s_addr, time_step_ms * 2);
+		lPingProxy = ping_single_host(htonl(ulProxyAddress), time_step_ms * 2);
+
+		PostMessage(hwndMAIN, WM_USER+680, (WPARAM)lPingMUD, (LONG)lPingProxy);
+
+		int dt = GetTickCount() - t0;
+		if (dt < time_step_ms)
+			Sleep(time_step_ms - dt);
+	}
     return 0;
 }
 
@@ -511,7 +639,7 @@ void ShowError (char* strError)
 void tintin_puts(char *cptr)
 {
     tintin_puts2(cptr);  
-    check_all_actions(cptr); 
+    check_all_actions(cptr, false); 
 }
 
 
@@ -595,6 +723,7 @@ void  DLLEXPORT CloseState(void)
 
 //* en:fix to allow DROPPING reload message
 void do_one_line(char *line);
+void do_multiline();
 //*/en
 
 void  DLLEXPORT ReloadScriptEngine(LPCSTR strScriptText, GUID guidEngine, LPCSTR strProfile)
@@ -606,8 +735,7 @@ void  DLLEXPORT ReloadScriptEngine(LPCSTR strScriptText, GUID guidEngine, LPCSTR
 	char* buff = rs::rs(1196);
                     do_one_line(buff);
                     if ( !(*buff== '.' && *(buff+1) == 0 ) ) {
-                        strcat(buff, "\n");
-                        DirectOutputFunction(buff, 0);
+						tintin_puts2(buff);
                     }
 //*/en
 }
@@ -620,6 +748,11 @@ void DLLEXPORT CompileInput(char* str)
 {
     USES_CONVERSION;
 
+	if (last_line[0]) {
+		//process_incoming(" [GA forced]\x01");
+		process_incoming("\x01");
+	}
+
     if ( WaitForSingleObject (eventAllObjectEvent, 0) == WAIT_OBJECT_0  ) {
         // Make event 
         pJmcObj->m_pvarEventParams[0] = str;
@@ -631,10 +764,12 @@ void DLLEXPORT CompileInput(char* str)
 
         char line[BUFFER_SIZE];
         strcpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal ));
-        parse_input(line);
+        //parse_input(line);
         SetEvent(eventAllObjectEvent );
-    } else 
+		parse_input(line);
+    } else {
         write_line_mud(str);
+	}
 }
 
 
@@ -677,8 +812,7 @@ static void tick_func()
                     char* buff = rs::rs(1197);
                     do_one_line(buff);
                     if ( !(*buff== '.' && *(buff+1) == 0 ) ) {
-                        strcat(buff, "\n");
-                        DirectOutputFunction(buff, 0);
+						tintin_puts2(buff);
                     }
               }
             Done = 1;
@@ -688,8 +822,7 @@ static void tick_func()
                 char* buff = rs::rs(1198);
                 do_one_line(buff); 
                 if ( !(*buff== '.' && *(buff+1) == 0 ) ) {
-                    strcat(buff, "\n");
-                    DirectOutputFunction(buff, 0);
+					tintin_puts2(buff);
                 }
             }
           Done = 0;
@@ -717,16 +850,57 @@ void do_one_line(char *line)
         strcpy(line, "." );
 
     if ( bRet ) {
-        if (!presub && !ignore)
-          check_all_actions(line);
-        if (!togglesubs)                            
-            if(!do_one_antisub(line))
-            do_one_sub(line);
-        if (presub && !ignore)
-          check_all_actions(line);
+		int len = strlen(line);
+		if (multiline_length + len + 1 >= sizeof(multiline_buf)) {
+			// show error?
+			len = sizeof(multiline_buf) - 1 - multiline_length;
+		}
+		if (len > 0 && multiline_length > 0) {
+			multiline_buf[multiline_length++] = '\n';
+		}
+
+        if (!presub && !ignore) {
+			strncpy(&multiline_buf[multiline_length], line, len);
+			multiline_length += len;
+
+			check_all_actions(line, false);
+		}
+
+        if (!togglesubs) {
+			if(!do_one_antisub(line))
+				do_one_sub(line);
+		}
+
+        if (presub && !ignore) {
+			strncpy(&multiline_buf[multiline_length], line, len);
+			multiline_length += len;
+
+			check_all_actions(line, false);
+		}
+
         do_one_high(line);
     }
-}  
+}
+
+void do_multiline()
+{
+	USES_CONVERSION;
+
+	if (!multiline_length)
+		return;
+	multiline_buf[multiline_length] = 0;
+
+    pJmcObj->m_pvarEventParams[0] = (multiline_buf);
+    BOOL bRet = pJmcObj->Fire_Prompt();
+    if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) 
+        strcpy(multiline_buf, W2A(pJmcObj->m_pvarEventParams[0].bstrVal) );
+
+    if ( bRet ) {
+		check_all_actions(multiline_buf, true);
+	}
+
+	multiline_length = 0;
+}
 
 
 unsigned char DLLEXPORT substChars[SUBST_ARRAY_SIZE];
@@ -737,113 +911,23 @@ CRITICAL_SECTION DLLEXPORT secSubstSection;
 DWORD lastRecvd;
 int DLLEXPORT MoreComingDelay = 150;
 
-int read_buffer_mud(char *buffer)
-{
-    int didget;
-    char tmpbuf[BUFFER_SIZE], *cpsource, *cpdest;
-    
-    didget=recv(MUDSocket, tmpbuf, 512, 0);
-
-    old_more_coming=more_coming;
-/*    if (didget==512  && tmpbuf[511] != 0xA && !(tmpbuf[510]==TN_IAC && tmpbuf[510]==TN_GA)) {
-        more_coming=1;
-    }
-    else 
-        more_coming=0;
-*/
-   if(didget<=0)  {
-        return -1; 
-    } else {
-#ifdef _DEBUG_LOG
-        // --------   Write external log
-        if (hExLog ) {
-            char exLogText[128];
-            DWORD Written;
-            sprintf(exLogText , "\r\n#RECV got %d bytes#\r\n" , didget );
-            WriteFile(hExLog , exLogText , strlen(exLogText) , &Written, NULL);
-            WriteFile(hExLog , tmpbuf , didget , &Written, NULL);
-        }
-#endif
-
-        tmpbuf[didget] = 0;
-        cpsource=tmpbuf;
-        cpdest=buffer;
-
-        didget = do_telnet_protecol((unsigned char*)cpsource, cpdest, didget);
-        if ( didget && buffer[didget] != '\n' && buffer[didget] != 0x1 ) {
-            lastRecvd = GetTickCount();
-            more_coming=1;
-        } else 
-            more_coming=0;
-
-/*        if ( buffer[didget-1] != 0xA && buffer[didget-1]!= 1 )
-            more_coming = 1;
-        else 
-            more_coming = 0;
-*/
-#ifdef _DEBUG_LOG
-        if (hExLog ) {
-            char exLogText[128];
-            DWORD Written;
-            sprintf(exLogText , "\r\n#BUFFER AFTER TELNET#\r\n" );
-            WriteFile(hExLog , exLogText , strlen(exLogText) , &Written, NULL);
-            WriteFile(hExLog , buffer , didget , &Written, NULL);
-        }
-#endif
-
-        
-  }
-
-  // ---- substituting characters 
-
-    if ( bSubstitution ) {
-        int i;
-    // start crit section
-        EnterCriticalSection(&secSubstSection);
-        for ( i= 0 ; i < *((int*)substChars) ; i++ ) {
-            int j;
-            for ( j = 0 ; j < didget ; j++ ) {
-                if ( buffer[j] == substChars[i*2+sizeof(int)] ) {
-                    buffer[j] = substChars[i*2+sizeof(int)+1];
-                }
-            }
-        }
-        LeaveCriticalSection(&secSubstSection);
-    }
-
-  // ---- end substituting characters
-/*    if ( didget < 0 ) 
-        return 0;
-    else   
-        return didget;
-*/
-    return didget;
-}
-
-
-
 /*************************************************************/
 /* read text from mud and test for actions/substitutes */
 /*************************************************************/
 
-static void process_incoming(char* buffer)
+static void process_incoming(char* buffer, BOOL FromServer)
 {
     char linebuffer[BUFFER_SIZE], *cpsource, *cpdest;
 	char line_to_log[BUFFER_SIZE];
     int LastLineLen = 0, n;
-    
-    
-    bReadingMud = TRUE;
 
-    cpsource=buffer; 
-    cpdest=linebuffer;
-    if (old_more_coming==1) {
+    cpsource = buffer; 
+    cpdest = linebuffer;
+	if (last_line[0]) {
         LastLineLen = strlen(last_line);
         strcpy(linebuffer,last_line);
-        cpdest+=LastLineLen;
+        cpdest += LastLineLen;
     } 
-    pIncomigResultPos = strIncomingResult;
-    *pIncomigResultPos = 0;
 
     BOOL bProcess = TRUE;
     if ( WaitForSingleObject (eventAllObjectEvent, 0) != WAIT_OBJECT_0  ) 
@@ -855,21 +939,23 @@ static void process_incoming(char* buffer)
             continue;
         }
 
-        if(*cpsource=='\n' /*|| *cpsource=='\r'*/ || *cpsource==0x1) {
-            *cpdest='\0';
+        if(*cpsource == '\n' || *cpsource == 0x1) {
+            *cpdest = '\0';
 			
 			if ( !bLogAsUserSeen ) {
 				strcpy(line_to_log, linebuffer);
 			}
             if ( bProcess ) { 
                 do_one_line(linebuffer);
+				if (*cpsource == 0x1)
+					do_multiline();
 			}
 			if ( bLogAsUserSeen ) {
 				strcpy(line_to_log, linebuffer);
 			}
 
 			//vls-begin// #logadd + #logpass // multiple output
-            if(hLogFile.is_open() && !bLogPassedLine) {
+            if(hLogFile.is_open() && !bLogPassedLine && (bLogAsUserSeen || FromServer)) {
 				log(processLine(line_to_log));
 				log("\n");
             }
@@ -877,89 +963,120 @@ static void process_incoming(char* buffer)
             bLogPassedLine = FALSE;
 			//vls-end//
 
-            if( /**linebuffer != 0x1 &&  */ !(*linebuffer=='.' && !*(linebuffer+1)) ) {
-                n=strlen(linebuffer);
-                memcpy(pIncomigResultPos, linebuffer, n);
-                pIncomigResultPos+=n;
-                if ( *cpsource != 0x1 ) 
-                    *pIncomigResultPos++= '\n';// *cpsource++;
-                cpsource++;
-
-                // !!! Dont need anymore. Only \n is valid combination
-                // if((*cpsource=='\n' || *cpsource=='\r')&& *(cpsource-1) != *cpsource )
-                //    cpsource++; 
+            if( strcmp(linebuffer, ".") ) {
+                n = strlen(linebuffer);
+				linebuffer[n++] = *cpsource;
+				linebuffer[n] = '\0';
+				DirectOutputFunction(linebuffer, 0);// out to main window
             }
-            else {
-                cpsource++;
-                // !!! Dont need anymore. Only \n is valid combination
-                // if((*cpsource=='\n' || *cpsource=='\r')&& *(cpsource-1) != *cpsource )
-                //    cpsource++;
-            }
+			last_line[0] = '\0';
 
-            cpdest=linebuffer;
+            cpsource++;
+
+            cpdest = linebuffer;
         } else {
-            *cpdest++= *cpsource++;
+            *cpdest++ = *cpsource++;
 		}
     }
     *cpdest='\0';
-    
-	if (more_coming==1) {
-        strcpy(last_line , linebuffer);
-    } else { 
-		//vls-begin// #logadd + #logpass // multiple output
-		if ( !bLogAsUserSeen ) {
-			strcpy(line_to_log, linebuffer);
-		}
-        if ( bProcess ) { 
-			do_one_line(linebuffer);
-		}
-		if ( bLogAsUserSeen ) {
-			strcpy(line_to_log, linebuffer);
-		}
 
-		//vls-begin// #logadd + #logpass // multiple output
-        if(hLogFile.is_open() && !bLogPassedLine) {
-			log(processLine(line_to_log));
-			log("\n");
-        }
-
-        bLogPassedLine = FALSE;
-		//vls-end//
-
-        if( !(*linebuffer=='.' && !*(linebuffer+1)) ) {
-            n=strlen(linebuffer);
-            memcpy(pIncomigResultPos, linebuffer, n);
-            pIncomigResultPos+=n;
-        }
-    }
-
-    *pIncomigResultPos='\0';
+	if (linebuffer[0] && strcmp(linebuffer, ".")) {
+		strcpy(last_line , linebuffer);
+		DirectOutputFunction(linebuffer, 0);// out to main window
+		lastRecvd = GetTickCount();
+	} else {
+		last_line[0] = '\0';
+	}
 
     if ( bProcess  ) 
         SetEvent(eventAllObjectEvent );
-
-    // Sending few string to draw. Need to split it
-    DirectOutputFunction(strIncomingResult, 0);// out to main window
-    bReadingMud = FALSE;
 }
 
 void read_mud(void )
 {
-    char buffer[BUFFER_SIZE];
-    int didget;
+    char buffer[BUFFER_SIZE], processed[BUFFER_SIZE];
+    int didget, decoded;
+	unsigned long len;
+	bool error = false;
 
-                                                                                                               
-    if( (didget=read_buffer_mud(buffer)) < 0 ) {
-        cleanup_session();
+	if( ioctlsocket(MUDSocket, FIONREAD, &len) == SOCKET_ERROR || len == 0 ) {
+		error = true;
+	} else {
+		decoded = 0;
+		while( len > 0 ) {
+			int to_read = len;
+			if( to_read > sizeof(buffer) )
+				to_read = sizeof(buffer);
+			if( (didget = recv(MUDSocket, buffer, to_read, 0)) <= 0 ) {
+				error = true;
+				break;
+			}
+			len -= didget;
+
+#ifdef _DEBUG_LOG
+			// --------   Write external log
+			if (hExLog ) {
+				char exLogText[128];
+				DWORD Written;
+				sprintf(exLogText , "\r\n#RECV got %d bytes#\r\n" , didget );
+				WriteFile(hExLog , exLogText , strlen(exLogText) , &Written, NULL);
+				WriteFile(hExLog , buffer , didget , &Written, NULL);
+			}
+#endif
+
+			telnet_push_back(buffer, didget);
+			while( (didget = telnet_pop_front(processed, sizeof(processed) - 1)) > 0 ) {
+				decoded += didget;
+				processed[didget] = '\0';
+
+#ifdef _DEBUG_LOG
+				if (hExLog ) {
+					char exLogText[128];
+					DWORD Written;
+					sprintf(exLogText , "\r\n#BUFFER AFTER TELNET#\r\n" );
+					WriteFile(hExLog , exLogText , strlen(exLogText) , &Written, NULL);
+					WriteFile(hExLog , processed , didget , &Written, NULL);
+				}
+#endif
+
+				//old_more_coming = more_coming;
+				//if ( didget > 0 && processed[didget - 1] != '\n' && processed[didget - 1] != 0x1 ) {
+				more_coming = telnet_more_coming();
+
+				if ( bSubstitution ) {
+					int i;
+				// start crit section
+					EnterCriticalSection(&secSubstSection);
+					for ( i= 0 ; i < *((int*)substChars) ; i++ ) {
+						int j;
+						for ( j = 0 ; j < didget ; j++ ) {
+							if (processed[j] == substChars[i*2+sizeof(int)])
+								processed[j] = substChars[i*2+sizeof(int)+1];
+						}
+					}
+					LeaveCriticalSection(&secSubstSection);
+				}
+
+				process_incoming(processed);
+			}
+			if (didget < 0) {
+				error = true;
+				break;
+			}
+		}
+	}
+
+	if(error) {
+		cleanup_session();
 //* en:fix to allow ACTING zap message
-					char* buff = rs::rs(1199);
-                    do_one_line(buff);
-                    if ( !(*buff== '.' && *(buff+1) == 0 ) ) {
-                        strcat(buff, "\n");
-                        DirectOutputFunction(buff, 0);
-                    }
+		char* buff = rs::rs(1199);
+        do_one_line(buff);
+        if ( !(*buff== '.' && *(buff+1) == 0 ) ) {
+			tintin_puts2(buff);
+        }
 //*/en
         MUDSocket = NULL;
+		memset(&MUDAddress, 0, sizeof(MUDAddress));
         if ( WaitForSingleObject (eventAllObjectEvent, 0) == WAIT_OBJECT_0  ) {
             pJmcObj->Fire_ConnectLost();
             SetEvent(eventAllObjectEvent );
@@ -969,12 +1086,8 @@ void read_mud(void )
             DWORD dwThreadID;
             hConnThread = CreateThread(NULL, 0, &ConnectThread, NULL, 0, &dwThreadID);
         }
-        bReadingMud = FALSE;
-        return ;
-    }
-
-    process_incoming (buffer);
-    return;
+        //bReadingMud = FALSE;
+	}
 }
 
 
@@ -1045,35 +1158,37 @@ void DLLEXPORT ReadMud()
         FD_SET(MUDSocket,&readfdmask);
 
         /*ticker_interrupted=FALSE;*/
-        select(32, &readfdmask,  0, 0, &timeout);
+        int nRet = select(0, &readfdmask,  0, 0, &timeout);
 
-        if(FD_ISSET(MUDSocket,&readfdmask))
+        if(nRet > 0 && FD_ISSET(MUDSocket,&readfdmask))
             read_mud();
         else { // do delayed delete 
             // check we have delayed string without \n
-            if ( more_coming && GetTickCount() - lastRecvd >= MoreComingDelay ) {
-                more_coming = 0;
-                old_more_coming = 1;
-                process_incoming("\n");
-            } else 
-                if ( bDelayedActionDelete ) 
-                    if ( WaitForSingleObject (eventAllObjectEvent, 0) == WAIT_OBJECT_0 ) {
-                        ACTION_INDEX aind = ActionList.begin();
-                        while ( aind != ActionList.end() ) {
-                            // CActionPtr pac = *aind;
-                            ACTION* pac = *aind;
-                            if ( pac->m_bDeleted){
-                                ACTION_INDEX aind1 = aind;
-                                aind++;
-                                delete pac;
-                                ActionList.erase(aind1);
-                            } else 
-                                aind++;
+			more_coming = 0;
+			if (last_line[0] && ((int)(GetTickCount() - lastRecvd) >= MoreComingDelay)) {
+				//process_incoming("\n");
+				process_incoming("\x01");
+            } else if ( bDelayedActionDelete ) {
+				if ( WaitForSingleObject (eventAllObjectEvent, 0) == WAIT_OBJECT_0 ) {
+					ACTION_INDEX aind = ActionList.begin();
+                    while ( aind != ActionList.end() ) {
+						// CActionPtr pac = *aind;
+                        ACTION* pac = *aind;
+                        if ( pac->m_bDeleted) {
+							ACTION_INDEX aind1 = aind;
+                            aind++;
+                            delete pac;
+                            ActionList.erase(aind1);
+                        } else {
+							aind++;
                         }
-                        bDelayedActionDelete = FALSE;
-                        SetEvent(eventAllObjectEvent);
-                    } else 
-                        return;
+					}
+                    bDelayedActionDelete = FALSE;
+                    SetEvent(eventAllObjectEvent);
+                } else {
+					return;
+				}
+			}
         }
     } else {
         if ( WaitForSingleObject (eventMudEmuTextArrives, 0 ) == WAIT_OBJECT_0 ) {
@@ -1081,7 +1196,6 @@ void DLLEXPORT ReadMud()
             memcpy(buf, strMudEmuText, nMudEmuTextSize);
             buf[nMudEmuTextSize] = 0;
             
-            old_more_coming=more_coming;
             if ( buf[nMudEmuTextSize-1] != 0xA && buf[nMudEmuTextSize-1]!= 1 )
                 more_coming = 1;
             else 
@@ -1089,9 +1203,60 @@ void DLLEXPORT ReadMud()
 
 			ResetEvent(eventMudEmuTextArrives);
 
-            process_incoming (buf);
+            process_incoming (buf, FALSE);
         }
     }
+
+	if ( !more_coming ) {
+		if (LoopBackCount > 0) {
+			process_incoming (LoopBackBuffer, FALSE);
+			LoopBackCount = 0;
+		}
+
+		if (BCASTSocket != INVALID_SOCKET) {
+			char buf[BUFFER_SIZE];
+			unsigned long len;
+
+			for(;;) {	
+				if( ioctlsocket(BCASTSocket, FIONREAD, &len) == SOCKET_ERROR )
+					break;
+				if( !len )
+					break;
+
+				if( len >= sizeof(buf) - 1 )
+					len = sizeof(buf) - 2;
+
+				struct sockaddr_in dest;
+				int tmp = sizeof(dest);
+
+				if( (len = recvfrom(BCASTSocket, buf, len, 0, (struct sockaddr*)&dest, &tmp)) <= 0)
+					break;
+				if( bBCastFilterPort && htons(dest.sin_port) != wBCastUdpPort )
+					continue;
+				if( bBCastFilterIP ) {
+					char hostname[256];
+					struct hostent *host;
+					
+					if( gethostname(hostname, sizeof(hostname)) )
+						continue;
+					if( !(host = gethostbyname(hostname)) )
+						continue;
+
+					bool found = false;
+					for (int i = 0; host->h_addr_list[i] != NULL && !found; i++)
+						found = found || (!memcmp(host->h_addr_list[i], &dest.sin_addr, 4));
+					
+					if (!found)
+						continue;
+				}
+				if( !bBCastFilterPort || htons(dest.sin_port) == wBCastUdpPort ) {
+					buf[len++] = '\n';
+					buf[len] = '\0';
+					process_incoming (buf, FALSE);
+				}
+			}
+		}
+	}
 
     // Do timer events 
     std::map<int, TIMER*>::iterator pos = TIMER_LIST.begin ();
@@ -1123,11 +1288,11 @@ void MultiactionCommand(char* arg)
     arg=get_arg_in_braces(arg, left, STOP_SPACES);
 
     if ( *left ) {
-        if ( !strcmpi("on", left) ) {
+        if ( !_strcmpi("on", left) ) {
             bMultiAction = TRUE;
             tintin_puts2(rs::rs(1200));
         } else 
-            if ( !strcmpi("off", left) ) {
+            if ( !_strcmpi("off", left) ) {
                 bMultiAction = FALSE;
                 tintin_puts2(rs::rs(1201));
             } else 
@@ -1150,11 +1315,11 @@ void MultiHlightCommand(char* arg)
     arg=get_arg_in_braces(arg, left, STOP_SPACES);
 
     if ( *left ) {
-        if ( !strcmpi("on", left) ) {
+        if ( !_strcmpi("on", left) ) {
             bMultiHighlight  = TRUE;
             tintin_puts2(rs::rs(1205));
         } else 
-            if ( !strcmpi("off", left) ) {
+            if ( !_strcmpi("off", left) ) {
                 bMultiHighlight = FALSE;
                 tintin_puts2(rs::rs(1206));
             } else 
@@ -1230,9 +1395,9 @@ void woutput_command(char* arg)
     }
 
     if ( !right[0] ) {  // no colors
-        prepare_actionalias(left,strng); 
+        prepare_actionalias(left,strng, sizeof(strng)); 
     } else {
-        prepare_actionalias(right,result); 
+        prepare_actionalias(right,result, sizeof(result)); 
         add_codes(result, strng, left);
     }
     tintin_puts3(strng, wnd);
@@ -1399,3 +1564,28 @@ void wpos_command(char *arg)
 }
 
 //vls-end//
+
+void DLLEXPORT reopen_bcast_socket()
+{
+	if( BCASTSocket != INVALID_SOCKET ) {
+		closesocket(BCASTSocket);
+	}
+	if( (BCASTSocket = socket(AF_INET, SOCK_DGRAM, 0)) != INVALID_SOCKET ) {
+		BOOL bVal = TRUE;
+		if( setsockopt(BCASTSocket, SOL_SOCKET, SO_BROADCAST, (const char*)&bVal, sizeof(bVal)) == SOCKET_ERROR ||
+			setsockopt(BCASTSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&bVal, sizeof(bVal)) == SOCKET_ERROR ) {
+			closesocket(BCASTSocket);
+			BCASTSocket = INVALID_SOCKET;
+		} else {
+			struct sockaddr_in local;
+			local.sin_family = AF_INET;
+			local.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+			local.sin_port = htons(wBCastUdpPort);
+			if( bind(BCASTSocket, (const sockaddr*)&local, sizeof(local)) == SOCKET_ERROR ) {
+				closesocket(BCASTSocket);
+				BCASTSocket = INVALID_SOCKET;
+			}
+		}
+	}
+}
+

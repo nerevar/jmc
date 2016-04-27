@@ -3,6 +3,8 @@
 #include "ttcoreex.h"
 #include "tintin.h"
 
+static const unsigned char *pcre_tables = NULL;
+
 std::map<int, TIMER*> TIMER_LIST;
 ACTIONLIST ActionList;
 ALIASLIST AliasList;
@@ -77,6 +79,95 @@ CGROUP::~CGROUP()
 
 }
 
+ALIAS::ALIAS()
+{
+    m_pPcre = NULL;
+    m_pExtra = NULL;
+    m_bRecompile = FALSE;
+    m_bDeleted = FALSE;
+	m_bIgnoreCase = FALSE;
+}
+
+
+ALIAS::~ALIAS()
+{
+    if ( m_pPcre ) 
+        pcre_free(m_pPcre);
+    if ( m_pExtra ) 
+        pcre_free(m_pExtra);
+}
+
+BOOL ALIAS::CreatePattern(char* left )
+{
+    if ( !left ) 
+        left = (char*)m_strRegex.data ();
+
+    if ( m_pPcre ) 
+        pcre_free(m_pPcre);
+    if ( m_pExtra) 
+        pcre_free(m_pExtra);
+    
+    m_pExtra = NULL;
+    m_pPcre = NULL;
+
+	int options = 0;
+	if (m_bIgnoreCase)
+		options |= PCRE_CASELESS;
+
+	if (!pcre_tables) 
+		pcre_tables = pcre_maketables();
+
+    const char* err;
+    int err_offset;
+    m_pPcre = pcre_compile(left, options, &err, &err_offset, pcre_tables);
+    if ( !m_pPcre ) {
+        std::string  errstr(rs::rs(1142));
+        errstr += err;
+        tintin_puts2((char*)errstr.data ());
+        return FALSE;
+    }
+    m_pExtra = pcre_study(m_pPcre, 0 , &err);
+    if ( err ) {
+        std::string  errstr(rs::rs(1142));
+        errstr += err;
+        tintin_puts2((char*)errstr.data ());
+        return FALSE;
+    }
+    return TRUE;
+}
+
+BOOL ALIAS::SetLeft(char* left)
+{
+    m_strRegex.empty();
+    m_strLeft = left;
+	m_bIgnoreCase = FALSE;
+
+    if ( *left == '/' ) { // its regexp
+        m_strRegex = left+1;
+        int size = m_strRegex.size();
+		BOOL i_flag = FALSE;
+		for (int i = size - 1; i >= 0; i--) {
+			if (m_strRegex[i] == 'i') {
+				i_flag = TRUE;
+			} else if (m_strRegex[i] == '/') {
+				m_bIgnoreCase = i_flag;
+				m_strRegex.resize(i);
+				break;
+			} else {
+				break;
+			}
+		}
+    } 
+
+    if ( *left != '/' && strchr(left, '$' ) ) {
+        m_bRecompile = TRUE;
+        return TRUE;
+    } else {
+        return CreatePattern();
+	}
+}
+/////
+
 ACTION::ACTION()
 {
     m_nPriority = 5;
@@ -84,6 +175,8 @@ ACTION::ACTION()
     m_pExtra = NULL;
     m_bRecompile = FALSE;
     m_bDeleted = FALSE;
+	m_InputType = Action_TEXT;
+	m_bMultiline = m_bIgnoreCase = FALSE;
 }
 
 
@@ -108,10 +201,18 @@ BOOL ACTION::CreatePattern(char* left )
     m_pExtra = NULL;
     m_pPcre = NULL;
 
+	int options = 0;
+	if (m_bMultiline)
+		options |= PCRE_MULTILINE;
+	if (m_bIgnoreCase)
+		options |= PCRE_CASELESS;
+	
+	if (!pcre_tables) 
+		pcre_tables = pcre_maketables();
 
     const char* err;
     int err_offset;
-    m_pPcre = pcre_compile(left, 0, &err, &err_offset, NULL);
+    m_pPcre = pcre_compile(left, options, &err, &err_offset, pcre_tables);
     if ( !m_pPcre ) {
         std::string  errstr(rs::rs(1142));
         errstr += err;
@@ -132,20 +233,34 @@ BOOL ACTION::SetLeft(char* left)
 {
     m_strRegex.empty();
     m_strLeft = left;
+	m_bMultiline = m_bIgnoreCase = FALSE;
+
     if ( *left == '/' ) { // its regexp
         m_strRegex = left+1;
         int size = m_strRegex.size();
-        if ( size && m_strRegex[size-1] == '/' ) 
-            m_strRegex.resize(size-1);
-
+		BOOL i_flag = FALSE, m_flag = FALSE;
+		for (int i = size - 1; i >= 0; i--) {
+			if (m_strRegex[i] == 'i') {
+				i_flag = TRUE;
+			} else if (m_strRegex[i] == 'm') {
+				m_flag = TRUE;
+			} else if (m_strRegex[i] == '/') {
+				m_bMultiline = m_flag;
+				m_bIgnoreCase = i_flag;
+				m_strRegex.resize(i);
+				break;
+			} else {
+				break;
+			}
+		}
     } 
 
     if ( *left != '/' && strchr(left, '$' ) ) {
         m_bRecompile = TRUE;
         return TRUE;
-    }
-    else 
+    } else {
         return CreatePattern();
+	}
 }
 
 GROUPED_NODE::GROUPED_NODE()

@@ -1,0 +1,6 @@
+#promptchar
+  show current end-of-prompt character
+#promptchar disable
+  disables control of the end of prompt (use telnet GA and EOR options if possible)
+#promptchar <character>
+  set character that ends your prompt (be sure it can't be printed by your MUD in other lines)

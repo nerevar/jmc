@@ -42,6 +42,13 @@ public:
 	BOOL	m_bSplitOnBackscroll;
 	BOOL	m_bMinimizeToTray;
 	int		m_nTrigDelay;
+	UINT	m_wBCastUdpPort;
+	BOOL	m_bBCastLocalIP;
+	BOOL	m_bBCastSamePort;
+	BOOL	m_bLineWrap;
+	BOOL	m_bSelectRect;
+	BOOL	m_bRemoveESC;
+	BOOL	m_bShowHidden;
 	//}}AFX_DATA
 
 

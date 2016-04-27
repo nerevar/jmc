@@ -1,7 +1,19 @@
 #action [<pattern>]
   show all action containing pattern 
-#action <pattern> <reaction> [priority] [group]
+#action [text|raw|ansi|smaug|sow] <pattern> <reaction> [priority] [group]
+#action [text|raw|ansi|smaug|sow] /<regexp>/[i|m] <reaction> [priority] [group]
   set reaction on pattern with priority in group
+  available types of testing line:
+    text - all color esc-sequences are removed
+    raw  - line remains unchanged
+    ansi - color codes are placed in the right-most positions, background
+           codes are removed, colors for empty-substrings are omitted
+    smaug- same as ansi, esc-sequences replaced with codes such as "&w", "&R" and so on
+    sow  - same as ansi, esc-sequences replaced with codes such as "[7]", "{1}" and so on
+  default type: text
+  possible flags:
+    i - case insensitive
+    m - multiline (pattern will be tested against eash batch of lines devided by GA, EOP, long delay or user input)
 #unaction <pattern>
   delete action
   

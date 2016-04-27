@@ -31,13 +31,123 @@ void prefix_command(char *arg);
 
 char s_prefix[BUFFER_SIZE];
 
+extern BOOL bReadingConfig;
 
+static char *pstack = NULL;
+static int stack_ptr = 0, stack_capacity = 0, stack_length = 0;
+static BOOL parsing_stack = FALSE;
+
+static BOOL stack_maintain(int need_capacity) {
+	if( pstack && need_capacity <= stack_capacity ) {
+		return TRUE;
+	}
+	int to_allocate = need_capacity + BUFFER_SIZE*2;
+	if( !pstack ) {
+		pstack = (char*)malloc(to_allocate);
+		stack_length = 0;
+		if( pstack ) {
+			stack_ptr = BUFFER_SIZE;
+			pstack[stack_ptr] = '\0';
+		}
+	} else {
+		char *new_ptr = (char*)realloc(pstack, to_allocate);
+		if( !new_ptr )
+			free(pstack);
+		pstack = new_ptr;
+	}
+	if( pstack ) {
+		stack_capacity = to_allocate;
+		return TRUE;
+	} else {
+		stack_capacity = stack_length = stack_ptr = 0;
+		tintin_puts("#Error: out of memory");
+		return FALSE;
+	}
+}
+static char* stack_top() {
+	return pstack + stack_ptr;
+}
+static BOOL stack_push_front(char *arg) {
+	int len = strlen(arg);
+	
+	if( stack_length > 0 )
+		len++; //for command delimiter
+	else //stack_length == 0, ptr can has any value; choose middle
+		stack_ptr = stack_capacity / 2;
+
+	if( !stack_maintain(stack_length + len + 1) )
+		return FALSE;
+	
+	if( stack_ptr >= len ) { //new data could be simply copied
+		stack_ptr -= len;
+	} else {
+		int rest_free = stack_capacity - stack_length - len;
+		int desired_ptr = rest_free / 2 + len;
+		int offset = desired_ptr - stack_ptr; //must be greater than zero
+		memmove(pstack + stack_ptr + offset, pstack + stack_ptr, stack_length + 1);
+		stack_ptr = desired_ptr - len;
+	}
+	strcpy(pstack + stack_ptr, arg);
+
+	if( stack_length > 0 )
+		pstack[stack_ptr+len-1] = cCommandDelimiter;
+	else
+		pstack[stack_ptr+len] = '\0';
+
+	stack_length += len;
+
+	return TRUE;
+}
+static BOOL stack_push_back(char *arg) {
+	int len = strlen(arg);
+	
+	if( stack_length > 0 )
+		len++; //for command delimiter
+	else //stack_length == 0, ptr can has any value; choose middle
+		stack_ptr = stack_capacity / 2;
+
+	if( !stack_maintain(stack_length + len + 1) )
+		return FALSE;
+	
+	if( stack_ptr + stack_length + len < stack_capacity ) { //new data could be simply copied
+		
+	} else {
+		int rest_free = stack_capacity - stack_length - len;
+		int desired_ptr = stack_capacity - len - stack_length - rest_free / 2 - 1;
+		int offset = stack_ptr - desired_ptr; //must be greater than zero
+		memmove(pstack + stack_ptr - offset, pstack + stack_ptr, stack_length + 1);
+		stack_ptr = desired_ptr;
+	}
+	if( stack_length > 0 ) {
+		pstack[stack_ptr + stack_length] = cCommandDelimiter;
+		stack_length++;
+		len--;
+	}
+	strcpy(pstack + stack_ptr + stack_length, arg);
+	stack_length += len;
+
+	return TRUE;
+}
+static void stack_pop_front(char *upto) {
+	int len = upto - stack_top();
+	if(*upto)
+		len++; //command delimiter
+	if( len >= stack_length ) {
+		stack_length = 0;
+		stack_ptr = stack_capacity / 2;
+		pstack[stack_ptr] = '\0';
+	} else {
+		stack_ptr += len;
+		stack_length -= len;
+	}
+}
 /**************************************************************************/
 /* parse input, check for TINTIN commands and aliases and send to session */
 /**************************************************************************/
-void parse_input(char *input)
+void parse_input(char *input, BOOL bExecuteNow)
 {
-    char command[BUFFER_SIZE], arg[BUFFER_SIZE], result[BUFFER_SIZE];
+    char command[BUFFER_SIZE], arg[BUFFER_SIZE];
+	static char result[BUFFER_SIZE];
     char *input2;
 
     bPasswordEcho = TRUE;
@@ -48,7 +158,7 @@ void parse_input(char *input)
     }
 
     if ( verbatim  && *input == cCommandChar && *(input+1) == 'v' ) {// check verbatim command
-        char command[BUFFER_SIZE];
+        static char command[BUFFER_SIZE];
         char* input2=get_arg_stop_spaces(input+1, command);
         if(command[0] == 'v' && is_abrev(command, "verbatim")){
             char arg[BUFFER_SIZE];
@@ -68,21 +178,45 @@ void parse_input(char *input)
         write_line_mud(input);
         return ;
     }
-    substitute_myvars(input, result);
-    input2=result;
-    while(*input2) {
+    
+	int stack_length_initial = stack_length;
+
+	if( !stack_push_front(input) )
+		return;
+ 	if( !bExecuteNow && parsing_stack )
+		return;
+	parsing_stack = TRUE;
+	
+	//substitute_myvars(input, result);
+    //input2=result;
+	//while(*input2) {
+	while( stack_length > stack_length_initial ) {
+		input2 = stack_top();
 //* en:colon
         // if(*input2==';')
-        if(*input2==cCommandDelimiter||(bColon && *input2==';')&&*(input2-1)!='\\')
+        if( ((!bColon && *input2==cCommandDelimiter)||
+			 ( bColon && *input2==';'              ))
+			 && 
+			 (input2 == result || *(input2-1)!='\\') )
             input2++;
 //*/en
-        input2=get_arg_stop_spaces(input2, command);
-        input2=get_arg_all(input2, arg);
+		
+		char *current_token_start = input2;
+        input2 = get_arg_stop_spaces(input2, command);
+        input2 = get_arg_all(input2, arg);
+		char *current_token_end = input2;
+
+		substitute_myvars(command, result, sizeof(result));
+		strcpy(command, result);
+		substitute_myvars(arg, result, sizeof(result));
+		strcpy(arg, result);
+
+		stack_pop_front(input2);
 
 //* en:prefix
 		if(s_prefix[0] && command[0] != cCommandChar)
 		{
-			char p_command[BUFFER_SIZE];
+			static char p_command[BUFFER_SIZE];
 			strcpy(p_command,command);
 			strcat(p_command," ");
 			strcat(p_command,arg);
@@ -94,7 +228,7 @@ void parse_input(char *input)
 		{
 			if (bDisplayCommands) {
 				// output command in square brackets
-				char strInputCommand[BUFFER_SIZE], strOutputBuffer[BUFFER_SIZE];
+				static char strInputCommand[BUFFER_SIZE], strOutputBuffer[BUFFER_SIZE];
 				strcpy(strInputCommand, "\n[");
 				strcat(strInputCommand, command);
 				if (*arg != '\0') {
@@ -137,12 +271,42 @@ void parse_input(char *input)
 //* en
 
           ALIAS_INDEX ind;
-			
+
+		  ind = AliasList.begin();
+		  char *test_str = current_token_start;
+		  int test_len = current_token_end - current_token_start;
+		  int offsets[33];
+		  while (ind != AliasList.end() ) {
+			  ALIAS *pal = ind->second;
+			  int captured;
+			  if (pal->m_pGroup->m_bEnabled && pal->m_strRegex.length() > 0 &&
+				  (captured = pcre_exec(pal->m_pPcre, pal->m_pExtra, test_str, test_len, 0, 0, offsets, 33)) > 0) {
+				  int i;
+				  for ( i = 0 ; i < 10 ; i++ ) 
+					  vars[i][0] = 0;
+				  for ( i = 1 ; i < captured ; i++ ) {
+					  if ( offsets[i*2] >= 0 ) {
+						  int size = offsets[i*2+1]-offsets[i*2];
+						  strncpy(vars[i-1], test_str+offsets[i*2], size);
+						  *(vars[i-1]+size)='\0'; 
+					  }
+				  }
+				  char newcommand[BUFFER_SIZE];
+				  prepare_actionalias((char*)pal->m_strRight.data(), newcommand, sizeof(newcommand));
+				  parse_input(newcommand);
+				  break;
+			  }
+			  ind++;
+		  }
+		  if (ind != AliasList.end())
+			  continue;
+		
 		  if( (ind=AliasList.find(command)) != AliasList.end() && ind->second->m_pGroup->m_bEnabled ) 
 		  {
             
             int i;
-            char *cpsource, *cpsource2, newcommand[BUFFER_SIZE], end;
+            char *cpsource, *cpsource2, end;
+			char newcommand[BUFFER_SIZE];
 
             strcpy(vars[0], arg);
 
@@ -159,7 +323,7 @@ void parse_input(char *input)
                 cpsource=(*cpsource2) ? cpsource2+1 : cpsource2;
             }
             ALIAS* pal = ind->second;
-            prepare_actionalias((char*)pal->m_strRight.data(), newcommand); 
+            prepare_actionalias((char*)pal->m_strRight.data(), newcommand, sizeof(newcommand)); 
             if(!strcmp(pal->m_strRight.data(), newcommand) && *arg) 
 			{
                 strcat(newcommand, " "); 
@@ -178,6 +342,8 @@ void parse_input(char *input)
            }
 		}
     }
+	if( stack_length == 0 )
+		parsing_stack = FALSE;
     return;
 }
 
@@ -299,6 +465,13 @@ char *get_arg_all(char *s, char *arg)
     }
 
     // else if(*s==';' && nest<1) {
+	else if(*s == 0x1B && *(s+1) == '[') { //don't even look into escape sequence!!!
+		*arg++ = *s++;
+		*arg++ = *s++;
+		do {
+			*arg++ = *s++;
+		} while(*s && (isdigit(*s) || *s == ';'));
+	}
 	else if((*s==cCommandDelimiter||(bColon && *s==';'&&*(s-1)!='\\')) && nest<1) {
 	break;
     }
@@ -341,6 +514,13 @@ char *get_arg_with_spaces(char * s, char* arg)
     }
 
     // else if(*s==';' && nest==0) {
+	else if(*s == 0x1B) { //don't even look into escape sequence!!!
+		*arg++ = *s++;
+		*arg++ = *s++;
+		do {
+			*arg++ = *s++;
+		} while(*s && (isdigit(*s) || *s == ';'));
+	}
 	else if((*s==cCommandDelimiter||(bColon && *s==';'&&*(s-1)!='\\')) && nest==0) {
 	break;
     }
@@ -378,12 +558,10 @@ char *get_arg_in_braces(char *s, char *arg, int flag)
      while(*s!='\0' && !(*s==DEFAULT_CLOSE && nest==0)) {
        if(*s==DEFAULT_OPEN) {
          nest++;
-       }
-     
-       else if(*s==DEFAULT_CLOSE) {
+       } else if(*s==DEFAULT_CLOSE) {
          nest--;
-       }                                    
-       *arg++=*s++;
+       }
+       *arg++ = *s++;
      }
    if (!*s)
      tintin_puts2(rs::rs(1146));
@@ -413,7 +591,17 @@ char *get_arg_stop_spaces(char *s, char *arg)
     }
 
     // else if(*s==';') {
-	else if(*s==cCommandDelimiter||(bColon && *s==';' &&*(s-1)!='\\')) {
+	else if(*s == 0x1B) { //don't even look into escape sequence!!!
+		*arg++ = *s++;
+		*arg++ = *s++;
+		do {
+			*arg++ = *s++;
+		} while(*s && (isdigit(*s) || *s == ';'));
+	}
+	else if( ((!bColon && *s==cCommandDelimiter)||
+		      ( bColon && *s==';'              )) 
+			  &&
+			  (*(s-1) != '\\')) {
       if(inside)
 	*arg++=*s++;
       else

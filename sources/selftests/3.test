@@ -1,0 +1,51 @@
+##    CHECK RANDOM GENERATOR, CLOCKMS, FAST OUTPUT, LONG RECURSIVE LOOPS
+
+#var MaxN 10000
+
+#alias generateRandom {#random x -10000 10000; #if {$n == 0} {#var Min $x; #var Max $x} {#if {$Min > $x} {#var Min $x}; #if {$Max < $x} {#var Max $x}}; #math Sum {$Sum + $x}; #math n {$n + 1}; #if {$n < $MaxN} {generateRandom} {}}
+#alias generateRandomOutput {#random x -10000 10000; #showme {generated random number: $x}; #if {$n == 0} {#var Min $x; #var Max $x} {#if {$Min > $x} {#var Min $x}; #if {$Max < $x} {#var Max $x}}; #math Sum {$Sum + $x}; #math n {$n + 1}; #if {$n < $MaxN} {generateRandomOutput} {}}
+
+#message variable off
+
+#srandom 0
+#var Sum 0
+#var n 0
+#var T0 $CLOCKMS
+generateRandom
+#math dT1 {$CLOCKMS - $T0}
+#math dT11 {($dT1 * 1000) / $MaxN}
+#math Avg1 {$Sum / $MaxN}
+#var Min1 {$Min}
+#var Max1 {$Max}
+
+#output {Random test1: Min = $Min1, Max = $Max1, avg = $Avg1, time elapsed ~= $dT1 ms ($dT11 us/number) }
+
+#srandom 0
+#var Sum 0
+#var n 0
+#var T0 $CLOCKMS
+generateRandomOutput
+#math dT2 {$CLOCKMS - $T0}
+#math dT21 {($dT2 * 1000) / $MaxN}
+#math Avg2 {$Sum / $MaxN}
+#var Min2 {$Min}
+#var Max2 {$Max}
+
+#output {Random test2: Min = $Min2, Max = $Max2, avg = $Avg2, time elapsed ~= $dT2 ms ($dT21 us/number) }
+
+assertEqual RANDOM_GENERATOR_SRAND Min1 Min2
+assertEqual RANDOM_GENERATOR_SRAND Max1 Max2
+assertEqual RANDOM_GENERATOR_SRAND Avg1 Avg2
+
+##TODO: add chi-square test/KS-test
+
+#math Period {$Max1 - $Min1}
+#math MaxMin {$Period / 100}
+#math MinAvg {($Min1 + $Max1) / 2 - $Period / 10}
+#math MaxAvg {($Min1 + $Max1) / 2 + $Period / 10}
+
+assertLess RANDOM_GENERATOR_QUALITY Min1 MaxMin
+assertLess RANDOM_GENERATOR_QUALITY Avg1 MaxAvg
+assertLess RANDOM_GENERATOR_QUALITY MinAvg Avg1
+
+#message variable on

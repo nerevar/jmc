@@ -1,0 +1,9 @@
+#random {varibale} {min} {max}
+  sets value of certain variable to random 
+  evenly distributed integer number
+  between min and max exclusive, [min..max)
+#random {variable} {max}
+   interval is [0..max)
+#random {variable}
+  interval is [0..100)
+  

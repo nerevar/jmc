@@ -76,6 +76,8 @@ PCScriptFile DLLEXPORT GetScriptFileList(int* size)
     EnterCriticalSection(&secScriptFiles);
     if (size)
         *size = ScriptFileList.size();
+	if(!ScriptFileList.size())
+		return NULL;
     CScriptFile *pScr = ScriptFileList.front();
     LeaveCriticalSection(&secScriptFiles);
     return pScr;
