@@ -56,18 +56,20 @@ void syserr(char* msg)
 
 string StrPrintfV(char* pszFormat, va_list marker)
 {
+	/*
 	string data;
 	data.reserve(256);
 	while( _vsnprintf(&data[0], data.capacity(), pszFormat, marker) == -1 )
            data.reserve(data.capacity() + 256);
     return data;
-	/*
+	*/
+	
     vector<char> data;
         data.reserve(256);
     while( _vsnprintf(data.begin(), data.capacity(), pszFormat, marker) == -1 )
            data.reserve(data.capacity() + 256);
     return data.begin();
-	*/
+	
 }
 
 string strprintf(char* pszFormat, ...)
