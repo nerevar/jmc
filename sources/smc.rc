@@ -146,7 +146,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,94,68,50,14
 END
 
-IDD_PARAMS_PAGE DIALOG DISCARDABLE  0, 0, 297, 107
+IDD_PARAMS_PAGE DIALOG DISCARDABLE  0, 0, 310, 164
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
@@ -159,34 +159,53 @@ BEGIN
     EDITTEXT        IDC_MIN_LEN,180,10,30,12,ES_AUTOHSCROLL | ES_NUMBER
     LTEXT           "History size:",IDC_STATIC,110,29,38,11
     EDITTEXT        IDC_HISTORY_SIZE,180,29,30,12,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Uncompleted lines delay:",IDC_STATIC,223,4,66,25
+    LTEXT           "Uncompleted lines delay:",IDC_STATIC,223,4,67,25
     EDITTEXT        IDC_TRIG_DELAY,223,31,30,12,ES_AUTOHSCROLL | ES_NUMBER
     LTEXT           "Command char:",IDC_STATIC,11,56,59,11
     EDITTEXT        IDC_COMMAND_CHAR,78,55,15,12,ES_AUTOHSCROLL
     LTEXT           "Command delimiter:",IDC_STATIC,11,71,62,11
     EDITTEXT        IDC_COMMAND_DELIMITER,78,70,15,12,ES_AUTOHSCROLL
     CONTROL         "Display input",IDC_DISPLAY_INPUT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,102,49,76,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,108,56,76,10
     CONTROL         "Clean input",IDC_CLEAR_INPUT,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,102,60,83,10
+                    WS_TABSTOP,109,113,63,10
     CONTROL         "Split on scroll",IDC_SPLIT_ONBACKSCROLL,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,197,71,99,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,108,65,77,10
     CONTROL         "Autoreconnect",IDC_AUTO_RECONNECT,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,197,49,77,10
     CONTROL         "Beep on connect",IDC_CONNECT_BEEP,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,197,60,89,10
     GROUPBOX        "Commands history",IDC_STATIC,7,2,208,45
     CONTROL         "Leave one token",IDC_TOKEN_INPUT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,102,71,85,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,109,122,72,10
     CONTROL         "Clear last token",IDC_TOKEN_LAST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,102,82,87,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,109,132,66,10
     CONTROL         "Cursor in end",IDC_AUTO_END,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,197,82,93,10
+                    WS_TABSTOP,109,141,66,10
     CONTROL         "Display commands",IDC_DISPLAY_COMMANDS,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,12,84,76,10
     CONTROL         "Minimize to system tray",IDC_MINIMIZE_TO_TRAY,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,102,92,87,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,197,70,87,10
     GROUPBOX        "Commands",IDC_COMMANDS_FRAME,7,46,90,52
+    GROUPBOX        "Broadcast messaging",IDC_STATIC,7,102,89,52
+    LTEXT           "UDP port",IDC_STATIC,10,115,33,8
+    EDITTEXT        IDC_BCAST_UDP_PORT,45,112,44,12,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    CONTROL         "Local IP only",IDC_BCAST_LOCAL_IP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,10,126,76,8
+    CONTROL         "Same port only",IDC_BCAST_SAME_PORT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,9,137,66,8
+    CONTROL         "Wrap lines",IDC_CHK_LINEWRAP,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,108,75,72,10
+    CONTROL         "Rectangular area",IDC_CHK_SELECTRECT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,201,114,71,10
+    CONTROL         "Show hidden text",IDC_CHK_SHOWHIDDEN,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,108,84,71,10
+    GROUPBOX        "Input handling",IDC_STATIC,103,102,85,52
+    GROUPBOX        "Display settings",IDC_STATIC,103,46,85,52
+    GROUPBOX        "Selection",IDC_STATIC,195,102,105,52
+    CONTROL         "Remove ESC-sequences",IDC_CHK_REMOVEESC,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,201,125,95,10
 END
 
 IDD_SUBST_PAGE DIALOG DISCARDABLE  0, 0, 269, 98
@@ -430,7 +449,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,129,25,50,14
 END
 
-IDD_JMC_ACTIONS DIALOG DISCARDABLE  0, 0, 359, 170
+IDD_JMC_ACTIONS DIALOG DISCARDABLE  0, 0, 359, 181
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
@@ -440,18 +459,21 @@ BEGIN
     CONTROL         "List1",IDC_ACTIONS,"SysListView32",LVS_REPORT | 
                     LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | 
                     WS_TABSTOP,8,25,288,100
-    LTEXT           "Pattern:",IDC_STATIC,8,135,32,8
-    EDITTEXT        IDC_NAME,44,131,160,12,ES_AUTOHSCROLL
-    LTEXT           "Action:",IDC_STATIC,8,154,33,8
-    EDITTEXT        IDC_TEXT,44,150,311,12,ES_AUTOHSCROLL
-    LTEXT           "Priority:",IDC_STATIC,208,134,28,8
-    COMBOBOX        IDC_PRIORITY,238,130,25,73,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    LTEXT           "Pattern:",IDC_STATIC,12,135,26,8
+    EDITTEXT        IDC_NAME,44,131,310,12,ES_AUTOHSCROLL
+    LTEXT           "Action:",IDC_STATIC,13,165,27,8
+    EDITTEXT        IDC_TEXT,43,162,311,12,ES_AUTOHSCROLL
+    LTEXT           "Priority:",IDC_STATIC,13,150,27,8
+    COMBOBOX        IDC_PRIORITY,43,146,25,73,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
-    LTEXT           "Group:",IDC_STATIC,268,134,26,8
-    COMBOBOX        IDC_GRP,295,130,60,89,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    LTEXT           "Group:",IDC_STATIC,73,150,26,8
+    COMBOBOX        IDC_GRP,101,146,84,89,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     PUSHBUTTON      "Add",IDC_ADD,305,25,50,14
     PUSHBUTTON      "Delete",IDC_REMOVE,305,42,50,14
+    LTEXT           "Type:",IDC_STATIC,189,150,23,9
+    COMBOBOX        IDC_ACTION_TYPE,212,146,57,73,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_JMC_HLIGHT DIALOG DISCARDABLE  0, 0, 359, 170
@@ -736,6 +758,16 @@ BEGIN
 0x0038, 
     IDC_PRIORITY, 0x403, 2, 0
 0x0039, 
+    IDC_ACTION_TYPE, 0x403, 5, 0
+0x6574, 0x7478, "\000" 
+    IDC_ACTION_TYPE, 0x403, 4, 0
+0x6172, 0x0077, 
+    IDC_ACTION_TYPE, 0x403, 5, 0
+0x6e61, 0x6973, "\000" 
+    IDC_ACTION_TYPE, 0x403, 6, 0
+0x6d73, 0x7561, 0x0067, 
+    IDC_ACTION_TYPE, 0x403, 4, 0
+0x6f73, 0x0077, 
     0
 END
 
@@ -826,12 +858,18 @@ BEGIN
 
     IDD_PARAMS_PAGE, DIALOG
     BEGIN
-        BOTTOMMARGIN, 104
+        RIGHTMARGIN, 308
+        BOTTOMMARGIN, 161
     END
 
     IDD_LOG_PARAMS_PAGE, DIALOG
     BEGIN
         RIGHTMARGIN, 199
+    END
+
+    IDD_JMC_ACTIONS, DIALOG
+    BEGIN
+        BOTTOMMARGIN, 170
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -1040,6 +1078,7 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_SF_ADD_CAPTION      "Add file"
     IDS_SF_ALREADY_USED_DEFAULT "This file is used by default."
+    IDS_TP_INPUTTYPE_COL    "Color"
 END
 
 STRINGTABLE DISCARDABLE 

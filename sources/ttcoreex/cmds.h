@@ -117,6 +117,14 @@ jmc_cmdi jmc_cmds[JMC_CMDS_NUM]={
            {"run",&run_command,"\0"},
 		   {"clear",&clear_command,"\0"},
 		   {"wclear",&wclear_command,"\0"},
-		   {"strcmp",&strcmp_command,"\0"}
+		   {"loopback",&loopback_command,"\0"},
+		   {"broadcast",&broadcast_command,"\0"},
+		   {"strcmp",&strcmp_command,"\0"},
+		   {"srandom",&srandom_command,"\0"},
+		   {"random",&random_command,"\0"},
+		   {"sync",&sync_command,"\0"},
+		   {"proxy",&proxy_command,"\0"},
+		   {"mccp", &mccp_command, "\0"},
+		   {"promptend", &promptend_command, "\0"}
 	   };
 #endif

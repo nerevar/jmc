@@ -17,7 +17,8 @@
 		ID_PreTimer, 
 		ID_Disconnected, 
 		ID_Load, 
-		ID_Unload
+		ID_Unload,
+		ID_Prompt
 
     };
 
