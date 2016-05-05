@@ -844,16 +844,19 @@ void do_one_line(char *line)
 
     pJmcObj->m_pvarEventParams[0] = (line);
     BOOL bRet = pJmcObj->Fire_Incoming();
-    if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) 
-        strcpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal) );
-    else 
+    if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) {
+        //strcpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal) );
+		if (strncpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal), BUFFER_SIZE - 1) < 0)
+			line[BUFFER_SIZE-1] = '\0';
+    } else {
         strcpy(line, "." );
+	}
 
     if ( bRet ) {
 		int len = strlen(line);
-		if (multiline_length + len + 1 >= sizeof(multiline_buf)) {
+		if (multiline_length + len + 1 >= sizeof(multiline_buf) - 1) {
 			// show error?
-			len = sizeof(multiline_buf) - 1 - multiline_length;
+			len = sizeof(multiline_buf) - 1 - 1 - multiline_length;
 		}
 		if (len > 0 && multiline_length > 0) {
 			multiline_buf[multiline_length++] = '\n';
@@ -892,12 +895,11 @@ void do_multiline()
 
     pJmcObj->m_pvarEventParams[0] = (multiline_buf);
     BOOL bRet = pJmcObj->Fire_Prompt();
-    if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) 
-        strcpy(multiline_buf, W2A(pJmcObj->m_pvarEventParams[0].bstrVal) );
-
-    if ( bRet ) {
+	if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) {
+		if (strncpy(multiline_buf, W2A(pJmcObj->m_pvarEventParams[0].bstrVal), sizeof(multiline_buf) - 1) < 0)
+			multiline_buf[sizeof(multiline_buf)-1] = '\0';
 		check_all_actions(multiline_buf, true);
-	}
+    }
 
 	multiline_length = 0;
 }
