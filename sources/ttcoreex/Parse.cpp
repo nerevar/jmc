@@ -150,8 +150,6 @@ void parse_input(char *input, BOOL bExecuteNow)
 	static char result[BUFFER_SIZE];
     char *input2;
 
-    bPasswordEcho = TRUE;
-
     if(*input=='\0') {
         write_line_mud("");
         return ; 

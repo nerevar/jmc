@@ -448,7 +448,7 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 break;
 
             // check for [ command and digit after it. IF not - skip to end of ESC command
-            if ( *src++ != '[' /*|| !isdigit(*src)*/ ) {
+            if ( *src != '[' /*|| !isdigit(*src)*/ ) {
                 while ( *src && *src != 'm' ) src++;
                 if ( *src == 'm' )
                     src++;
@@ -547,7 +547,7 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 break;
 
             // check for [ command and digit after it. IF not - skip to end of ESC command
-            if ( *src++ != '[' /*|| !isdigit(*src)*/ ) {
+            if ( *src != '[' /*|| !isdigit(*src)*/ ) {
                 while ( *src && *src != 'm' ) src++;
                 if ( *src == 'm' )
                     src++;

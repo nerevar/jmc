@@ -321,16 +321,33 @@ void substitute_vars(char *arg, char *result, int maxlength)
   *result++='\0';
 }
 
+static void remove_ansi_codes(const char *input, char *output)
+{
+    while (*input)  {
+        switch ( *input ) {
+        case 0x1B:
+            while ( *input && *input != 'm' ) 
+                input++;
+            if ( *input ) 
+                input++;
+            break;
+        default:
+            *output++ = *input++;
+            break;
+
+        }
+    } 
+    *output = 0;
+}
+
 static void canonize_ansi_codes(const char *input, char *output, int maxlength)
 {
 	static int state = 37;
 	int last_printed = -1;
-	int len;
-	maxlength -= 7;
-	for(len = 0; (*input) && len < maxlength; ) {
-		if (*input == 0x1B) {
-			input++;
-			int cmd = 0, cmdlen = 0;
+	while ((*input) && maxlength) {
+		if (input[0] == 0x1B && input[1] == '[') {
+			input += 2;
+			int cmd = 0, cmdlen = 0, next_state = state;
 			while (*input) {
 				if (*input >= '0' && *input <= '9') {
 					cmd = cmd * 10 + (*input - '0');
@@ -338,15 +355,19 @@ static void canonize_ansi_codes(const char *input, char *output, int maxlength)
 				} else if (cmdlen > 0) {
 					//parse cmd
 					if (cmd == 0) {
-						state = 37;
+						next_state = 37;
 					} else if (cmd == 1) {
-						state |= 0x100;
+						next_state |= 0x100;
 					} else if (cmd >= 30 && cmd <= 37) {
-						state = (state & 0x100) | cmd;
+						next_state = (next_state & 0x100) | cmd;
 					}
 					cmd = cmdlen = 0;
 				}
-				if (*input == 'm') {
+				if (isalpha((unsigned char)(*input))) {
+					if (*input == 'm') //color command
+						state = next_state;
+					else
+						next_state = state;
 					input++;
 					break;
 				}
@@ -354,22 +375,24 @@ static void canonize_ansi_codes(const char *input, char *output, int maxlength)
 			}
 			continue;
 		}
-		if (isprint((unsigned char)(*input)) || (*input) < 0 || (*input) == '\n') {
-			if (!isspace((unsigned char)(*input)) && last_printed != state) {
-				output[len++] = 0x1B;
-				output[len++] = '[';
-				output[len++] = '0' + (state >> 8);
-				output[len++] = ';';
-				output[len++] = '3';
-				output[len++] = '0' + ((state & 0xFF) - 30);
-				output[len++] = 'm';
+		if ((*input) < 0 || isprint((unsigned char)(*input)) || (*input) == '\n') {
+			if (!isspace((unsigned char)(*input)) && last_printed != state && maxlength >= 8) {
+				(*output++) = 0x1B;
+				(*output++) = '[';
+				(*output++) = '0' + (state >> 8);
+				(*output++) = ';';
+				(*output++) = '3';
+				(*output++) = '0' + ((state & 0xFF) - 30);
+				(*output++) = 'm';
+				maxlength -= 7;
 				last_printed = state;
 			}
-			output[len++] = *input;
+			(*output++) = *input;
+			maxlength--;
 		}
 		input++;
 	}
-	output[len] = '\0';
+	*output = '\0';
 }
 
 static void replace_all_inplace(char *inout, const char *search_for, const char *replace_with)
@@ -444,45 +467,21 @@ static void translate_to_sow(const char *canonized, char *output)
 /**********************************************/
 /* check actions                              */
 /**********************************************/
-void check_all_actions(char *line1, bool multiline)
+void check_all_actions(char *line, bool multiline)
 {
-    static char temp[512] = PROMPT_FOR_PW_TEXT;
+    static char strng[BUFFER_SIZE];
 
-    static char strng[BUFFER_SIZE*32];
-	static char line[BUFFER_SIZE*2*32];
-
-	static char colored_ansi[BUFFER_SIZE*2*32];
-	static char colored_smaug[BUFFER_SIZE*2*32];
-	static char colored_sow[BUFFER_SIZE*2*32];
+	static char uncolored_text[MULTILINE_BUFFER_SIZE];
+	static char colored_ansi[MULTILINE_BUFFER_SIZE];
+	static char colored_smaug[MULTILINE_BUFFER_SIZE*2];
+	static char colored_sow[MULTILINE_BUFFER_SIZE*2];
 	
-	canonize_ansi_codes(line1, colored_ansi, sizeof(colored_ansi) - 1);
-	colored_smaug[0] = 0;
-	colored_sow[0] = 0;
-
-    char* ptr = line1;
-    char* res = line;
-    while (*ptr)  {
-        switch ( *ptr ) {
-        case 0x1B:
-            while ( *ptr && *ptr != 'm' ) 
-                ptr++;
-            if ( *ptr ) 
-                ptr++;
-            break;
-        default:
-            *res++ = *ptr++;
-            break;
-
-        }
-    } 
-    *res = 0;
+	uncolored_text[0] = '\0';
+	colored_ansi[0] = '\0';
+	colored_smaug[0] = '\0';
+	colored_sow[0] = '\0';
 
     // Do check 
-
-    if( !multiline && check_one_action(line, temp) ){
-        bPasswordEcho = FALSE;
-    } else 
-        bPasswordEcho = TRUE;
 
     bDroppedLine = FALSE;
   
@@ -496,21 +495,29 @@ void check_all_actions(char *line1, bool multiline)
 
 			switch (pac->m_InputType) {
 			default:
-			case ACTION::Action_TEXT:
+			case ACTION::Action_RAW:
 				input = line;
 				break;
-			case ACTION::Action_RAW:
-				input = line1;
+			case ACTION::Action_TEXT:
+				if (!uncolored_text[0])
+					remove_ansi_codes(line, uncolored_text);
+				input = uncolored_text;
 				break;
 			case ACTION::Action_ANSI:
+				if (!colored_ansi[0])
+					canonize_ansi_codes(line, colored_ansi, sizeof(colored_ansi) - 1);
 				input = colored_ansi;
 				break;
 			case ACTION::Action_SMAUG:
+				if (!colored_ansi[0])
+					canonize_ansi_codes(line, colored_ansi, sizeof(colored_ansi) - 1);
 				if (!colored_smaug[0])
 					translate_to_smaug(colored_ansi, colored_smaug);
 				input = colored_smaug;
 				break;
 			case ACTION::Action_SOW:
+				if (!colored_ansi[0])
+					canonize_ansi_codes(line, colored_ansi, sizeof(colored_ansi) - 1);
 				if (!colored_sow[0])
 					translate_to_sow(colored_ansi, colored_sow);
 				input = colored_sow;
@@ -526,8 +533,8 @@ void check_all_actions(char *line1, bool multiline)
 				}
 				parse_input(buffer, TRUE);
 				if ( bDroppedLine ) {
-					line1[0] = '.';
-					line1[1] = 0;
+					line[0] = '.';
+					line[1] = 0;
 					return;
 				}
 				if ( !bMultiAction && !bContinuedAction) 

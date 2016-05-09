@@ -11,9 +11,12 @@
 #define MAX_OUTPUT 10
 //vls-end//
 
-#define SUBST_ARRAY_SIZE 68
-#define BUFFER_SIZE 2048
-#define MAX_VARNAME_LENGTH 64
+#define SUBST_ARRAY_SIZE		68
+#define BUFFER_SIZE				2048
+//#define MULTILINE_BUFFER_SIZE	(BUFFER_SIZE*32)
+#define MULTILINE_BUFFER_SIZE	(BUFFER_SIZE*1)
+#define EMULATOR_BUFFER_SIZE	1024
+#define MAX_VARNAME_LENGTH		64
 
 typedef void (CALLBACK* END_FUNC)(void);
 typedef void (CALLBACK* DIRECT_OUT_FUNC)(char*, BOOL);
@@ -71,7 +74,6 @@ extern BOOL DLLEXPORT bAppendLogTitle;
 extern BOOL DLLEXPORT bANSILog;
 extern int DLLEXPORT iSecToTick;
 extern BOOL DLLEXPORT bTickStatus;
-extern BOOL DLLEXPORT bPasswordEcho ;
 extern BOOL DLLEXPORT bConnectBeep;
 extern BOOL DLLEXPORT bAutoReconnect;
 extern BOOL DLLEXPORT bDisplayCommands;
@@ -105,7 +107,7 @@ extern HANDLE DLLEXPORT eventAllObjectEvent;
 
 extern HANDLE DLLEXPORT eventMudEmuTextArrives;
 extern int DLLEXPORT nMudEmuTextSize;
-extern char DLLEXPORT strMudEmuText[513];
+extern char DLLEXPORT strMudEmuText[EMULATOR_BUFFER_SIZE];
 
 //vls-begin// #system
 extern CRITICAL_SECTION DLLEXPORT secSystemExec;

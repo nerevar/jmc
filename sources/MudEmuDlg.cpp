@@ -63,10 +63,10 @@ void CMudEmuDlg::OnStartStopLog()
 	UpdateData();
 
 	if (m_pBuff != NULL) {
+		KillTimer(1);
 		ResetEvent(eventMudEmuTextArrives);
-		delete m_pBuff;
+		delete[] m_pBuff;
 		m_pBuff = NULL;
-        KillTimer(1);
 		m_StartStopButton.SetWindowText("Start");
 		m_SendButton.EnableWindow(TRUE);
 		m_SendLineButton.EnableWindow(TRUE);
@@ -83,8 +83,8 @@ void CMudEmuDlg::OnStartStopLog()
 
 		DWORD dwSize = GetFileSize(m_hLogFile, NULL);
         m_pBuff = new char[dwSize+2];
-        m_pBuff[dwSize] = 0;
 		ReadFile(m_hLogFile, m_pBuff, dwSize, &dwSize, NULL);
+		m_pBuff[dwSize] = 0;
 		CloseHandle(m_hLogFile);
 
 		m_nOffset = 0;
@@ -177,7 +177,7 @@ void CMudEmuDlg::OnTimer(UINT nIDEvent)
 
     if ( IsConnected() ) {
         ResetEvent(eventMudEmuTextArrives);
-        delete m_pBuff;
+        delete[] m_pBuff;
         m_pBuff = NULL;
         KillTimer(1);
 		m_StartStopButton.SetWindowText("Start");
@@ -230,7 +230,7 @@ void CMudEmuDlg::OnTimer(UINT nIDEvent)
 
         if ( m_nOffset >= m_nBufSize ) {
             KillTimer(1);
-            delete m_pBuff;
+            delete[] m_pBuff;
             m_pBuff= NULL;
 			m_StartStopButton.SetWindowText("Start");
 			m_SendButton.EnableWindow(TRUE);

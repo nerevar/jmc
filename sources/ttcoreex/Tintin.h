@@ -99,7 +99,6 @@ enum {
 /* The text below is checked for. If it trickers then echo is turned off */
 /* echo is turned back on the next time the user types a return          */
 /*************************************************************************/
-#define PROMPT_FOR_PW_TEXT "assword:"
 
 #define DEFAULT_GROUP_NAME "default" 
 

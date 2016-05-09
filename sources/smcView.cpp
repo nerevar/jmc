@@ -204,14 +204,9 @@ LONG CSmcView::OnLineEntered( UINT wParam, LONG lParam)
     } else {
         strInput = strCommand;
     }
-/*    CString OutText;
-    if ( pFrame->GetInputDisplay() && bPasswordEcho ) 
-        OutText = (LPCSTR)(strCommand + "\n");
-*/    InputSection.Unlock();
+    InputSection.Unlock();
     SetEvent(hInputDoneEvent);
-/*    if ( pFrame->GetInputDisplay() && bPasswordEcho ) 
-        pDoc->DrawSome ((LPSTR)(LPCSTR)OutText);
-*/    return 0;
+    return 0;
 }
 
 
@@ -438,9 +433,7 @@ BOOL CSmcView::PreTranslateMessage(MSG* pMsg)
             strcat((char*)action, "\n");
             SetEvent(hInputDoneEvent);
             pDoc->m_KeyListSection.Unlock();
-/*            if ( ((CMainFrame*)AfxGetMainWnd())->GetInputDisplay() && bPasswordEcho ) 
-                pDoc->DrawSome((char*)action);
-*/            return TRUE;
+            return TRUE;
         }
 
     }
@@ -586,7 +579,7 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 break;
 
             // check for [ command and digit after it. IF not - skip to end of ESC command
-            if ( *src++ != '[' /*|| !isdigit(*src)*/ ) {
+            if ( *src != '[' /*|| !isdigit(*src)*/ ) {
                 while ( *src && *src != 'm' ) src++;
                 if ( *src == 'm' )
                     src++;
@@ -682,11 +675,11 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
 			}
 
             // Now check for ANSI colors
-            if ( !*src++ ) // if end of string - get out
+            if ( !(*src++) ) // if end of string - get out
                 break;
 
             // check for [ command and digit after it. IF not - skip to end of ESC command
-            if ( *src++ != '[' /*|| !isdigit(*src)*/ ) {
+            if ( *src != '[' /*|| !isdigit(*src)*/ ) {
                 while ( *src && *src != 'm' ) src++;
                 if ( *src == 'm' )
                     src++;
@@ -744,13 +737,10 @@ void CSmcView::OnLButtonDown(UINT nFlags, CPoint point)
 static char* SkipAnsi(char* ptr)
 {
 
-    for ( ; *ptr ; ptr++ ) {
-        if ( *ptr == 'm' ){
-            ptr++;
-            break;
-        }
-    }
+    for ( ; *ptr && *ptr != 'm'; ptr++ ) {};
 
+	if (*ptr)
+		ptr++;
     return ptr;
 }
 

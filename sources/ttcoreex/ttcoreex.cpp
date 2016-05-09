@@ -69,7 +69,6 @@ BOOL DLLEXPORT bAppendLogTitle;
 BOOL DLLEXPORT bANSILog;
 int DLLEXPORT iSecToTick;
 BOOL DLLEXPORT bTickStatus;
-BOOL DLLEXPORT bPasswordEcho = TRUE;
 BOOL DLLEXPORT bConnectBeep;
 BOOL DLLEXPORT bAutoReconnect;
 BOOL DLLEXPORT bHTML;
@@ -95,7 +94,7 @@ HANDLE DLLEXPORT eventAllObjectEvent;
 
 HANDLE DLLEXPORT eventMudEmuTextArrives;
 int DLLEXPORT nMudEmuTextSize = 0;
-char DLLEXPORT strMudEmuText[513];
+char DLLEXPORT strMudEmuText[EMULATOR_BUFFER_SIZE];
 
 //vls-begin// #system
 CRITICAL_SECTION DLLEXPORT secSystemExec;
@@ -180,7 +179,7 @@ typedef DWORD (WINAPI* pfnDHDPWPipPDD)(HANDLE, DWORD, LPVOID, WORD,
 									   PIP_OPTION_INFORMATION, LPVOID, DWORD, DWORD); // evil, no?
 unsigned long __stdcall PingThread(void *pParam);
 
-static char multiline_buf[BUFFER_SIZE * 32];
+static char multiline_buf[MULTILINE_BUFFER_SIZE];
 static int multiline_length = 0;
 
 static void process_incoming(char* buffer, BOOL FromServer = TRUE);
@@ -722,6 +721,7 @@ void  DLLEXPORT CloseState(void)
 }
 
 //* en:fix to allow DROPPING reload message
+void add_line_to_multiline(char *line);
 void do_one_line(char *line);
 void do_multiline();
 //*/en
@@ -837,6 +837,35 @@ static void tick_func()
 /**********************************************************/
 /* do all of the functions to one line of buffer          */
 /**********************************************************/
+void add_line_to_multiline(char *line)
+{
+	int multiline_capacity = sizeof(multiline_buf) - 1; //hold one char for null-terminator
+	int rest = multiline_capacity - multiline_length;
+
+	if (rest <= 0)
+		return;
+
+	int len = strlen(line);
+
+	if (len <= 0)
+		return;
+
+	if (multiline_length > 0) { //add new line
+		multiline_buf[multiline_length++] = '\n';
+		rest--;
+
+		if (rest <= 0)
+			return;
+	}
+
+	if (rest < len) {
+		// show error?
+		len = rest;
+	}
+    
+	memcpy(&multiline_buf[multiline_length], line, len);
+	multiline_length += len;
+}
 
 void do_one_line(char *line)
 {   
@@ -846,26 +875,15 @@ void do_one_line(char *line)
     BOOL bRet = pJmcObj->Fire_Incoming();
     if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) {
         //strcpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal) );
-		if (strncpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal), BUFFER_SIZE - 1) < 0)
-			line[BUFFER_SIZE-1] = '\0';
+		strncpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal), BUFFER_SIZE - 1);
+		line[BUFFER_SIZE - 1] = '\0';
     } else {
         strcpy(line, "." );
 	}
 
     if ( bRet ) {
-		int len = strlen(line);
-		if (multiline_length + len + 1 >= sizeof(multiline_buf) - 1) {
-			// show error?
-			len = sizeof(multiline_buf) - 1 - 1 - multiline_length;
-		}
-		if (len > 0 && multiline_length > 0) {
-			multiline_buf[multiline_length++] = '\n';
-		}
-
-        if (!presub && !ignore) {
-			strncpy(&multiline_buf[multiline_length], line, len);
-			multiline_length += len;
-
+		if (!presub && !ignore) {
+			add_line_to_multiline(line);
 			check_all_actions(line, false);
 		}
 
@@ -875,9 +893,7 @@ void do_one_line(char *line)
 		}
 
         if (presub && !ignore) {
-			strncpy(&multiline_buf[multiline_length], line, len);
-			multiline_length += len;
-
+			add_line_to_multiline(line);
 			check_all_actions(line, false);
 		}
 
@@ -892,12 +908,12 @@ void do_multiline()
 	if (!multiline_length)
 		return;
 	multiline_buf[multiline_length] = 0;
-
+	
     pJmcObj->m_pvarEventParams[0] = (multiline_buf);
     BOOL bRet = pJmcObj->Fire_Prompt();
 	if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) {
-		if (strncpy(multiline_buf, W2A(pJmcObj->m_pvarEventParams[0].bstrVal), sizeof(multiline_buf) - 1) < 0)
-			multiline_buf[sizeof(multiline_buf)-1] = '\0';
+		strncpy(multiline_buf, W2A(pJmcObj->m_pvarEventParams[0].bstrVal), sizeof(multiline_buf) - 1);
+		multiline_buf[sizeof(multiline_buf)-1] = '\0';
 		check_all_actions(multiline_buf, true);
     }
 
@@ -1142,7 +1158,6 @@ void ParseScriptlet2(BSTR bstrScriptlet)
 //vls-end//
 
 }
-
 void DLLEXPORT ReadMud()
 {    
     fd_set readfdmask;
@@ -1194,14 +1209,20 @@ void DLLEXPORT ReadMud()
         }
     } else {
         if ( WaitForSingleObject (eventMudEmuTextArrives, 0 ) == WAIT_OBJECT_0 ) {
-            char buf[BUFFER_SIZE];
-            memcpy(buf, strMudEmuText, nMudEmuTextSize);
-            buf[nMudEmuTextSize] = 0;
+            static char buf[BUFFER_SIZE];
+			if (nMudEmuTextSize > 0) {
+				memcpy(buf, strMudEmuText, nMudEmuTextSize);
+				buf[nMudEmuTextSize] = 0;
             
-            if ( buf[nMudEmuTextSize-1] != 0xA && buf[nMudEmuTextSize-1]!= 1 )
-                more_coming = 1;
-            else 
-                more_coming = 0;
+				if ( buf[nMudEmuTextSize-1] != 0xA && buf[nMudEmuTextSize-1]!= 1 )
+					more_coming = 1;
+				else 
+					more_coming = 0;
+
+				nMudEmuTextSize = 0;
+			} else {
+				buf[0] = '\0';
+			}
 
 			ResetEvent(eventMudEmuTextArrives);
 
@@ -1216,7 +1237,7 @@ void DLLEXPORT ReadMud()
 		}
 
 		if (BCASTSocket != INVALID_SOCKET) {
-			char buf[BUFFER_SIZE];
+			static char buf[BUFFER_SIZE];
 			unsigned long len;
 
 			for(;;) {	

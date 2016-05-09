@@ -200,10 +200,10 @@ static void AddToOutList(char* str, int wndCode)
 
     // Now we are ready to parse string, split it to few strings to fit to window etc.
     // Lets start
-    char AllANSIFromCurrString[BUFFER_SIZE] = "";
+    char AllANSIFromCurrString[BUFFER_SIZE];
     char* src = strAdd;
     char* ansi = AllANSIFromCurrString;
-    char OutputBuffer[BUFFER_SIZE+32] = "";
+    char OutputBuffer[BUFFER_SIZE+32];
     char* dest = OutputBuffer;
     int OutTextLen = 0;
 
