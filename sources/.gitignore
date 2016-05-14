@@ -12,6 +12,7 @@
 *.com
 *.class
 *.dll
+!zlib.dll
 *.exe
 *.pdb
 *.dll.config
