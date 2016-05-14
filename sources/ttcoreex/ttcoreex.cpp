@@ -973,7 +973,8 @@ static void process_incoming(char* buffer, BOOL FromServer)
 			}
 
 			//vls-begin// #logadd + #logpass // multiple output
-            if(hLogFile.is_open() && !bLogPassedLine && (bLogAsUserSeen || FromServer)) {
+            if(hLogFile.is_open() && !bLogPassedLine && (bLogAsUserSeen || FromServer)
+				&& strcmp(line_to_log, ".")) {
 				log(processLine(line_to_log));
 				log("\n");
             }
