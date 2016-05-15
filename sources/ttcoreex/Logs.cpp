@@ -179,11 +179,7 @@ BOOL StartMainLog(char* logName, BOOL logMode, BOOL logHTML)
 
     // Do HTML Log pereference
     if ( logHTML ) {
-		string html_header;
-		if ( !bHTMLTimestamps )
-			html_header = loadHTMLFromFile("html.log.template");
-		else
-			html_header = loadHTMLFromFile("htmltimestamps.log.template");
+		string html_header = loadHTMLFromFile("html.log.template");
 
 		string::size_type pos = 0;
 		while ( ( pos = html_header.find("%title%", pos) ) != string::npos ) {
@@ -366,7 +362,7 @@ string processHTML(string strInput)
 		currTicker = GetTickCount() - firstTicker;
 
 		if ( currTicker - lastTicker >= MIN_HTML_FRAMES_DELAY_MS ) {
-			strOutput += strprintf("<div id=\"t_%d\">", currTicker);
+			strOutput += strprintf("<div class=\"t %d\">", currTicker);
 			lastTicker = currTicker;
 			close_timestamp_tag = TRUE;
 		}
