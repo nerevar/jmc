@@ -29,6 +29,15 @@ extern WORD DLLEXPORT wBCastUdpPort;
 extern char LoopBackBuffer[BUFFER_SIZE];
 extern LoopBackCount;
 
+GET_WNDSIZE_FUNC GetWindowSize = 0;
+SET_WNDSIZE_FUNC SetWindowSize = 0;
+
+void DLLEXPORT InitWindowSizeFunc(GET_WNDSIZE_FUNC GetWndFunc, SET_WNDSIZE_FUNC SetWndFunc)
+{
+    GetWindowSize = GetWndFunc;
+	SetWindowSize = SetWndFunc;
+}
+
 /****************************/
 /* the cr command           */
 /****************************/
@@ -238,6 +247,7 @@ void showme_command(char *arg)
 	if (bLogAsUserSeen) {
 		log(processLine(strng));
 		log("\n");
+		add_line_to_scrollbuffer(strng);
 	}
     tintin_puts2(strng);
 }
@@ -288,7 +298,7 @@ void message_command(char *arg)
 //  char ms[8][20], tpstr[80];
 //* en:logs
 //  char ms[9][20], tpstr[80];
-  char ms[10][20], tpstr[80];
+  char ms[MSG_MAXNUM][20], tpstr[80];
 //*/en
 //vls-end//
     char type[BUFFER_SIZE], flag[BUFFER_SIZE];
@@ -296,22 +306,14 @@ void message_command(char *arg)
   arg = get_arg_in_braces(arg,type, STOP_SPACES);
   arg = get_arg_in_braces(arg,flag, STOP_SPACES);
 
-//vls-begin// script files
-//  sscanf("aliases actions substitutes antisubstitutes highlights variables groups hotkeys",
-//    "%s %s %s %s %s %s %s %s",ms[0],ms[1],ms[2],ms[3],ms[4],ms[5],ms[6], ms[7]);
-//* en:logs
-//  sscanf("aliases actions substitutes antisubstitutes highlights variables groups hotkeys uses",
-//    "%s %s %s %s %s %s %s %s %s",ms[0],ms[1],ms[2],ms[3],ms[4],ms[5],ms[6], ms[7], ms[8]);
-  sscanf("aliases actions substitutes antisubstitutes highlights variables groups hotkeys uses logs",
-    "%s %s %s %s %s %s %s %s %s %s",ms[0],ms[1],ms[2],ms[3],ms[4],ms[5],ms[6], ms[7], ms[8], ms[9]);
-//*/en
-//vls-end//
+  sscanf("aliases actions substitutes antisubstitutes highlights variables groups hotkeys uses logs telnet",
+    "%s %s %s %s %s %s %s %s %s %s %s",ms[0],ms[1],ms[2],ms[3],ms[4],ms[5],ms[6], ms[7], ms[8], ms[9], ms[10]);
   
   
   mestype=0;
-  while (!is_abrev(type,ms[mestype]) && mestype< sizeof(mesvar)/sizeof(int) ) 
+  while (!is_abrev(type,ms[mestype]) && mestype< MSG_MAXNUM ) 
     mestype++;
-  if (mestype==sizeof(mesvar)/sizeof(int))
+  if (mestype==MSG_MAXNUM)
     tintin_puts2(rs::rs(1108));
   else 
   {
@@ -521,6 +523,19 @@ void tabdel_command(char* arg)
     char msg[BUFFER_SIZE];
     sprintf(msg,rs::rs(1141), word);
     tintin_puts2(msg);
+}
+
+LONG  DLLEXPORT GetCommandsList(char *List)
+{
+	int i, ret = 0;
+
+	for (i = 0; i < JMC_CMDS_NUM; i++) {
+		ret += 1 + strlen(jmc_cmds[i].alias) + 1;
+		if (List)
+			List += sprintf(List, "%c%s ", cCommandChar, jmc_cmds[i].alias);
+	}
+
+	return ret;
 }
 
 //vls-begin// #quit
@@ -1062,20 +1077,10 @@ void wclear_command(char *arg)
 {
 	char number[BUFFER_SIZE];
     int wnd = MAX_OUTPUT;
-    int i, ok;
 
     arg=get_arg_in_braces(arg, number, STOP_SPACES);
     
-    // checking first parameter to be all digits
-    ok = 1;
-    for (i = 0; number[i]; i++) {
-        if (number[i] < '0' || number[i] > '9') {
-            ok = 0;
-            break;
-        }
-    }
-
-    if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts(rs::rs(1261));
         return;
     }

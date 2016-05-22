@@ -764,3 +764,18 @@ void CCoolDialogBar::SetTitle(LPCTSTR sTitle)
     }
 }
 //vls-end//
+
+void CCoolDialogBar::Resize(int Width, int Height)
+{
+	Width += m_cxBorder * 2 + m_cxEdge * 2;
+	Height += m_cyBorder * 2 + m_cxEdge * 2;
+
+	m_sizeFloat.cx = Width;
+    m_sizeFloat.cy = Height;
+
+    //m_sizeHorz.cx = Width;
+    m_sizeHorz.cy = Height;
+
+    m_sizeVert.cx = Width;
+    //m_sizeVert.cy = Height;
+}

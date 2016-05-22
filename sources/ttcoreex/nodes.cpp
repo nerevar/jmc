@@ -12,9 +12,46 @@ GROUPLIST GroupList;
 VARLIST  VarList;
 HLIGHTLIST HlightList;
 
+VARTOPCRE VarPcreDeps;
+
 //vls-begin// script files
 SCRIPTFILELIST ScriptFileList;
 //vls-end//
+
+
+static std::list<std::string> extract_varnames(const char *line) 
+{
+	std::list<std::string> ret;
+
+	while (line = strchr(line, '$')) {
+		std::string varname = "";
+		line++;
+		while (is_allowed_symbol(line[0])) {
+			varname += line[0];
+			line++;
+		}
+		if (varname.length() > 0)
+			ret.push_back(varname);
+	}
+
+	return ret;
+}
+
+static int add_dependencies(CPCRE *pPcre, const std::string line)
+{
+	std::list<std::string> varnames = extract_varnames(line.c_str());
+
+	for (std::list<std::string>::iterator it = varnames.begin(); it != varnames.end(); it++)
+		VarPcreDeps[*it].insert(pPcre);
+
+	return varnames.size();
+}
+
+static void remove_dependencies(CPCRE *pPcre)
+{
+	for (VARTOPCRE::iterator it = VarPcreDeps.begin(); it != VarPcreDeps.end(); it++)
+		it->second.erase(pPcre);
+}
 
 TIMER::TIMER(int ID, int Interval, int PreInterval) 
 {
@@ -79,127 +116,57 @@ CGROUP::~CGROUP()
 
 }
 
-ALIAS::ALIAS()
+CPCRE::CPCRE()
 {
-    m_pPcre = NULL;
-    m_pExtra = NULL;
-    m_bRecompile = FALSE;
-    m_bDeleted = FALSE;
-	m_bIgnoreCase = FALSE;
-}
-
-
-ALIAS::~ALIAS()
-{
-    if ( m_pPcre ) 
-        pcre_free(m_pPcre);
-    if ( m_pExtra ) 
-        pcre_free(m_pExtra);
-}
-
-BOOL ALIAS::CreatePattern(char* left )
-{
-    if ( !left ) 
-        left = (char*)m_strRegex.data ();
-
-    if ( m_pPcre ) 
-        pcre_free(m_pPcre);
-    if ( m_pExtra) 
-        pcre_free(m_pExtra);
-    
-    m_pExtra = NULL;
-    m_pPcre = NULL;
-
-	int options = 0;
-	if (m_bIgnoreCase)
-		options |= PCRE_CASELESS;
-
-	if (!pcre_tables) 
-		pcre_tables = pcre_maketables();
-
-    const char* err;
-    int err_offset;
-    m_pPcre = pcre_compile(left, options, &err, &err_offset, pcre_tables);
-    if ( !m_pPcre ) {
-        std::string  errstr(rs::rs(1142));
-        errstr += err;
-        tintin_puts2((char*)errstr.data ());
-        return FALSE;
-    }
-    m_pExtra = pcre_study(m_pPcre, 0 , &err);
-    if ( err ) {
-        std::string  errstr(rs::rs(1142));
-        errstr += err;
-        tintin_puts2((char*)errstr.data ());
-        return FALSE;
-    }
-    return TRUE;
-}
-
-BOOL ALIAS::SetLeft(char* left)
-{
-    m_strRegex.empty();
-    m_strLeft = left;
-	m_bIgnoreCase = FALSE;
-
-    if ( *left == '/' ) { // its regexp
-        m_strRegex = left+1;
-        int size = m_strRegex.size();
-		BOOL i_flag = FALSE;
-		for (int i = size - 1; i >= 0; i--) {
-			if (m_strRegex[i] == 'i') {
-				i_flag = TRUE;
-			} else if (m_strRegex[i] == '/') {
-				m_bIgnoreCase = i_flag;
-				m_strRegex.resize(i);
-				break;
-			} else {
-				break;
-			}
-		}
-    } 
-
-    if ( *left != '/' && strchr(left, '$' ) ) {
-        m_bRecompile = TRUE;
-        return TRUE;
-    } else {
-        return CreatePattern();
-	}
-}
-/////
-
-ACTION::ACTION()
-{
-    m_nPriority = 5;
-    m_pPcre = NULL;
-    m_pExtra = NULL;
-    m_bRecompile = FALSE;
-    m_bDeleted = FALSE;
-	m_InputType = Action_TEXT;
+	m_strSource = "";
+	m_pPcre = NULL;
+	m_pExtra = NULL;
+	m_bContainVars = FALSE;
 	m_bMultiline = m_bIgnoreCase = FALSE;
 }
 
-
-ACTION::~ACTION()
+CPCRE::~CPCRE()
 {
-    if ( m_pPcre ) 
-        pcre_free(m_pPcre);
-    if ( m_pExtra ) 
-        pcre_free(m_pExtra);
+	remove_dependencies(this);
+	Clear(TRUE);
 }
 
-BOOL ACTION::CreatePattern(char* left )
+void CPCRE::Clear(BOOL ResetSource)
 {
-    if ( !left ) 
-        left = (char*)m_strRegex.data ();
-
-    if ( m_pPcre ) 
+	if ( m_pPcre ) {
         pcre_free(m_pPcre);
-    if ( m_pExtra) 
+		m_pPcre = NULL;
+	}
+    if ( m_pExtra ) {
         pcre_free(m_pExtra);
-    
-    m_pExtra = NULL;
-    m_pPcre = NULL;
+		m_pExtra = NULL;
+	}
+
+	if ( ResetSource ) {
+		m_strSource = "";
+		m_bContainVars = FALSE;
+		m_bMultiline = m_bIgnoreCase = FALSE;
+	}
+}
+
+BOOL CPCRE::SetSource(const std::string Source, BOOL Multiline, BOOL IgnoreCase)
+{
+	Clear(TRUE);
+
+	m_strSource = Source;
+	m_bMultiline = Multiline;
+	m_bIgnoreCase = IgnoreCase;
+
+	m_bContainVars = (add_dependencies(this, m_strSource) ? TRUE : FALSE);
+	return Recompile();
+}
+
+BOOL CPCRE::Recompile(const char *Pattern)
+{
+	if ( !Pattern ) 
+        Pattern = (char*)m_strSource.data ();
+
+    Clear(FALSE);
 
 	int options = 0;
 	if (m_bMultiline)
@@ -210,9 +177,15 @@ BOOL ACTION::CreatePattern(char* left )
 	if (!pcre_tables) 
 		pcre_tables = pcre_maketables();
 
+	char expression[BUFFER_SIZE];
+	if (m_bContainVars) {
+		prepare_actionalias((char *)Pattern, expression, sizeof(expression));
+		Pattern = expression;
+	}
+
     const char* err;
     int err_offset;
-    m_pPcre = pcre_compile(left, options, &err, &err_offset, pcre_tables);
+    m_pPcre = pcre_compile(Pattern, options, &err, &err_offset, pcre_tables);
     if ( !m_pPcre ) {
         std::string  errstr(rs::rs(1142));
         errstr += err;
@@ -229,38 +202,114 @@ BOOL ACTION::CreatePattern(char* left )
     return TRUE;
 }
 
-BOOL ACTION::SetLeft(char* left)
+ALIAS::ALIAS()
 {
-    m_strRegex.empty();
-    m_strLeft = left;
-	m_bMultiline = m_bIgnoreCase = FALSE;
+    m_bRecompile = FALSE;
+    m_bDeleted = FALSE;
+}
 
-    if ( *left == '/' ) { // its regexp
-        m_strRegex = left+1;
-        int size = m_strRegex.size();
-		BOOL i_flag = FALSE, m_flag = FALSE;
+
+ALIAS::~ALIAS()
+{
+}
+
+BOOL ALIAS::SetLeft(char* left)
+{
+    m_PCRE.Clear(TRUE);
+
+    m_strLeft = left;
+	BOOL i_flag = FALSE;
+	std::string regexp = "";
+
+    if ( *left == '/' ) {
+		regexp = left + 1;
+        
+        int size = regexp.size();
+		
 		for (int i = size - 1; i >= 0; i--) {
-			if (m_strRegex[i] == 'i') {
+			if (regexp[i] == 'i') {
+				size--;
 				i_flag = TRUE;
-			} else if (m_strRegex[i] == 'm') {
-				m_flag = TRUE;
-			} else if (m_strRegex[i] == '/') {
-				m_bMultiline = m_flag;
-				m_bIgnoreCase = i_flag;
-				m_strRegex.resize(i);
+			} else if (regexp[i] == '/') {
+				size--;
 				break;
 			} else {
+				size = regexp.size();
+				i_flag = FALSE;
 				break;
 			}
 		}
+		regexp.resize(size);
     } 
 
-    if ( *left != '/' && strchr(left, '$' ) ) {
-        m_bRecompile = TRUE;
-        return TRUE;
-    } else {
-        return CreatePattern();
+	if (regexp.size() > 0) {
+        return m_PCRE.SetSource(regexp, FALSE, i_flag);
 	}
+	
+	if (strchr(left, '$' ))
+        m_bRecompile = TRUE;
+	return TRUE;
+}
+/////
+
+ACTION::ACTION()
+{
+    m_nPriority = 5;
+    m_bRecompile = FALSE;
+    m_bDeleted = FALSE;
+	m_InputType = Action_TEXT;
+	m_bGlobal = FALSE;
+}
+
+
+ACTION::~ACTION()
+{
+}
+
+BOOL ACTION::SetLeft(char* left)
+{
+    m_PCRE.Clear(TRUE);
+
+    m_strLeft = left;
+	BOOL i_flag = FALSE, m_flag = FALSE, g_flag = FALSE;
+	std::string regexp = "";
+
+    if ( *left == '/' ) {
+		regexp = left + 1;
+        
+        int size = regexp.size();
+		
+		for (int i = size - 1; i >= 0; i--) {
+			if (regexp[i] == 'i') {
+				size--;
+				i_flag = TRUE;
+			} else if (regexp[i] == 'm') {
+				size--;
+				m_flag = TRUE;
+			} else if (regexp[i] == 'g') {
+				size--;
+				g_flag = TRUE;
+			} else if (regexp[i] == '/') {
+				size--;
+				break;
+			} else {
+				size = regexp.size();
+				i_flag = m_flag = g_flag = FALSE;
+				break;
+			}
+		}
+		regexp.resize(size);
+    } 
+
+	m_bGlobal = g_flag;
+
+	if (regexp.size() > 0) {
+        return m_PCRE.SetSource(regexp, m_flag, i_flag);
+	}
+	
+	if (strchr(left, '$' ))
+        m_bRecompile = TRUE;
+	return TRUE;
 }
 
 GROUPED_NODE::GROUPED_NODE()

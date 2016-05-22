@@ -80,6 +80,31 @@ static void __stdcall GetOutputName(int wnd, char *name, int maxlen)
 }
 //vls-end//
 
+static void __stdcall GetWindowSizeFunc(int wnd, int &width, int &height)
+{
+	width = height = 0;
+	if (wnd >= 0 && wnd < MAX_OUTPUT)
+    {
+        CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
+        height = pMainFrm->m_coolBar[wnd].m_wndAnsi.m_nPageSize;
+		width = pMainFrm->m_coolBar[wnd].m_wndAnsi.m_nLineWidth;
+    }
+	else
+	{
+		CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
+		CSmcView* pView = (CSmcView*)pMainFrm->GetActiveView();
+		height = pView->m_nPageSize;
+		width = pView->m_nLineWidth;
+	}
+}
+static void __stdcall SetWindowSizeFunc(int wnd, int width, int height)
+{
+	if (wnd < 0 || wnd >= MAX_OUTPUT)
+		wnd = MAX_OUTPUT;
+	CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
+	pMainFrm->PostMessage(WM_USER+506, MAKELPARAM(width, height));
+}
+
 static void DrawColoredText(LPDRAWITEMSTRUCT lpDrawItemStruct, LPCSTR strText)
 {
     CSmcDoc* pDoc = (CSmcDoc*) (((CMainFrame*)AfxGetMainWnd())->GetActiveDocument());
@@ -282,6 +307,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_MESSAGE(WM_USER+501, OnNameOutput)
     ON_MESSAGE(WM_USER+502, OnDockOutput)
     ON_MESSAGE(WM_USER+505, OnPosWOutput)
+	ON_MESSAGE(WM_USER+506, OnSizeWOutput)
 //vls-end//
 
     ON_MESSAGE(WM_USER+600, OnCleanInput)
@@ -310,8 +336,11 @@ CMainFrame::CMainFrame()
 	
     m_wndSplitter.m_nUpSize = ::GetPrivateProfileInt("Main" , "UpSize" , 300, szGLOBAL_PROFILE);
     m_wndSplitter.m_nDownSize = ::GetPrivateProfileInt("Main" , "DownSize" , 100, szGLOBAL_PROFILE);
+	nScrollSize = ::GetPrivateProfileInt("Options" , "Scroll" , 300, szGLOBAL_PROFILE);
     bDisplayCommands  = ::GetPrivateProfileInt("Options" , "DisplayCommands" , 0, szGLOBAL_PROFILE);
     bDisplayInput  = ::GetPrivateProfileInt("Options" , "DisplayInput" , 1, szGLOBAL_PROFILE);
+	bInputOnNewLine  = ::GetPrivateProfileInt("Options" , "InputOnNewLine" , 0, szGLOBAL_PROFILE);
+	bDisplayPing  = ::GetPrivateProfileInt("Options" , "DisplayPing" , 1, szGLOBAL_PROFILE);
     bMinimizeToTray  = ::GetPrivateProfileInt("Options" , "MinimizeToTray" , 0, szGLOBAL_PROFILE);
     MoreComingDelay  = ::GetPrivateProfileInt("Options" , "MoreComingDelay" , 100, szGLOBAL_PROFILE);
 }
@@ -322,6 +351,8 @@ CMainFrame::~CMainFrame()
     ::WritePrivateProfileInt("Main" , "DownSize" , m_wndSplitter.m_nDownSize, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "DisplayCommands" , bDisplayCommands, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "DisplayInput" , bDisplayInput , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt("Options" , "InputOnNewLine" , bInputOnNewLine , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt("Options" , "DisplayPing" , bDisplayPing , szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "MinimizeToTray" , bMinimizeToTray, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "MoreComingDelay" , MoreComingDelay , szGLOBAL_PROFILE);
 }
@@ -454,6 +485,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     }
     LoadBarState("JMC");
     InitOutputNameFunc(GetOutputName);
+	InitWindowSizeFunc(GetWindowSizeFunc, SetWindowSizeFunc);
 	
 //vls-end//
     
@@ -529,7 +561,7 @@ void CMainFrame::OnOptionsOptions()
     pg1.m_strCommandDelimiter = cCommandDelimiter;
     pg1.m_nHistorySize = m_editBar.GetHistorySize();
     pg1.m_bDisplayCommands = bDisplayCommands;
-    pg1.m_bDisplayInput = bDisplayInput;
+	pg1.m_bShowPing = bDisplayPing;
     pg1.m_bClearInput = m_editBar.m_bClearInput;
     pg1.m_bTokenInput = m_editBar.m_bTokenInput;
     pg1.m_bScrollEnd = m_editBar.m_bScrollEnd;
@@ -546,6 +578,13 @@ void CMainFrame::OnOptionsOptions()
 	pg1.m_bSelectRect = pDoc->m_bRectangleSelection;
 	pg1.m_bRemoveESC = pDoc->m_bRemoveESCSelection;
 	pg1.m_bShowHidden = pDoc->m_bShowHiddenText;
+
+	if (!bDisplayInput)
+		pg1.m_nUserInputHide = 0;
+	else if (!bInputOnNewLine)
+		pg1.m_nUserInputHide = 1;
+	else 
+		pg1.m_nUserInputHide = 2;
 
 
     // Fill subst params
@@ -605,7 +644,9 @@ void CMainFrame::OnOptionsOptions()
         cCommandChar = pDoc->m_cCommandChar = pg1.m_strCommandChar[0];
         cCommandDelimiter = pg1.m_strCommandDelimiter[0];
         bDisplayCommands = pg1.m_bDisplayCommands;
-        bDisplayInput = pg1.m_bDisplayInput;
+        bDisplayInput = (pg1.m_nUserInputHide != 0);
+		bInputOnNewLine = (pg1.m_nUserInputHide == 2);
+		bDisplayPing = pg1.m_bShowPing;
 		bMinimizeToTray = pg1.m_bMinimizeToTray;
         m_editBar.m_bClearInput = pg1.m_bClearInput;
         m_editBar.m_bTokenInput = pg1.m_bTokenInput;
@@ -1389,6 +1430,9 @@ LONG CMainFrame::OnUpdPing(UINT wParam, LONG lParam)
 	static char mud_buf[64], proxy_buf[64], msg_buf[128];
 
 	switch(mud_ping) {
+	case -4:
+		sprintf(mud_buf, "");
+		break;
 	case -3:
 		sprintf(mud_buf, "ping error");
 		break;
@@ -1407,6 +1451,9 @@ LONG CMainFrame::OnUpdPing(UINT wParam, LONG lParam)
 	}
 
 	switch(proxy_ping) {
+	case -4:
+		sprintf(proxy_buf, "");
+		break;
 	case -3:
 		sprintf(proxy_buf, " (proxy: error)");
 		break;
@@ -1494,6 +1541,36 @@ LONG CMainFrame::OnPosWOutput(UINT wParam, LONG lParam)
 		m_coolBar[wnd].m_mX = p1;
 		m_coolBar[wnd].m_mY = p2;
     }
+  
+    return 0;
+}
+
+LONG CMainFrame::OnSizeWOutput(UINT wParam, LONG lParam)
+{
+    int p1,p2;
+    int wnd = (int)wParam;
+
+	p1 = lParam & 32767;
+	p2 = lParam>>16;
+
+	if (wnd >= 0 && wnd < MAX_OUTPUT) {
+		UINT nId = outputwindows[wnd];
+		CControlBar* pBar = GetControlBar(nId);
+
+		if ((pBar != NULL) && (m_coolBar[wnd])) {
+			m_coolBar[wnd].Resize(p1 * pDoc->m_nCharX, p2 * pDoc->m_nYsize);
+
+			if(m_coolBar[wnd].IsFloating()) {
+				FloatControlBar(&m_coolBar[wnd],CPoint(m_coolBar[wnd].m_mX,m_coolBar[wnd].m_mY),0);
+			} else {
+				CSmcView* pView = (CSmcView*)GetActiveView();
+				RecalcLayout();
+				pView->RedrawWindow();
+			}
+		}
+	} else {
+		//m_coolBar[wnd].Resize(p1 * pDoc->m_nCharX, p2 * pDoc->m_nYsize);
+	}
   
     return 0;
 }

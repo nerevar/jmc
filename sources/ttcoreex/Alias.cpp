@@ -105,7 +105,7 @@ void unalias_command(char *arg)
 
     while (ind  != AliasList.end() ) {
 		ALIAS* pal = ind->second;
-		if ( ((pal->m_strRegex.length() > 0) && !strcmp(left, (char*)pal->m_strLeft.data())) ||
+		if ( (pal->m_PCRE.m_pPcre && !strcmp(left, (char*)pal->m_strLeft.data())) ||
              (match(left, (char*)ind->first.data())) ) {
             if (mesvar[MSG_ALIAS]) {
                 sprintf(result, rs::rs(1013), (char*)ind->first.data());

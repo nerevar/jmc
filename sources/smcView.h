@@ -25,11 +25,12 @@ public:
     BOOL     m_bAnsiBold; 
     CStringList m_strList;
 	std::vector<int> m_LineCountsList;
+	int      m_TotalLinesReceived;
+	int m_nPageSize, m_nLastPageSize, m_nLineWidth;
     void DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int StringPos = 0);
 
 
 protected:
-    int m_nPageSize, m_nLastPageSize, m_nLineWidth;
 
     int m_nStartSelectX, m_nStartSelectY, m_nEndSelectX, m_nEndSelectY; // Selection while grabbing screen
     int m_nStartTrackX, m_nStartTrackY, m_nEndTrackX, m_nEndTrackY; // Tracking positions of mouse

@@ -219,20 +219,21 @@ void write_command(char *arg)
             strcpy(buffer+1, "message hotkey OFF\n");
             fputs(buffer, myfile);
         }
-//vls-begin// script files
         if ( !mesvar[MSG_SF] ) {
             buffer[0] = cCommandChar ;
             strcpy(buffer+1, "message uses OFF\n");
             fputs(buffer, myfile);
         }
-//vls-end//
-//* en
         if ( !mesvar[MSG_LOG] ) {
             buffer[0] = cCommandChar ;
             strcpy(buffer+1, "message logs OFF\n");
             fputs(buffer, myfile);
         }
-//*/en
+		if ( mesvar[MSG_TELNET] ) {
+            buffer[0] = cCommandChar ;
+            strcpy(buffer+1, "message telnet ON\n");
+            fputs(buffer, myfile);
+        }
 
         // save togglesub/echo/multiaction etc states 
         buffer[0] = cCommandChar ;
@@ -505,11 +506,17 @@ void write_command(char *arg)
 	}
 	fputs(buffer, myfile);
 
-	//save mccp settings
-	if (bMCCPEnabled)
-		prepare_for_write("mccp", "on", "", "", "", buffer);
+	//save telnet options
+	for(int opt = 0; opt < vEnabledTelnetOptions.size(); opt++) {
+		char optname[64];
+		get_telnet_option_name(vEnabledTelnetOptions[opt], optname);
+		prepare_for_write("telnet", optname, "on", "", "", buffer);
+		fputs(buffer, myfile);
+	}
+	if (bTelnetDebugEnabled)
+		prepare_for_write("telnet", "debug", "on", "", "", buffer);
 	else
-		prepare_for_write("mccp", "off", "", "", "", buffer);
+		prepare_for_write("telnet", "debug", "off", "", "", buffer);
 	fputs(buffer, myfile);
 
 	//save end-of-prompt char settings

@@ -124,7 +124,9 @@ jmc_cmdi jmc_cmds[JMC_CMDS_NUM]={
 		   {"random",&random_command,"\0"},
 		   {"sync",&sync_command,"\0"},
 		   {"proxy",&proxy_command,"\0"},
-		   {"mccp", &mccp_command, "\0"},
-		   {"promptend", &promptend_command, "\0"}
+		   {"telnet", &telnet_command, "\0"},
+		   {"promptend", &promptend_command, "\0"},
+		   {"wsize", &wsize_command, "\0"},
+		   {"replace", &replace_command, "\0"}
 	   };
 #endif

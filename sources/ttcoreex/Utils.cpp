@@ -15,10 +15,22 @@ using namespace std;
 
 void syserr(char* msg);
 
+int is_all_digits(const char *number)
+{
+	int i, ok = 1;
+    for (i = 0; number[i]; i++) {
+        if (number[i] < '0' || number[i] > '9') {
+            ok = 0;
+            break;
+        }
+    }
+	return ok;
+}
+
 /*********************************************/
 /* return: TRUE if s1 is an abrevation of s2 */
 /*********************************************/
-int is_abrev(char *s1, char *s2)
+int is_abrev(const char *s1, const char *s2)
 {
 //vls-begin// bugfix
 //    return(s1[0]==s2[0] && !strncmp(s2, s1, strlen(s1)));

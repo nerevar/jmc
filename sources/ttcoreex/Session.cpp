@@ -37,6 +37,7 @@ void  newactive_session()
     mesvar[MSG_GRP]=DEFAULT_GROUP_MESS;
     mesvar[MSG_HOT]=DEFAULT_HOTKEY_MESS;
     mesvar[MSG_LOG]=DEFAULT_LOG_MESS;
+	mesvar[MSG_TELNET]=DEFAULT_TELNET_MESS;
 }
 
 

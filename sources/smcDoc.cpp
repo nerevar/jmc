@@ -115,7 +115,7 @@ static void AddToOutList(char* str, int wndCode)
     CString* pLastEsc;
     int * pCount ;
     int CharSize ;
-    if ( wndCode) {
+    if (wndCode) {
         wndCode = wndCode > MAX_OUTPUT ? 0 : wndCode-1;
         pList = &(pDoc->m_strOutputTempList[wndCode]);
         pLastEsc = &pStrOutputLastESC[wndCode];
@@ -140,18 +140,18 @@ static void AddToOutList(char* str, int wndCode)
 	bool user_input = false,
 		 jmc_message = false;
 
-	if (str[0] == 0x2) {
+	if (str[0] == TINTIN_OUTPUT_MARK) {
 		jmc_message = true;
 		str++;
-		if (str[0] == 0x1) {
+		if (str[0] == USER_INPUT_MARK) {
 			user_input = true;
 			str++;
 		}
 	}
 
     int TailLen = strTail.GetLength();
-	bool uncomplete_line = TailLen && (strTail[TailLen-1] != '\n') && (strTail[TailLen-1] != 0x1);
-	bool prompt_line = TailLen && (strTail[TailLen-1] == 0x1);
+	bool uncomplete_line = TailLen && (strTail[TailLen-1] != '\n') && (strTail[TailLen-1] != END_OF_PROMPT_MARK);
+	bool prompt_line = TailLen && (strTail[TailLen-1] == END_OF_PROMPT_MARK);
 	bool copy_tail = false;
 
 	if (uncomplete_line) {
@@ -166,12 +166,12 @@ static void AddToOutList(char* str, int wndCode)
 			set_tail = true;
 		}
 	} else if (prompt_line) {
-		TailLen--; //suppress 0x1 char
-		if (user_input) {
+		TailLen--; //suppress END_OF_PROMPT_MARK char
+		if (user_input && !bInputOnNewLine) {
 			set_tail = true;
 			copy_tail = true;
 		} else {
-			strTail.Replace((char)0x1, (char)'\n');
+			strTail.Replace((char)END_OF_PROMPT_MARK, (char)'\n');
 			set_tail = false;
 		}
 	}
@@ -224,6 +224,7 @@ static void AddToOutList(char* str, int wndCode)
         case 0:
             // End of line - time to do all save operations 
             *dest = 0;
+			*ansi = 0;
             // Buffer filled , now parse ansi and save values
 			if (src > strAdd && !user_input)
 				ParseAnsiValues(AllANSIFromCurrString, pLastEsc);
@@ -248,13 +249,13 @@ static void AddToOutList(char* str, int wndCode)
 
 static void __stdcall OutTextFrom(char* str, int wndCode) 
 {
-
     if ( pDoc ) {
         CCriticalSection* pSec;
         if ( wndCode )
 //vls-begin// multiple output
 //            pSec = &pDoc->m_UpdateOutputSection;
-            pSec = &(pDoc->m_OutputUpdateSection[wndCode > MAX_OUTPUT ? 0 : wndCode-1]);
+			pSec = &(pDoc->m_OutputUpdateSection[wndCode > MAX_OUTPUT ? 0 : wndCode-1]);
+			//pSec = &(pDoc->m_OutputUpdateSection[wndCode-1]);
         else 
             pSec = &pDoc->m_UpdateSection ;
 
@@ -285,7 +286,7 @@ static void __stdcall OutTextFrom(char* str, int wndCode)
 			}
         } while (*src++ ) ;
 
-        if ( pMainWnd ) 
+        if ( pMainWnd && !wndCode) 
             pMainWnd->PostMessage (WM_COMMAND, wndCode ? ID_OUTPUT_TEXT_ADDED :ID_DRAW_TEXT_ADDED, 0 );
         pSec->Unlock();
     }
@@ -462,7 +463,6 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
 	bBCastFilterPort = ::GetPrivateProfileInt("Options" , "BroadCastFilterPort" , TRUE , szGLOBAL_PROFILE);
 	reopen_bcast_socket();
 
-    m_nScrollSize = ::GetPrivateProfileInt("Options" , "Scroll" , 300, szGLOBAL_PROFILE);
     m_bSplitOnBackscroll = ::GetPrivateProfileInt("Options" , "SplitOnBackscroll" , 1, szGLOBAL_PROFILE);
 
 	m_bRectangleSelection = ::GetPrivateProfileInt("Options" , "RectangleSelection" , 0, szGLOBAL_PROFILE);
@@ -536,7 +536,7 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
 
 CSmcDoc::~CSmcDoc()
 {
-    ::WritePrivateProfileInt("Options" , "Scroll" , m_nScrollSize, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt("Options" , "Scroll" , nScrollSize, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "CommandChar" , cCommandChar, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "ConnectBeep" , bConnectBeep , szGLOBAL_PROFILE);
     ::WritePrivateProfileInt("Options" , "AutoReconnect" , bAutoReconnect , szGLOBAL_PROFILE);
@@ -571,7 +571,9 @@ CSmcDoc::~CSmcDoc()
 		CString strWords;
 		POSITION pos = m_lstTabWords.GetHeadPosition ();
 		while ( pos ) {
-			strWords += m_lstTabWords.GetNext (pos) + "\r\n";
+			CString word = m_lstTabWords.GetNext (pos);
+			if ( word[0] != cCommandChar )
+				strWords += word + "\r\n";
 		}
 
 		HANDLE hFile;
@@ -918,10 +920,16 @@ void CSmcDoc::OnDrawTextAdded()
     m_UpdateSection.Unlock();
 }
 
+static DWORD lastOutputDrawTickCount = 0;
 void CSmcDoc::OnOutputTextAdded()
 {
     if ( m_bFrozen ) 
         return;
+
+	DWORD now = GetTickCount();
+	if( now - lastOutputDrawTickCount < 20)
+		return;
+	lastOutputDrawTickCount = now;
 
     for (int i = 0; i < MAX_OUTPUT; i++) {
         if (m_bClearOutputContents[i] || m_nOutputUpdateCount[i] > 0) {
@@ -964,9 +972,9 @@ void CSmcDoc::OnOptionsScrollbuffer()
 {
 	CScrollOptionDlg dlg(AfxGetMainWnd());
 
-    dlg.m_nCount = pDoc->m_nScrollSize;
+    dlg.m_nCount = nScrollSize;
     if ( dlg.DoModal() == IDOK ) {
-        m_nScrollSize = dlg.m_nCount;
+        nScrollSize = dlg.m_nCount;
 
         UpdateAllViews(NULL, SCROLL_SIZE_CHANGED, NULL );
 //vls-begin// multiple output
@@ -1099,8 +1107,10 @@ void CSmcDoc::OnBreakScript()
 void CSmcDoc::FillTabWords(LPCSTR strWords)
 {
     m_lstTabWords.RemoveAll ();
-    unsigned char* ptr  = (UCHAR*)strWords;
-    while ( *ptr ) {
+    
+	unsigned char* ptr  = (UCHAR*)strWords;
+    
+	while ( *ptr ) {
         while ( *ptr && *ptr <= ' ' ) 
             ptr++;
         if ( !*ptr ) 
@@ -1115,8 +1125,33 @@ void CSmcDoc::FillTabWords(LPCSTR strWords)
         strncpy((char*)buff, (LPCSTR)ptrWord, size);
         buff[size] = 0;
         m_lstTabWords.AddTail(buff);
-        delete buff;
+        delete[] buff;
     }
+
+	int len = GetCommandsList(NULL);
+	char *commands = new char[len + 1];
+	GetCommandsList(commands);
+
+	ptr = (unsigned char*)commands;
+	while ( *ptr ) {
+        while ( *ptr && *ptr <= ' ' ) 
+            ptr++;
+        if ( !*ptr ) 
+            break;
+
+        unsigned char* ptrWord = ptr++;
+        while ( *ptr && *ptr > ' ' ) 
+            ptr++;
+
+        int size = ptr-ptrWord;
+        char* buff = new char[size+1];
+        strncpy((char*)buff, (LPCSTR)ptrWord, size);
+        buff[size] = 0;
+        m_lstTabWords.AddTail(buff);
+        delete[] buff;
+    }
+
+	delete[] commands;
 }
 
 void CSmcDoc::OnOptionsKeywords() 

@@ -239,8 +239,12 @@ void parse_input(char *input, BOOL bExecuteNow)
 
 				tintin_puts2(strOutputBuffer);
 
-				if (hLogFile.is_open()) {
-					log(strInputCommand);
+				if (bLogAsUserSeen) {
+					if (hLogFile.is_open()) {
+						log(strInputCommand);
+						log("\n");
+					}
+					add_line_to_scrollbuffer(strInputCommand);
 				}
 			}
 
@@ -277,8 +281,8 @@ void parse_input(char *input, BOOL bExecuteNow)
 		  while (ind != AliasList.end() ) {
 			  ALIAS *pal = ind->second;
 			  int captured;
-			  if (pal->m_pGroup->m_bEnabled && pal->m_strRegex.length() > 0 &&
-				  (captured = pcre_exec(pal->m_pPcre, pal->m_pExtra, test_str, test_len, 0, 0, offsets, 33)) > 0) {
+			  if (pal->m_pGroup->m_bEnabled && pal->m_PCRE.m_pPcre &&
+				  (captured = pcre_exec(pal->m_PCRE.m_pPcre, pal->m_PCRE.m_pExtra, test_str, test_len, 0, 0, offsets, 33)) > 0) {
 				  int i;
 				  for ( i = 0 ; i < 10 ; i++ ) 
 					  vars[i][0] = 0;
@@ -514,10 +518,10 @@ char *get_arg_with_spaces(char * s, char* arg)
     // else if(*s==';' && nest==0) {
 	else if(*s == 0x1B) { //don't even look into escape sequence!!!
 		*arg++ = *s++;
-		*arg++ = *s++;
-		do {
-			*arg++ = *s++;
-		} while(*s && (isdigit(*s) || *s == ';'));
+		if(*arg++ = *s++)
+			do {
+				*arg++ = *s++;
+			} while(*s && (isdigit(*s) || *s == ';'));
 	}
 	else if((*s==cCommandDelimiter||(bColon && *s==';'&&*(s-1)!='\\')) && nest==0) {
 	break;
@@ -591,10 +595,10 @@ char *get_arg_stop_spaces(char *s, char *arg)
     // else if(*s==';') {
 	else if(*s == 0x1B) { //don't even look into escape sequence!!!
 		*arg++ = *s++;
-		*arg++ = *s++;
-		do {
-			*arg++ = *s++;
-		} while(*s && (isdigit(*s) || *s == ';'));
+		if(*arg++ = *s++)
+			do {
+				*arg++ = *s++;
+			} while(*s && (isdigit(*s) || *s == ';'));
 	}
 	else if( ((!bColon && *s==cCommandDelimiter)||
 		      ( bColon && *s==';'              )) 
@@ -622,7 +626,7 @@ char *get_arg_stop_spaces(char *s, char *arg)
 /*********************************************/ 
 char *space_out(char *s)
 {
-  while(isspace(*s))
+  while(*s && isspace(*s))
     s++;
   return s;
 }

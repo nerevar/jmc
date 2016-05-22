@@ -18,6 +18,10 @@
 BOOL bLogPassedLine = FALSE;
 //vls-end//
 
+int DLLEXPORT nScrollSize = 300;
+ScrollLineRec *pScrollLinesBuffer = NULL;
+int ScrollBufferCapacity = 0, ScrollBufferBegin = 0, ScrollBufferEnd = 0;
+
 static BOOL bCurLogHTML = FALSE;
 
 static int attrib;
@@ -41,6 +45,30 @@ void DLLEXPORT InitOutputNameFunc(GET_OUTPUTNAME_FUNC OutputNameFunc)
     GetOutputName = OutputNameFunc;
 }
 //vls-end//
+
+void add_line_to_scrollbuffer(const char *line)
+{
+	nScrollSize = max(MIN_SCROLL_SIZE, min(nScrollSize, MAX_SCROLL_SIZE));
+	if(ScrollBufferCapacity < nScrollSize) {
+		pScrollLinesBuffer = (ScrollLineRec*)realloc(pScrollLinesBuffer, nScrollSize * sizeof(ScrollLineRec));
+
+		if(ScrollBufferEnd < ScrollBufferBegin) {
+			int taillen = ScrollBufferCapacity - ScrollBufferBegin;
+			memmove(&pScrollLinesBuffer[nScrollSize - taillen], &pScrollLinesBuffer[ScrollBufferBegin], taillen * sizeof(ScrollLineRec));
+			memset(&pScrollLinesBuffer[ScrollBufferBegin], 0, (nScrollSize - ScrollBufferCapacity) * sizeof(ScrollLineRec));
+			ScrollBufferBegin = nScrollSize - taillen;
+		} else {
+			memset(&pScrollLinesBuffer[ScrollBufferCapacity], 0, (nScrollSize - ScrollBufferCapacity) * sizeof(ScrollLineRec));
+		}
+
+		ScrollBufferCapacity = nScrollSize;
+	}
+	pScrollLinesBuffer[ScrollBufferEnd].timestamp = GetTickCount();
+	pScrollLinesBuffer[ScrollBufferEnd].line = string(line);
+	ScrollBufferEnd = (ScrollBufferEnd + 1) % ScrollBufferCapacity;
+	if(ScrollBufferEnd == ScrollBufferBegin)
+		ScrollBufferBegin = (ScrollBufferBegin + 1) % ScrollBufferCapacity;
+}
 
 void debug(char *pszFormat, ...)
 {
@@ -205,7 +233,7 @@ BOOL StartWNDLog(int wnd, char* logName, BOOL logMode)
 }
 
 //vls-begin// multiple output
-BOOL StartLog(int wnd, char* left, char *right)
+BOOL StartLog(int wnd, char* left, char *right, int dumplines = 0)
 {
 	BOOL status;
 	char *logName = wnd >= 0 ? sOutputLogName[wnd] : sLogName;
@@ -276,9 +304,8 @@ BOOL StartLog(int wnd, char* left, char *right)
 		return FALSE;		
 	}	
 
-	GetLocalTime(&stl);
-
 	if (bAppendLogTitle) {
+		GetLocalTime(&stl);
 
 		sprintf(logTitle, rs::rs(1258) , logName);
 		log(wnd, logTitle);
@@ -289,6 +316,16 @@ BOOL StartLog(int wnd, char* left, char *right)
 			sprintf(Timerecord, rs::rs(1029) , stl.wDay, stl.wMonth , stl.wYear , stl.wHour, stl.wMinute);
 	    
 		log(wnd, Timerecord);
+	}
+
+	if (dumplines > 0) {
+		int i;
+		for (i = ScrollBufferBegin; 
+		     i != ScrollBufferEnd && dumplines > 0; 
+			 i = (i + 1) % ScrollBufferCapacity, dumplines--) {
+			log(processLine(pScrollLinesBuffer[i].line.c_str(), pScrollLinesBuffer[i].timestamp));
+			log("\n");
+		}
 	}
 	
     return TRUE;
@@ -345,7 +382,7 @@ void stripDefaultColorDuplicates(string &strInput) {
     }
 }
 
-string processHTML(string strInput)
+string processHTML(string strInput, DWORD TimeStamp)
 {
 	string strOutput = "";
 
@@ -354,12 +391,15 @@ string processHTML(string strInput)
 	if ( bHTMLTimestamps ) {
 		DWORD currTicker = 0;
 
+		if ( !TimeStamp )
+			TimeStamp = GetTickCount();
+
 		if ( firstTicker == 0 ) {
-			firstTicker = GetTickCount();
+			firstTicker = TimeStamp;
 			lastTicker = 0;
 		}
 
-		currTicker = GetTickCount() - firstTicker;
+		currTicker = TimeStamp - firstTicker;
 
 		if ( currTicker - lastTicker >= MIN_HTML_FRAMES_DELAY_MS ) {
 			strOutput += strprintf("<div class=\"t %d\">", currTicker);
@@ -442,15 +482,18 @@ string processHTML(string strInput)
 	return strOutput;
 }
 
-string processRMA(string strInput)
+string processRMA(string strInput, DWORD TimeStamp)
 {
 	string strOutput;
 	DWORD currTicker = 0;
 
-    if ( lastTicker == 0 ) 
-        lastTicker = GetTickCount();
+	if ( !TimeStamp )
+		TimeStamp = GetTickCount();
 
-	currTicker = GetTickCount();
+    if ( lastTicker == 0 ) 
+        lastTicker = TimeStamp;
+
+	currTicker = TimeStamp;
 
     if ( currTicker - lastTicker ) {
 		strOutput = strprintf("%cp:%dm", 0x1B, currTicker - lastTicker);
@@ -484,17 +527,17 @@ string processTEXT(string strInput)
 }
 
 
-string processLine(char *charInput)
+string processLine(const char *charInput, DWORD TimeStamp)
 {
 	string strInput(charInput), strOutput;
 	
 	if (bCurLogHTML) {
 		// parse line to HTML
-		strOutput = processHTML(strInput);
+		strOutput = processHTML(strInput, TimeStamp);
 	} else if (bANSILog) {
 		// keep ANSI codes
 		strOutput = bRMASupport
-			? processRMA(strInput)
+			? processRMA(strInput, TimeStamp)
 			: strInput;
 	} else {
 		// strip all Esc-sequences
@@ -517,7 +560,7 @@ void StopLogging()
     }
 
     for (int i = 0; i < MAX_OUTPUT; i++) {
-        if (hOutputLogFile[i]) {	
+        if (hOutputLogFile[i].is_open()) {	
 			hOutputLogFile[i].close();
 			sOutputLogName[i][0] = '\0';
         }
@@ -533,11 +576,20 @@ void StopLogging()
 void log_command(char *arg)
 {
     char filename[BUFFER_SIZE], params[BUFFER_SIZE];
+	int dumplines = 0;
 
     arg=get_arg_in_braces(arg, filename, STOP_SPACES);
     arg=get_arg_in_braces(arg, params,   STOP_SPACES);
 
-    if ( StartLog(-1, filename, params) && mesvar[MSG_LOG]) {
+	if (!strcmpi(params, "all")) {
+		dumplines = nScrollSize;
+		arg=get_arg_in_braces(arg, params, STOP_SPACES);
+	} else if (is_all_digits(params)) {
+		dumplines = atoi(params);
+		arg=get_arg_in_braces(arg, params, STOP_SPACES);
+	}
+
+    if ( StartLog(-1, filename, params, dumplines) && mesvar[MSG_LOG]) {
         char msg[BUFFER_SIZE];
         sprintf(msg, rs::rs(1030), filename);
         tintin_puts2(msg);
@@ -560,9 +612,10 @@ void logadd_command(char *arg)
 
     substitute_vars(arg,tmp, sizeof(tmp));
     substitute_myvars(tmp,msg, sizeof(msg));
-    strcat(msg, "\n");
 
 	log(msg);
+	log("\n");
+	add_line_to_scrollbuffer(msg);
 }
 
 /************************/

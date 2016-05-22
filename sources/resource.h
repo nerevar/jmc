@@ -166,6 +166,10 @@
 #define IDC_CHK_SELECTRECT              1128
 #define IDC_CHK_SHOWHIDDEN              1129
 #define IDC_CHK_REMOVEESC               1130
+#define IDC_INPUT_DONT_DISPLAY          1131
+#define IDC_INPUT_ON_PROMPT             1132
+#define IDC_INPUT_ON_NEW_LINE           1133
+#define IDC_DISPLAY_PING                1134
 #define ID_OPTIONS_SCROLLBUFFER         32771
 #define ID_OPTIONS_FONT                 32772
 #define ID_OPTIONS_HOTKEYS              32774
@@ -235,7 +239,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        179
 #define _APS_NEXT_COMMAND_VALUE         32809
-#define _APS_NEXT_CONTROL_VALUE         1131
+#define _APS_NEXT_CONTROL_VALUE         1135
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

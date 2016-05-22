@@ -19,6 +19,8 @@ jmc_special_variable jmc_vars[JMC_SPECIAL_VARIABLES_NUM]={
 		   {"NOCOLOR", &variable_value_color_default},
 
 		   {"RANDOM", &variable_value_random},
+		   
+		   {"HOSTNAME", &variable_value_hostname},
 		   {"HOSTIP", &variable_value_hostip},
 		   {"HOSTPORT", &variable_value_hostport},
 

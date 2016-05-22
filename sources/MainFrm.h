@@ -181,6 +181,7 @@ protected:
     afx_msg LONG OnNameOutput(UINT wParam, LONG lParam);
     afx_msg LONG OnDockOutput(UINT wParam, LONG lParam);
     afx_msg LONG OnPosWOutput(UINT wParam, LONG lParam);
+	afx_msg LONG OnSizeWOutput(UINT wParam, LONG lParam);
 //vls-end//
 
     afx_msg LONG OnCleanInput(UINT wParam, LONG lParam);

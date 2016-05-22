@@ -55,6 +55,7 @@ CSmcView::CSmcView()
 
     m_bSelected = FALSE;
 
+	m_TotalLinesReceived = 0;
 
     // Create event for macro thread
 
@@ -111,7 +112,7 @@ void CSmcView::OnDraw(CDC* pDC)
     pDC->SelectClipRgn(&rgn);
 
     int ScrollIndex = GetScrollPos(SB_VERT);
-	int last_line = min(ScrollIndex + m_nPageSize, pDoc->m_nScrollSize - 1);
+	int last_line = min(ScrollIndex + m_nPageSize, nScrollSize - 1);
 
     POSITION pos = m_strList.FindIndex(ScrollIndex+m_nPageSize);
     ASSERT(pos);
@@ -217,8 +218,10 @@ void CSmcView::OnInitialUpdate()
     CSmcDoc* pDoc = (CSmcDoc*)GetDocument();
 
 
-    while ( m_strList.GetCount () < pDoc->m_nScrollSize ) 
+    while ( m_strList.GetCount () < nScrollSize ) 
         m_strList.AddTail("");
+
+	m_TotalLinesReceived = 0;
 
     // Init colors 
     m_nCurrentBg = 0;
@@ -262,7 +265,7 @@ void CSmcView::OnSize(UINT nType, int cx, int cy)
     CView::OnSize(nType, cx, cy);
     
 	m_nLastPageSize = m_nPageSize;
-    m_nPageSize = min(cy/pDoc->m_nYsize, pDoc->m_nScrollSize);
+    m_nPageSize = min(cy/pDoc->m_nYsize, nScrollSize);
     
 	m_nYDiff = cy - m_nPageSize*pDoc->m_nYsize;
 	
@@ -279,7 +282,7 @@ void CSmcView::OnSize(UINT nType, int cx, int cy)
 void CSmcView::SetScrollSettings(BOOL bResetPosition )
 {
     CSmcDoc* pDoc = GetDocument();
-    int TotalCount = max(pDoc->m_nScrollSize-m_nPageSize, 0 );
+    int TotalCount = max(nScrollSize-m_nPageSize, 0 );
     int OldPos = GetScrollPos(SB_VERT);
     SetScrollRange(SB_VERT, 0, TotalCount -1, FALSE);
     if ( bResetPosition ) {
@@ -321,7 +324,7 @@ void CSmcView::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
         }
         break;
     case SB_LINEDOWN:
-        if ( Pos < pDoc->m_nScrollSize -1-m_nPageSize ) {
+        if ( Pos < nScrollSize -1-m_nPageSize ) {
             Pos ++;
             SetScrollPos(SB_VERT, Pos, TRUE);
 			InvalidateRect(NULL, FALSE );
@@ -343,10 +346,10 @@ void CSmcView::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
         }
         break;
     case SB_PAGEDOWN:
-        if ( Pos < pDoc->m_nScrollSize -1-m_nPageSize ) {
+        if ( Pos < nScrollSize -1-m_nPageSize ) {
             Pos += m_nPageSize;
-            if ( Pos > pDoc->m_nScrollSize -1-m_nPageSize ) 
-                Pos = pDoc->m_nScrollSize -1-m_nPageSize;
+            if ( Pos > nScrollSize -1-m_nPageSize ) 
+                Pos = nScrollSize -1-m_nPageSize;
             SetScrollPos(SB_VERT, Pos, TRUE);
             InvalidateRect(NULL, FALSE );
             UpdateWindow();
@@ -899,12 +902,15 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 	        GetClientRect(&rect);
 
 			if ( pDoc->m_bClearContents ) {
-				for ( POSITION it = m_strList.GetHeadPosition(); it != NULL; m_strList.GetNext(it))
-						m_strList.SetAt(it, "");
+				for ( POSITION it = m_strList.GetTailPosition(); it != NULL && m_TotalLinesReceived >= 0; m_strList.GetPrev(it)) {
+					m_strList.SetAt(it, "");
+					m_TotalLinesReceived--;
+				}
+				m_TotalLinesReceived = 0;
 			}
 
 			CString str = pDoc->m_strTempList.GetHead();
-			str.Replace((char)0x1, (char)' ');
+			str.Replace((char)END_OF_PROMPT_MARK, (char)' ');
 	        m_strList.SetAt(m_strList.GetTailPosition(), str);
 	        // pDoc->m_strTempList.RemoveHead();
 
@@ -926,6 +932,7 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 
 		        m_strList.AddTail(str);
 		        m_strList.RemoveHead();
+				m_TotalLinesReceived++;
 
 				new_lines += pDoc->m_bLineWrap ? 
 					NumOfLines(LengthWithoutANSI((const char*)str), m_nLineWidth) : 1;;
@@ -952,12 +959,12 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 
         break;
     case SCROLL_SIZE_CHANGED:
-        if ( pDoc->m_nScrollSize < m_strList.GetCount() ) { // remove some string from head of list
-            while ( pDoc->m_nScrollSize < m_strList.GetCount() ) 
+        if ( nScrollSize < m_strList.GetCount() ) { // remove some string from head of list
+            while ( nScrollSize < m_strList.GetCount() ) 
                 m_strList.RemoveHead();
         }
-        if ( pDoc->m_nScrollSize > m_strList.GetCount() ) {
-            while ( pDoc->m_nScrollSize > m_strList.GetCount() ) 
+        if ( nScrollSize > m_strList.GetCount() ) {
+            while ( nScrollSize > m_strList.GetCount() ) 
                 m_strList.AddHead("");
         }
         SetScrollSettings();

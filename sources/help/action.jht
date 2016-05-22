@@ -1,15 +1,29 @@
 #action [<pattern>]
   show all action containing pattern 
-#action [text|raw|ansi|smaug|sow] <pattern> <reaction> [priority] [group]
-#action [text|raw|ansi|smaug|sow] /<regexp>/[i|m] <reaction> [priority] [group]
+#action [text|raw|color] <pattern> <reaction> [priority] [group]
+#action [text|raw|color] /<regexp>/[i|m] <reaction> [priority] [group]
   set reaction on pattern with priority in group
   available types of testing line:
-    text - all color esc-sequences are removed
-    raw  - line remains unchanged
-    ansi - color codes are placed in the right-most positions, background
-           codes are removed, colors for empty-substrings are omitted
-    smaug- same as ansi, esc-sequences replaced with codes such as "&w", "&R" and so on
-    sow  - same as ansi, esc-sequences replaced with codes such as "[7]", "{1}" and so on
+    text  - all color esc-sequences are removed
+    raw   - line remains unchanged
+    color - text-color codes are placed at the right-most positions, 
+            background colors and colors for empty-substrings are removed
+            used codes:
+            &d/&D - black/dark black/grey/white
+            &r/&R - dark/bright red
+            &g/&G - dark/bright green
+            &y/&Y - dark/bright yellow/orange
+            &b/&B - dark/bright blue
+            &p/&P - dark/bright pink/magenta
+            &c/&C - dark/bright cyan/blue
+            &w/&W - dark/bright 
+            &&    - single '&' character
+            note that every colored-string starts with color-code possibly 
+            inherited from previous one; it doesn't apply to multiline-actions,
+            in which multiple lines in a row with same color have no precedent code
+    for better understanding how it works and looks like it is recommended
+    to create trigger "#act color {/(.*)/} {#output %0}" then when connected
+    try to use different colors (in chat for example) and see conversion results in output-window
   default type: text
   possible flags:
     i - case insensitive

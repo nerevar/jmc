@@ -6,6 +6,8 @@
 #include "JmcObj.h"
 
 extern jmc_special_variable jmc_vars[JMC_SPECIAL_VARIABLES_NUM];
+extern GET_WNDSIZE_FUNC GetWindowSize;
+extern SET_WNDSIZE_FUNC SetWindowSize;
 
 /////////////////////////////////////////////////////////////////////////////
 // CJmcObj
@@ -39,6 +41,7 @@ STDMETHODIMP CJmcObj::ShowMe(BSTR varText, BSTR varColor)
 	if ( bLogAsUserSeen ) {
 		log(processLine(result));
 		log("\n");
+		add_line_to_scrollbuffer(result);
 	}
 	tintin_puts2(result);
 
@@ -191,6 +194,9 @@ STDMETHODIMP CJmcObj::RegisterHandler(BSTR bstrEvent, BSTR bstrCode)
 	if ( *event == 'P' && !strcmp(event, "PROMPT" ) ){
         m_bstrEventsHandlers[ID_Prompt] = bstrCode;
     } else 
+	if ( *event == 'T' && !strcmp(event, "TELNETSE" ) ){
+        m_bstrEventsHandlers[ID_TelnetSE] = bstrCode;
+    } else 
         return E_INVALIDARG;
     return S_OK;
 }
@@ -220,7 +226,6 @@ STDMETHODIMP CJmcObj::DropEvent()
 {
 	// m_pvarEventParams[0].Clear();
     m_bDropped = TRUE;
-    drop_command("\0");
 	return S_OK;
 }
 
@@ -416,3 +421,112 @@ STDMETHODIMP CJmcObj::wOutput(LONG wndNum, BSTR bstrText, BSTR bstrColor)
 	return S_OK;
 }
 //*/en
+
+STDMETHODIMP CJmcObj::wGetWidth(LONG wndNum, LONG *nWidth)
+{
+	if ( wndNum < 0 || wndNum >= MAX_OUTPUT ) 
+		wndNum = -1;
+
+	int w, h;
+	GetWindowSize(wndNum, w, h);
+	
+	*nWidth = w;
+
+	return S_OK;
+}
+
+STDMETHODIMP CJmcObj::wGetHeight(LONG wndNum, LONG *nHeight)
+{
+	if ( wndNum < 0 || wndNum >= MAX_OUTPUT ) 
+		wndNum = -1;
+
+	int w, h;
+	GetWindowSize(wndNum, w, h);
+	
+	*nHeight = h;
+
+	return S_OK;
+}
+
+STDMETHODIMP CJmcObj::TelnetSB(LONG Option, BSTR bstrData)
+{
+    USES_CONVERSION;
+
+	if ( !bstrData ) 
+        return E_INVALIDARG;
+
+	send_telnet_subnegotiation((unsigned char)Option, W2A(bstrData), SysStringLen(bstrData));
+
+	return S_OK;
+}
+
+STDMETHODIMP CJmcObj::ToText(BSTR bstrANSI, BSTR *bstrText)
+{
+	USES_CONVERSION;
+
+	if ( !bstrANSI ) 
+        return E_INVALIDARG;
+
+	CComBSTR ret("");
+	char *ansi = W2A(bstrANSI);
+	int len = strlen(ansi);
+	char *text = new char[len + 1];
+	remove_ansi_codes(ansi, text);
+	ret = (text);
+
+	*bstrText = ret.Copy();
+
+	delete text;
+
+	return S_OK;
+}
+
+STDMETHODIMP  CJmcObj::ToColored(BSTR bstrANSI, BSTR *bstrColored)
+{
+	USES_CONVERSION;
+
+	if ( !bstrANSI ) 
+        return E_INVALIDARG;
+
+	CComBSTR ret("");
+	char *ansi = W2A(bstrANSI);
+	int len = strlen(ansi);
+	char *colored = new char[len + 1];
+	int state = 37;
+	convert_ansi_to_colored(ansi, colored, len, state);
+	ret = (colored);
+
+	*bstrColored = ret.Copy();
+
+	delete colored;
+
+	return S_OK;
+}
+
+STDMETHODIMP CJmcObj::FromColored(BSTR bstrColored, BSTR *bstrANSI)
+{
+	USES_CONVERSION;
+
+	if ( !bstrColored ) 
+        return E_INVALIDARG;
+
+	CComBSTR ret("");
+	char *colored = W2A(bstrColored);
+	
+	int len = strlen(colored);
+	int count = 0, i;
+	for (i = 0; i < len; i++)
+		if (colored[i] == '&')
+			count++;
+	//&? => ESC[?;??m
+	len += count * 5;
+	char *ansi = new char[len + 1];
+	convert_colored_to_ansi(colored, ansi, len);
+	ret = (ansi);
+
+	*bstrANSI = ret.Copy();
+
+	delete ansi;
+
+	return S_OK;
+}

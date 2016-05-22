@@ -21,7 +21,6 @@
 #include "telnet.h"
 
 // #define _DEBUG_LOG
-
 DWORD dwTime0;
 int ticker_interrupted;
 int tick_size= 60;
@@ -46,6 +45,7 @@ struct listnode *common_subs;
 struct listnode *common_antisubs, *common_pathdirs, *common_path;
 
 SOCKET MUDSocket;
+char MUDHostName[256];
 sockaddr_in MUDAddress;
 
 LONG DLLEXPORT lPingMUD;
@@ -79,6 +79,8 @@ BOOL DLLEXPORT bIACSendSingle, bIACReciveSingle;
 int DLLEXPORT nScripterrorOutput; // 0 - msgbox, 1- window, 2- output
 BOOL DLLEXPORT bDisplayCommands = FALSE;
 BOOL DLLEXPORT bDisplayInput = TRUE;
+BOOL DLLEXPORT bInputOnNewLine = FALSE;
+BOOL DLLEXPORT bDisplayPing = TRUE;
 BOOL DLLEXPORT bMinimizeToTray = FALSE;
 UINT DLLEXPORT uBroadcastMessage = 0;
 
@@ -127,10 +129,7 @@ int ignore;
 BOOL bInterrupted = TRUE;
 // -----------------------
 
-//vls-begin// script files
-//int mesvar[8]; // Look like its variables for command
-int mesvar[10];
-//vls-end//
+int mesvar[MSG_MAXNUM];
 
 BOOL bMultiAction, bMultiHighlight;
 
@@ -310,7 +309,7 @@ STDAPI DllUnregisterServer(void)
 void tintin_puts2(char *cptr)
 {
 	char buff[BUFFER_SIZE + 3];
-	buff[0] = 0x2;
+	buff[0] = TINTIN_OUTPUT_MARK;
 	buff[1] = 0;
     strcat(buff, cptr);
     strcat(buff, "\n");
@@ -319,12 +318,13 @@ void tintin_puts2(char *cptr)
 
 void tintin_puts3(char *cptr, int wnd)
 {
-    char buff[BUFFER_SIZE + 2];
-
-    strcpy ( buff , cptr);
+	char buff[BUFFER_SIZE + 3];
+	buff[0] = TINTIN_OUTPUT_MARK;
+	buff[1] = 0;
+    strcat(buff, cptr);
     strcat(buff, "\n");
 
-    if ( hOutputLogFile[wnd] ) {
+    if ( hOutputLogFile[wnd].is_open() ) {
 		log(wnd, processTEXT(string(cptr)));
 		log(wnd, "\n");
 	}
@@ -343,7 +343,7 @@ void output_command(char* arg)
     if ( !right[0] ) {  // no colors
         prepare_actionalias(left,strng, sizeof(strng)); 
     } else {
-        prepare_actionalias(right,result, sizeof(result)); 
+		prepare_actionalias(right,result, sizeof(result)); 
         add_codes(result, strng, left);
     }
 
@@ -354,16 +354,20 @@ void output_command(char* arg)
 void write_line_mud(char *line)
 {
     int len, OriginalLen;
-//vls-begin// bugfix
-    char* buff = 0;
-//vls-end//
+    static char* buff = NULL;
+	static int buff_size = 0;
     int ret = 0;
 
     if ( !MUDSocket ) {
         tintin_puts(rs::rs(1182) );
     } else {
         OriginalLen = len = strlen(line);
-        buff = (char*)malloc(2*len+3);
+
+		if(buff_size < 2*len+3) {
+			buff_size = 2*len+3;
+			buff = (char*)realloc(buff, buff_size);
+		}
+        
         if ( bIACSendSingle ) 
             strcpy (buff, line);
         else {
@@ -390,7 +394,6 @@ void write_line_mud(char *line)
     }
 
 //* en
-//    if ( bDisplayInput ) {
 	char daaString[BUFFER_SIZE+2];
 	int daalen = 0;
 	if (bDaaMessage) {
@@ -401,19 +404,21 @@ void write_line_mud(char *line)
 	}
 	daaString[daalen] = 0;
 
-    if(bDisplayInput && strlen(line)>0) 
+    if (bDisplayInput && !(SocketFlags & SOCKECHO) && strlen(line) > 0) 
 	{
         std::string str;
-        str = "\x01\x1B[0;33m";
+		str = USER_INPUT_MARK;
+        str += "\x1B[0;33m";
 		str += bDaaMessage ? daaString : line;
         str += "\x1B[0m";
         tintin_puts2((char*)str.c_str());
-    }
 
-    if (hLogFile) {
-		log(processLine(bDaaMessage ? daaString : line));
-		log("\n");
-    }
+		if (hLogFile) {
+			log(processLine(bDaaMessage ? daaString : line));
+			log("\n");
+		}
+		add_line_to_scrollbuffer(bDaaMessage ? daaString : line);
+    }    
 
 //* en
 	bDaaMessage = FALSE;
@@ -433,10 +438,6 @@ void write_line_mud(char *line)
     if (  ret < 0 ) {
         tintin_puts(rs::rs(1183) );
     }
-//vls-begin// bugfix
-    if (buff)
-		free(buff);
-//vls-end//
 }
 
 
@@ -453,9 +454,18 @@ unsigned long __stdcall ConnectThread(void * pParam)
     int connectresult;
     struct sockaddr_in sockaddr;
 
-    if(isdigit(*strConnectAddress))                            /* interprete host part */
+    if(isdigit(*strConnectAddress)) {                            /* interprete host part */
         sockaddr.sin_addr.s_addr=inet_addr(strConnectAddress);
-    else {
+
+		struct hostent *hp;
+		if((hp=gethostbyaddr((const char*)&sockaddr, sizeof(sockaddr), AF_INET))==NULL) {
+            strcpy(MUDHostName, strConnectAddress);
+        } else {
+			strcpy(MUDHostName, hp->h_name);
+        }	
+    } else {
+		strcpy(MUDHostName, strConnectAddress);
+
         struct hostent *hp;
         if((hp=gethostbyname(strConnectAddress))==NULL) {
             tintin_puts2(rs::rs(1185));
@@ -482,6 +492,12 @@ START1:
     if((sock=socket(AF_INET, SOCK_STREAM, 0))<0)
         tintin_puts2(rs::rs(1188));
 
+	BOOL enable_opt = TRUE;
+	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&enable_opt, sizeof(enable_opt)) < 0) {
+		// something weird happens
+		tintin_puts2("#Can't disable Nagle's algorithm");
+	}
+	
     sockaddr.sin_family=AF_INET;
 
 
@@ -601,9 +617,12 @@ unsigned long __stdcall PingThread(void * pParam)
 	for(;;) {
 		int t0 = GetTickCount();
 
-		lPingMUD = ping_single_host(MUDAddress.sin_addr.s_addr, time_step_ms * 2);
-		lPingProxy = ping_single_host(htonl(ulProxyAddress), time_step_ms * 2);
-
+		if (bDisplayPing) {
+			lPingMUD = ping_single_host(MUDAddress.sin_addr.s_addr, time_step_ms * 2);
+			lPingProxy = ping_single_host(htonl(ulProxyAddress), time_step_ms * 2);
+		} else {
+			lPingMUD = lPingProxy = -4;
+		}
 		PostMessage(hwndMAIN, WM_USER+680, (WPARAM)lPingMUD, (LONG)lPingProxy);
 
 		int dt = GetTickCount() - t0;
@@ -957,7 +976,7 @@ static void process_incoming(char* buffer, BOOL FromServer)
             continue;
         }
 
-        if(*cpsource == '\n' || *cpsource == 0x1) {
+        if(*cpsource == '\n' || *cpsource == END_OF_PROMPT_MARK) {
             *cpdest = '\0';
 			
 			if ( !bLogAsUserSeen ) {
@@ -965,22 +984,23 @@ static void process_incoming(char* buffer, BOOL FromServer)
 			}
             if ( bProcess ) { 
                 do_one_line(linebuffer);
-				if (*cpsource == 0x1)
+				if (*cpsource == END_OF_PROMPT_MARK)
 					do_multiline();
 			}
 			if ( bLogAsUserSeen ) {
 				strcpy(line_to_log, linebuffer);
 			}
 
-			//vls-begin// #logadd + #logpass // multiple output
-            if(hLogFile.is_open() && !bLogPassedLine && (bLogAsUserSeen || FromServer)
-				&& strcmp(line_to_log, ".")) {
-				log(processLine(line_to_log));
-				log("\n");
+            if(!bLogPassedLine && (bLogAsUserSeen || FromServer) && strcmp(line_to_log, ".")) {
+				if(hLogFile.is_open()) {
+					log(processLine(line_to_log));
+					log("\n");
+				}
+
+				add_line_to_scrollbuffer(line_to_log);
             }
 
             bLogPassedLine = FALSE;
-			//vls-end//
 
             if( strcmp(linebuffer, ".") ) {
                 n = strlen(linebuffer);
@@ -1398,22 +1418,12 @@ void woutput_command(char* arg)
     char left[BUFFER_SIZE], right[BUFFER_SIZE];
     char result[BUFFER_SIZE], strng[BUFFER_SIZE];
     int wnd = MAX_OUTPUT;
-    int i, ok;
     
     arg=get_arg_in_braces(arg, number, STOP_SPACES);
     arg=get_arg_in_braces(arg, left,   WITH_SPACES);
     arg=get_arg_in_braces(arg, right,  WITH_SPACES);
 
-    // checking first parameter to be all digits
-    ok = 1;
-    for (i = 0; number[i]; i++) {
-        if (number[i] < '0' || number[i] > '9') {
-            ok = 0;
-            break;
-        }
-    }
-
-    if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts(rs::rs(1239));
         return;
     }
@@ -1433,21 +1443,11 @@ void wshow_command(char *arg)
     char option[BUFFER_SIZE];
     int wnd = MAX_OUTPUT;
     int opt;
-    int i, ok;
 
     arg=get_arg_in_braces(arg, number, STOP_SPACES);
     arg=get_arg_in_braces(arg, option, STOP_SPACES);
 
-    // checking first parameter to be all digits
-    ok = 1;
-    for (i = 0; number[i]; i++) {
-        if (number[i] < '0' || number[i] > '9') {
-            ok = 0;
-            break;
-        }
-    }
-
-    if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts(rs::rs(1240));
         return;
     }
@@ -1471,21 +1471,11 @@ void wname_command(char *arg)
     char number[BUFFER_SIZE];
     char option[BUFFER_SIZE];
     int wnd = MAX_OUTPUT;
-    int i, ok;
 
     arg=get_arg_in_braces(arg, number, STOP_SPACES);
     arg=get_arg_in_braces(arg, option, STOP_SPACES);
 
-    // checking first parameter to be all digits
-    ok = 1;
-    for (i = 0; number[i]; i++) {
-        if (number[i] < '0' || number[i] > '9') {
-            ok = 0;
-            break;
-        }
-    }
-
-    if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts(rs::rs(1244));
         return;
     }
@@ -1504,19 +1494,9 @@ void wdock_command(char *arg)
     char option[BUFFER_SIZE];
     LONG enable;
     int wnd = MAX_OUTPUT;
-    int i, ok;
 
     arg=get_arg_in_braces(arg, number, STOP_SPACES);
     arg=get_arg_in_braces(arg, option, STOP_SPACES);
-
-    // checking first parameter to be all digits
-    ok = 1;
-    for (i = 0; number[i]; i++) {
-        if (number[i] < '0' || number[i] > '9') {
-            ok = 0;
-            break;
-        }
-    }
 
 	enable = 1;
 	if ( is_abrev(option, "disable") )
@@ -1530,7 +1510,7 @@ void wdock_command(char *arg)
 	else if ( is_abrev(option, "bottom") )
 		enable = 5;
 
-    if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts(rs::rs(1260));
         return;
     }
@@ -1546,25 +1526,16 @@ void wpos_command(char *arg)
     char point2[BUFFER_SIZE];
     LONG points;
     LONG wnd = MAX_OUTPUT;
-    int i, ok, p1,p2;
+    int p1,p2;
 
     arg=get_arg_in_braces(arg, number, STOP_SPACES);
     arg=get_arg_in_braces(arg, point1, STOP_SPACES);
     arg=get_arg_in_braces(arg, point2, STOP_SPACES);
 
-    // checking first parameter to be all digits
-    ok = TRUE;
-    for (i = 0; number[i]; i++) {
-        if (number[i] < '0' || number[i] > '9') {
-            ok = 0;
-            break;
-        }
-    }
-
 	p1 = (atoi(point1) > 2048) ? 2048 : atoi(point1);
 	p2 = (atoi(point2) > 2048) ? 2048 : atoi(point2);
 
-    if (!ok || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts(rs::rs(1244));
         return;
     }
@@ -1585,6 +1556,32 @@ void wpos_command(char *arg)
 	wposes[wnd][1] = p2;
 	points = MAKELPARAM(p1,p2);
     PostMessage(hwndMAIN, WM_USER+505, wnd, points);
+}
+
+extern GET_WNDSIZE_FUNC GetWindowSize;
+extern SET_WNDSIZE_FUNC SetWindowSize;
+void wsize_command(char *arg)
+{
+    char number[BUFFER_SIZE];
+    char width[BUFFER_SIZE];
+    char height[BUFFER_SIZE];
+    LONG wnd = MAX_OUTPUT;
+    int w, h;
+
+    arg = get_arg_in_braces(arg, number, STOP_SPACES);
+    arg = get_arg_in_braces(arg, width, STOP_SPACES);
+    arg = get_arg_in_braces(arg, height, STOP_SPACES);
+
+    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) ||
+		!is_all_digits(width)  || !sscanf(width,  "%d", &w  ) ||
+		!is_all_digits(height) || !sscanf(height, "%d", &h  ) ) {
+        tintin_puts(rs::rs(1281));
+        return;
+    }
+	if(wnd < 0 || wnd >= MAX_OUTPUT)
+		wnd = MAX_OUTPUT; //main window
+
+	PostMessage(hwndMAIN, WM_USER+506, wnd, MAKELPARAM(w,h));
 }
 
 //vls-end//

@@ -24,14 +24,15 @@ public:
     BOOL     m_bAnsiBold; 
     CStringList m_strList;
 	std::vector<int> m_LineCountsList;
+	int m_TotalLinesReceived;
+	int m_nPageSize, m_nLastPageSize;
+	int m_nLineWidth;
 
 //vls-begin// multiple output
     int m_wndCode;
 //vls-end//
 
 protected:
-    int m_nPageSize, m_nLastPageSize;
-	int m_nLineWidth;
 
     int m_nStartSelectX, m_nStartSelectY, m_nEndSelectX, m_nEndSelectY; // Selection while grabbing screen
     int m_nStartTrackX, m_nStartTrackY, m_nEndTrackX, m_nEndTrackY; // Tracking positions of mouse

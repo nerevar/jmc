@@ -3,17 +3,87 @@
 #include "tintin.h"
 #include "telnet.h"
 
-BOOL DLLEXPORT bMCCPEnabled = FALSE;
-BOOL DLLEXPORT bTelnetIACs = FALSE;
+#include "ttcoreex.h"
+#include "JmcObj.h"
+
+#include <vector>
+
+const TelnetOption TelnetOptions[TELNET_OPTIONS_NUM] = {
+	{TN_ECHO,      "ECHO",  "Server echoes user's input"},			/* should be controlled by JMC */
+	{TN_NAWS,      "NAWS",  "Negotiate about window size"},			/* should be controlled by JMC */
+	{TN_TTYPE,     "MTTS",  "MUD Terminal Type Standard"},			/* should be controlled by JMC */
+	{TN_MSDP,      "MSDP",  "MUD Server Data Protocol"},			
+	{TN_MSSP,      "MSSP",  "MUD Server Status Protocol"},			
+	{TN_COMPRESS2, "MCCP",  "MUD Client Compression Protocol v2"},	/* should be controlled by JMC */
+	{TN_COMPRESS,  "MCCP1", "MUD Client Compression Protocol v1"},	/* should be controlled by JMC */
+	{TN_COMPRESS2, "MCCP2", "MUD Client Compression Protocol v2"},	/* should be controlled by JMC */
+	{TN_MSP,       "MSP",   "MUD Sound Protocol"},
+	{TN_MXP,       "MXP",   "MUD eXtension Protocol"},
+	{TN_ATCP,      "ATCP",  "Achaea Telnet Client Protocol"},
+	{TN_GMCP,      "GMCP",  "Generic MUD Communication Protocol"}
+	};
+
+std::vector<unsigned char> vEnabledTelnetOptions;
+std::vector<char> SubnegotiationBuffer;
+
+extern GET_WNDSIZE_FUNC GetWindowSize;
+extern CComObject<CJmcObj>* pJmcObj;
+
+static int get_telnet_option_num(const char *name)
+{
+	int i;
+	if(is_all_digits(name) && strlen(name) > 0)
+		return atoi(name);
+	for(i = 0; i < TELNET_OPTIONS_NUM; i++)
+		if(is_abrev(name, TelnetOptions[i].Name))
+			return TelnetOptions[i].Code;
+	return -1;
+}
+void get_telnet_option_name(unsigned char num, char *buf)
+{
+	int i;
+	for(i = 0; i < TELNET_OPTIONS_NUM; i++)
+		if(TelnetOptions[i].Code == num) {
+			strcpy(buf, TelnetOptions[i].Name);
+			return;
+		}
+	sprintf(buf, "%d", num);
+}
+static void get_telnet_option_descr(unsigned char num, char *buf)
+{
+	int i;
+	for(i = 0; i < TELNET_OPTIONS_NUM; i++)
+		if(TelnetOptions[i].Code == num) {
+			sprintf(buf, "%d[%s] [%s]",
+				TelnetOptions[i].Code,
+				TelnetOptions[i].Name,
+				TelnetOptions[i].Descr);
+			return;
+		}
+	sprintf(buf, "%d [unknown telnet option]", num);
+}
+
+BOOL telnet_option_enabled(unsigned char Option)
+{
+	int i;
+	for(i = 0; i < vEnabledTelnetOptions.size(); i++)
+		if(vEnabledTelnetOptions[i] == Option)
+			return TRUE;
+	return FALSE;
+}
+
+BOOL DLLEXPORT bTelnetDebugEnabled = FALSE;
+
 unsigned char DLLEXPORT strPromptEndSequence[BUFFER_SIZE];
 unsigned char DLLEXPORT strPromptEndReplace[BUFFER_SIZE];
 BOOL DLLEXPORT bPromptEndEnabled = FALSE;
 
 unsigned char State;
-unsigned char LastSB;
+unsigned char CurrentSubnegotiation;
 bool SentDoCompress2;
-int WaitBuggyMccp1;
-int SocketFlags;
+int MttsCounter;
+unsigned int SocketFlags;
+int LastWidthReported, LastHeightReported;
 
 int PromptEndIndex;
 
@@ -21,15 +91,12 @@ z_stream mccp_stream;
 
 void TelnetMsg(char *type, int cmd, int opt)
 {
-	static char cmdstr[32], optstr[32], buf[128];
+	static char cmdstr[32], optstr[256], buf[512];
 	
-	if (!bTelnetIACs)
+	if (!mesvar[MSG_TELNET] || !bTelnetDebugEnabled)
 		return;
 
-	switch (cmd) {
-	case TN_SB:
-		sprintf(cmdstr, "SB");
-		break;
+	switch ((unsigned char)cmd) {
 	case TN_WILL:
 		sprintf(cmdstr, "WILL");
 		break;
@@ -43,12 +110,18 @@ void TelnetMsg(char *type, int cmd, int opt)
 		sprintf(cmdstr, "DONT");
 		break;
 
-	case TN_EOR:
-		sprintf(cmdstr, "EOR");
+	case TN_SB:
+		sprintf(cmdstr, "SB");
 		break;
 	case TN_SE:
 		sprintf(cmdstr, "SE");
 		break;
+	
+
+	case TN_EOR:
+		sprintf(cmdstr, "EOR");
+		break;
+	
 	case TN_NOP:
 		sprintf(cmdstr, "NOP");
 		break;
@@ -78,60 +151,32 @@ void TelnetMsg(char *type, int cmd, int opt)
 		break;
 
 	default:
-		sprintf(cmdstr, "%04o", cmd);
+		sprintf(cmdstr, "%d", cmd);
 	}
 
-	switch (opt) {
-	case 0:
-		sprintf(optstr, "");
-		break;
-	case TN_ECHO:
-		sprintf(optstr, "ECHO");
-		break;
-	case TN_SGA:
-		sprintf(optstr, "SGA");
-		break;
-	case TN_STATUS:
-		sprintf(optstr, "STATUS");
-		break;
-	case TN_TIMING_MARK:
-		sprintf(optstr, "TIMING_MARK");
-		break;
-	case TN_TTYPE:
-		sprintf(optstr, "TTYPE");
-		break;
-	case TN_EOR_OPT:
-		sprintf(optstr, "EOR_OPT");
-		break;
-	case TN_NAWS:
-		sprintf(optstr, "NAWS");
-		break;
-	case TN_TSPEED:
-		sprintf(optstr, "TSPEED");
-		break;
-	case TN_LINEMODE:
-		sprintf(optstr, "LINEMODE");
-		break;
-	case TN_COMPRESS:
-		sprintf(optstr, "COMPRESS");
-		break;
-	case TN_COMPRESS2:
-		sprintf(optstr, "COMPRESS2");
-		break;
-	default:
-		sprintf(optstr, "%04o", opt);
+	if(opt)
+		get_telnet_option_descr(opt, optstr);
+	else
+		strcpy(optstr, "");
+	
+	sprintf(buf, "#TELNET %s IAC:%s", type, cmdstr);
+	if(strlen(optstr) > 0) {
+		strcat(buf, ":");
+		strcat(buf, optstr);
 	}
-
-	sprintf(buf, "#TELNET %s IAC:%s:%s", type, cmdstr, optstr);
 	tintin_puts2(buf);
 }
 
 void SendCmd(int cmd, int opt)
 {
-	char szBuf[4];
-	wsprintf(szBuf, "%c%c%c", (char)(unsigned char)TN_IAC, (char)cmd, (char)opt);
-    send(MUDSocket,szBuf, 3, 0 );
+	char szBuf[4], len = 0;
+	szBuf[len++] = (char)TN_IAC;
+	szBuf[len++] = (char)cmd;
+	if (opt)
+		szBuf[len++] = (char)opt;
 
+	send(MUDSocket, szBuf, len, 0 );
+    
 	TelnetMsg("send", cmd, opt);
 }
 
@@ -190,41 +235,69 @@ static void do_decompressing(const char *src, int size, int *used, char *dst, in
 
 }
 
-void mccp_command(char *arg) 
+void telnet_command(char *arg) 
 {
-	char flag[BUFFER_SIZE];
-    arg = get_arg_in_braces(arg,flag,WITH_SPACES);
+	char option[BUFFER_SIZE], flag[BUFFER_SIZE], tmp[BUFFER_SIZE];
 
-    if ( *flag == 0 ) {
-        bMCCPEnabled =! bMCCPEnabled;
-    } else {
-        if ( !_strcmpi(flag, "on" ) )
-            bMCCPEnabled = TRUE;
-        else 
-            bMCCPEnabled = FALSE;
-    }
-  
-    if(bMCCPEnabled)
-        tintin_puts2(rs::rs(1266));
-    else
-        tintin_puts2(rs::rs(1267));
-}
+	arg = get_arg_in_braces(arg, option, STOP_SPACES);
+    arg = get_arg_in_braces(arg, flag, STOP_SPACES);
 
-static char *last_strstr(char *haystack, char *needle)
-{
-    if (*needle == '\0')
-        return haystack;
+	if ( !strlen(option) ) {
+		char options[BUFFER_SIZE];
+		if(vEnabledTelnetOptions.size() == 0) {
+			strcpy(options, "-");
+		} else {
+			strcpy(options, "");
+			for(int i = 0; i < vEnabledTelnetOptions.size(); i++) {
+				if(i > 0)
+					strcat(options,", ");
+				get_telnet_option_name(vEnabledTelnetOptions[i], tmp);
+				strcat(options, tmp);
+			}
+		}
+		sprintf(tmp, rs::rs(1266), options);
+		tintin_puts2(tmp);
+	} else if ( is_abrev(option, "debug") ) {
+		if ( strlen(flag) ==0 )
+			bTelnetDebugEnabled = !bTelnetDebugEnabled;
+		else if ( !_strcmpi(flag, "on") )
+			bTelnetDebugEnabled = TRUE;
+		else
+			bTelnetDebugEnabled = FALSE;
 
-    char *result = NULL;
-    for (;;) {
-        char *p = strstr(haystack, needle);
-        if (p == NULL)
-            break;
-        result = p;
-        haystack = p + 1;
-    }
+		if ( mesvar[MSG_TELNET] ) {
+			sprintf(tmp, rs::rs(1267), "debug",
+				bTelnetDebugEnabled ? "ON" : "OFF");
+			tintin_puts2(tmp);
+		}
+	} else {
+		int opt = get_telnet_option_num(option);
+		if(opt <= 0 || opt >= 255) {
+			sprintf(tmp, rs::rs(1280), option);
+			tintin_puts2(tmp);
+		} else {
+			if ( strlen(flag) ) {
+				if ( !_strcmpi(flag, "on") ) {
+					if ( !telnet_option_enabled(opt) )
+						vEnabledTelnetOptions.push_back(opt);
+				} else {
+					for ( int i = 0; i < vEnabledTelnetOptions.size(); i++ )
+						if ( vEnabledTelnetOptions[i] == opt ) {
+							vEnabledTelnetOptions.erase(vEnabledTelnetOptions.begin() + i);
+							break;
+						}
+				}
+			}
+			if ( mesvar[MSG_TELNET] ) {
+				get_telnet_option_name(opt, option);
+				sprintf(tmp, rs::rs(1267), 
+					option,
+					telnet_option_enabled(opt) ? "ON" : "OFF");
+				tintin_puts2(tmp);
+			}
+		}
 
-    return result;
+	}
 }
 
 void promptend_command(char *arg) 
@@ -278,12 +351,14 @@ void increase_capacity(char **ppBuf, int *capacity, int needed) {
 void reset_telnet_protocol()
 {
 	stop_decompressing();
-	SocketFlags = 0; //SOCKECHO;
+	SocketFlags = 0;
 	SentDoCompress2 = false;
-	WaitBuggyMccp1 = 0;
-	LastSB = 0;
+	MttsCounter = 0;
+	LastWidthReported = LastHeightReported = 0;
+	CurrentSubnegotiation = 0;
 	InputSize = OutputSize = DecompressedSize = 0;
 	State = '\0';
+	SubnegotiationBuffer.clear();
 	PromptEndIndex = 0;
 }
 
@@ -350,6 +425,59 @@ int telnet_pop_front(char *dst, int maxsize)
 	return ret;
 }
 
+void send_telnet_subnegotiation(unsigned char option, const char *output, int length)
+{
+	int i;
+	vector<char> buf;
+
+	buf.push_back((char)TN_IAC);
+	buf.push_back((char)TN_SB);
+	buf.push_back((char)option);
+	for (i = 0; i < length; i++) {
+		switch (output[i]) {
+		case TN_IAC:
+			buf.push_back((char)TN_IAC);
+			buf.push_back((char)TN_IAC);
+			break;
+		case TN_SB:
+		case TN_SE:
+			break;
+		default:
+			buf.push_back((char)output[i]);
+			break;
+		}
+	}
+	buf.push_back((char)TN_IAC);
+	buf.push_back((char)TN_SE);
+	
+	send(MUDSocket, buf.begin(), buf.size(), 0);
+
+	if (mesvar[MSG_TELNET]) {
+		char buf[BUFFER_SIZE], optname[64];
+		get_telnet_option_name(option, optname);
+		sprintf(buf, "#TELNET SB-%s: send %d byte(s)", optname, length);
+		tintin_puts2(buf);
+	}
+}
+
+void recv_telnet_subnegotiation(unsigned char option, const char *input, int length)
+{
+	USES_CONVERSION;
+
+	if (mesvar[MSG_TELNET]) {
+		char buf[BUFFER_SIZE], optname[64];
+		get_telnet_option_name(option, optname);
+		sprintf(buf, "#TELNET SB-%s: recv %d byte(s)", optname, length);
+		tintin_puts2(buf);
+	}
+
+	pJmcObj->m_pvarEventParams[0] = (input);
+	pJmcObj->m_pvarEventParams[1] = ((LONG)option);
+    BOOL bRet = pJmcObj->Fire_TelnetSE();
+	if ( bRet ) {
+    }
+}
+
 void do_telnet_protecol(const unsigned char* input, int length, int *used, unsigned char* output, int capacity, int *generated)
 {
     *used = *generated = 0;
@@ -366,12 +494,27 @@ void do_telnet_protecol(const unsigned char* input, int length, int *used, unsig
     for (*used = 0; *used < length && (*generated) < capacity; (*used)++) {
 		switch( State ) {
 		case TN_IAC: {
- 				switch(State = input[*used]) {
+				State = input[*used];
+ 				switch(State) {
 					case TN_GA:
+						if (CurrentSubnegotiation > 0) {
+							SubnegotiationBuffer.push_back(State);
+						} else {
+							//output[(*generated)++] = '\n';
+							output[(*generated)++] = END_OF_PROMPT_MARK;
+						}
+						RecvCmd(State, 0);
+						State = '\0';
+						break;
 					case TN_EOR:
-						TelnetMsg("recv", State, 0);
-						//output[(*generated)++] = '\n';
-						output[(*generated)++] = 0x1;
+						if(SocketFlags & SOCKEOR) {
+							if (CurrentSubnegotiation > 0) {
+								SubnegotiationBuffer.push_back(State);
+							} else {
+								output[(*generated)++] = END_OF_PROMPT_MARK;
+							}
+						}
+						RecvCmd(State, 0);
 						State = '\0';
 						break;
 
@@ -383,158 +526,251 @@ void do_telnet_protecol(const unsigned char* input, int length, int *used, unsig
 						break;
 
 					case TN_SE:
-						TelnetMsg("recv", State, 0);
+						RecvCmd(State, 0);
 						State = '\0';
-						if(LastSB == TN_COMPRESS2) {
+						SubnegotiationBuffer.push_back(0);
+						recv_telnet_subnegotiation(CurrentSubnegotiation, SubnegotiationBuffer.begin(), SubnegotiationBuffer.size() - 1);
+						SubnegotiationBuffer.pop_back();
+						switch (CurrentSubnegotiation) {
+						case TN_COMPRESS:
 							(*used)++;
-							start_decompressing();
-							return;
+							CurrentSubnegotiation = 0;
+							if (SubnegotiationBuffer.size() == 0) {
+								start_decompressing();
+								return;
+							}
+							break;
+						case TN_COMPRESS2:
+							(*used)++;
+							CurrentSubnegotiation = 0;
+							if (SubnegotiationBuffer.size() == 0) {
+								start_decompressing();
+								return;
+							}
+							break;
+						case TN_TTYPE:
+							if (SubnegotiationBuffer.size() == 1 && SubnegotiationBuffer[0] == MTTS_SEND) {
+								char mtts_is[128];
+								char *value = &(mtts_is[1]);
+								mtts_is[0] = MTTS_IS;
+
+								switch (MttsCounter) {
+								case 0:
+									sprintf(value, "%s", "JMC");
+									MttsCounter++;
+									break;
+								case 1:
+									sprintf(value, "%s", "ANSI");
+									MttsCounter++;
+									break;
+								case 2:
+									sprintf(value, "%s %d", "MTTS", 
+										MTTS_ANSI);
+									break;
+								}
+								send_telnet_subnegotiation(TN_TTYPE, mtts_is, strlen(value) + 1);
+							}
+							break;
+						case TN_NAWS:
+							break;
 						}
+						CurrentSubnegotiation = 0;
 						break;
 
 					case TN_IAC:
-						output[(*generated)++] = input[*used];
+						if (CurrentSubnegotiation > 0) {
+							SubnegotiationBuffer.push_back(State);
+						} else {
+							output[(*generated)++] = input[*used];
+						}
 						State = '\0';
 						break;
 					default:
+						RecvCmd(State, 0);
 						State = '\0';
 						break;
 				}
 		    }
 			break;
 		case TN_WILL: {
-				RecvCmd(TN_WILL, input[*used]);
-				switch(input[*used]) {
-				case TN_ECHO:
-					if( SocketFlags & SOCKECHO ){
-						SocketFlags &= ~SOCKECHO;
-						SendCmd(TN_DONT, TN_ECHO); // !!! DID DO 
-					}
-					break;
-				case TN_EOR_OPT:
-					if( ! (SocketFlags & SOCKEOR) ){
+				unsigned char opt = input[*used];
+				RecvCmd(TN_WILL, opt);
+				if (!telnet_option_enabled(opt)) {
+					SendCmd(TN_DONT, opt);
+				} else {
+					switch(opt) {
+					case TN_ECHO:
+						SocketFlags |= SOCKECHO;
+						SendCmd(TN_DO, TN_ECHO);
+						break;
+					case TN_EOR_OPT:
 						SocketFlags |= SOCKEOR;
 						SendCmd(TN_DO, TN_EOR_OPT);
-					}
-					break;
-				case TN_TSPEED:
-					SendCmd(TN_DONT, TN_TSPEED);
-					break;
-				case TN_COMPRESS:
-					if (!bMCCPEnabled || SentDoCompress2)
-						SendCmd(TN_DONT, TN_COMPRESS);
-					else
-						SendCmd(TN_DO, TN_COMPRESS);
-					break;
-				case TN_COMPRESS2:
-					if (!bMCCPEnabled) {
-						SendCmd(TN_DONT, TN_COMPRESS2);
-					} else {
+						break;
+					case TN_TTYPE:
+						MttsCounter = 0;
+						SendCmd(TN_DO, TN_TTYPE);
+						break;
+					case TN_COMPRESS:
+						if (SentDoCompress2)
+							SendCmd(TN_DONT, TN_COMPRESS);
+						else
+							SendCmd(TN_DO, TN_COMPRESS);
+						break;
+					case TN_COMPRESS2:
 						SendCmd(TN_DO, TN_COMPRESS2);
 						SentDoCompress2 = true;
+						break;
+					default:
+						SendCmd(TN_DO, opt);
+						break;
 					}
-					break;
-				default:
-					SendCmd(TN_DONT, input[*used]);
-					break;
 				}
 				State = '\0';
 			}
 			break;
 		case TN_WONT: {
-				RecvCmd(TN_WONT, input[*used]);
+				unsigned char opt = input[*used];
+				RecvCmd(TN_WONT, opt);
 				switch(input[*used]) {
 				case TN_ECHO:
-					if( ! (SocketFlags & SOCKECHO) ){
-						SocketFlags |= SOCKECHO;
-						SendCmd(TN_DONT, TN_ECHO);
-					}
+					SocketFlags &= ~SOCKECHO;
+					SendCmd(TN_DONT, TN_ECHO);
 					break;
 				case TN_EOR_OPT:
-					if( SocketFlags & SOCKEOR ){
-						SocketFlags &= ~SOCKEOR;
-						SendCmd(TN_DONT, TN_EOR);
-					}
+					SocketFlags &= ~SOCKEOR;
+					SendCmd(TN_DONT, TN_EOR);
 					break;
 				default:
+					SendCmd(TN_DONT, opt);
 					break;
 				}
 				State = '\0';
 			}
 			break;
 		case TN_DO: {
-				RecvCmd(TN_DO, input[*used]);
-				SendCmd(TN_WONT, input[*used]);
+				unsigned char opt = input[*used];
+				RecvCmd(TN_DO, opt);
+				if (!telnet_option_enabled(opt)) {
+					SendCmd(TN_WONT, opt);
+				} else {
+					switch (opt) {
+					case TN_ECHO:
+						SocketFlags &= ~SOCKECHO;
+						SendCmd(TN_WILL, TN_ECHO);
+						break;
+					case TN_NAWS:
+						SocketFlags |= SOCKNAWS;
+						SendCmd(TN_WILL, TN_NAWS);
+						break;
+					case TN_TTYPE:
+						MttsCounter = 0;
+						SendCmd(TN_WILL, TN_TTYPE);
+						break;
+					default:
+						SendCmd(TN_WONT, opt);
+						break;
+					}
+				}
 				State = '\0';
 			}
 			break;
 		case TN_DONT: {
-				RecvCmd(TN_DONT, input[*used]);
+				unsigned char opt = input[*used];
+				RecvCmd(TN_DONT, opt);
+				if (telnet_option_enabled(opt)) {
+					switch (opt) {
+					case TN_ECHO:
+						SocketFlags |= SOCKECHO;
+						SendCmd(TN_WONT, TN_ECHO);
+						break;
+					case TN_NAWS:
+						SocketFlags &= ~SOCKNAWS;
+						SendCmd(TN_WONT, TN_NAWS);
+						break;
+					default:
+						SendCmd(TN_WONT, opt);
+						break;
+					}
+				}
 				State = '\0';
 			}
 			break;
 		case TN_SB: {
-				RecvCmd(TN_SB, input[*used]);
-				if( (LastSB = input[*used]) == TN_COMPRESS ) {
-					WaitBuggyMccp1 = 1;
-				}
+				CurrentSubnegotiation = input[*used];
+				SubnegotiationBuffer.clear();
+				RecvCmd(TN_SB, CurrentSubnegotiation);
 				State = '\0';
 			}
 			break;
 		default:
-			if (WaitBuggyMccp1 == 1 && input[*used] == TN_WILL) {
-				WaitBuggyMccp1++;
-				continue;
-			}
-			if (WaitBuggyMccp1 == 2 && input[*used] == TN_SE) {
-				start_decompressing();
-				return;
-			}
-			WaitBuggyMccp1 = 0;
-			switch (input[*used]) {
-			case TN_IAC:
-				if ( !(SocketFlags & SOCKTELNET) )
-					SocketFlags |= SOCKTELNET;
-				State = input[*used];
-				break;
-			case 0x9:
-				if(capacity - (*generated) >= 4) {
-					output[(*generated)++] = ' ';
-					output[(*generated)++] = ' ';
-					output[(*generated)++] = ' ';
-					output[(*generated)++] = ' ';
+			{
+				unsigned char ch = input[*used];
+				if (ch == TN_IAC) {
+					if ( !(SocketFlags & SOCKTELNET) )
+						SocketFlags |= SOCKTELNET;
+					State = ch;
+				} else if (CurrentSubnegotiation > 0) {
+					if (CurrentSubnegotiation == TN_COMPRESS && ch == TN_WILL)
+						State = TN_IAC;
+					else
+						SubnegotiationBuffer.push_back(ch);
 				} else {
-					return;
-				}
-				break;
-			case 0x7:
-				MessageBeep(MB_OK);
-				break;
-			default:
-				if (bPromptEndEnabled) {
-					if (input[*used] == strPromptEndSequence[PromptEndIndex]) {
-						PromptEndIndex++;
-						if (!strPromptEndSequence[PromptEndIndex]) { //match!
-							for (char *copy = (char*)strPromptEndReplace; *copy; )
-								output[(*generated)++] = *(copy++);
-							output[(*generated)++] = 0x1;
-							PromptEndIndex = 0;
+					switch (ch) {
+					case 0x9:
+						if(capacity - (*generated) >= 4) {
+							output[(*generated)++] = ' ';
+							output[(*generated)++] = ' ';
+							output[(*generated)++] = ' ';
+							output[(*generated)++] = ' ';
+						} else {
+							return;
 						}
-						continue;
-					}
-					for (char *copy = (char*)strPromptEndSequence; PromptEndIndex; PromptEndIndex--)
-						output[(*generated)++] = *(copy++);
-				}
+						break;
+					case 0x7:
+						MessageBeep(MB_OK);
+						break;
+					default:
+						if (bPromptEndEnabled) {
+							if (input[*used] == strPromptEndSequence[PromptEndIndex]) {
+								PromptEndIndex++;
+								if (!strPromptEndSequence[PromptEndIndex]) { //match!
+									for (char *copy = (char*)strPromptEndReplace; *copy; )
+										output[(*generated)++] = *(copy++);
+									output[(*generated)++] = END_OF_PROMPT_MARK;
+									PromptEndIndex = 0;
+								}
+								continue;
+							}
+							for (char *copy = (char*)strPromptEndSequence; PromptEndIndex; PromptEndIndex--)
+								output[(*generated)++] = *(copy++);
+						}
 
-				if ((bIACReciveSingle || input[*used] != 255) && 
-				   (input[*used] >= 0x80 || 
-					input[*used] == 0x1B || 
-					input[*used] == '\r' || 
-					input[*used] == '\n' ||
-					isprint(input[*used]))) {
-					output[(*generated)++] = input[*used];
-				} else {
-					State = input[*used];
+						if ((bIACReciveSingle || ch != 255) && 
+						   (ch >= 0x80 || 
+							ch == 0x1B || 
+							ch == '\r' || 
+							ch == '\n' ||
+							isprint(ch))) {
+							output[(*generated)++] = ch;
+							if ((SocketFlags & SOCKNAWS) && (ch == '\n')) {
+								unsigned char buf[4];
+								int w, h;
+								GetWindowSize(-1, w, h);
+								if (w != LastWidthReported || h != LastHeightReported) {
+									buf[0] = (w >> 8) & 0xFF;
+									buf[1] = (w >> 0) & 0xFF;
+									buf[2] = (h >> 8) & 0xFF;
+									buf[3] = (h >> 0) & 0xFF;
+									send_telnet_subnegotiation(TN_NAWS, (const char*)buf, 4);
+									LastWidthReported = w;
+									LastHeightReported = h;
+								}
+							}
+						} else {
+							State = ch;
+						}
+					}
 				}
 			}
 		}

@@ -18,8 +18,17 @@
 #define EMULATOR_BUFFER_SIZE	1024
 #define MAX_VARNAME_LENGTH		64
 
+#define MIN_SCROLL_SIZE			100
+#define MAX_SCROLL_SIZE			30000
+
+
+#define END_OF_PROMPT_MARK		'\x01'
+#define USER_INPUT_MARK			'\x01'
+#define TINTIN_OUTPUT_MARK		'\x02'
+#define ESC_SEQUENCE_MARK		'\x1B'
+
 typedef void (CALLBACK* END_FUNC)(void);
-typedef void (CALLBACK* DIRECT_OUT_FUNC)(char*, BOOL);
+typedef void (CALLBACK* DIRECT_OUT_FUNC)(char*, int);
 typedef void (CALLBACK* CLEAR_WINDOW_FUNC)(int);
 typedef void (CALLBACK* SET_HOTKEYS)(char*, char*);
 typedef void (CALLBACK* SET_HOTSET)(char*);
@@ -28,6 +37,11 @@ typedef void (CALLBACK* GET_OUTPUTNAME_FUNC)(int, char*, int);
 
 void DLLEXPORT InitOutputNameFunc(GET_OUTPUTNAME_FUNC OutNameFunc);
 //vls-end//
+
+typedef void (CALLBACK* GET_WNDSIZE_FUNC)(int, int &, int &);
+typedef void (CALLBACK* SET_WNDSIZE_FUNC)(int, int  , int  );
+
+void DLLEXPORT InitWindowSizeFunc(GET_WNDSIZE_FUNC GetWndFunc, SET_WNDSIZE_FUNC SetWndFunc);
 
 void  DLLEXPORT InitState(DIRECT_OUT_FUNC OutFunc, CLEAR_WINDOW_FUNC ClearFunc, HWND mainWnd);
 void  DLLEXPORT CloseState(void);
@@ -41,14 +55,14 @@ BOOL  DLLEXPORT ParseScript(LPCSTR strScriptlet);
 void  DLLEXPORT BreakScript();
 void  DLLEXPORT LunchDebuger();
 
+LONG  DLLEXPORT GetCommandsList(char *List);
+
 const DLLEXPORT char * act_type_to_str(int type);
 
 extern BOOL DLLEXPORT bBCastFilterIP;
 extern BOOL DLLEXPORT bBCastFilterPort;
 extern WORD DLLEXPORT wBCastUdpPort;
 extern void DLLEXPORT reopen_bcast_socket();
-
-extern BOOL DLLEXPORT bMCCPEnabled;
 
 extern unsigned char DLLEXPORT strPromptEndSequence[BUFFER_SIZE];
 extern unsigned char DLLEXPORT strPromptEndReplace[BUFFER_SIZE];
@@ -78,6 +92,8 @@ extern BOOL DLLEXPORT bConnectBeep;
 extern BOOL DLLEXPORT bAutoReconnect;
 extern BOOL DLLEXPORT bDisplayCommands;
 extern BOOL DLLEXPORT bDisplayInput;
+extern BOOL DLLEXPORT bInputOnNewLine;
+extern BOOL DLLEXPORT bDisplayPing;
 extern BOOL DLLEXPORT bMinimizeToTray;
 extern BOOL DLLEXPORT bHTML;
 extern BOOL DLLEXPORT bHTMLTimestamps;
@@ -108,6 +124,8 @@ extern HANDLE DLLEXPORT eventAllObjectEvent;
 extern HANDLE DLLEXPORT eventMudEmuTextArrives;
 extern int DLLEXPORT nMudEmuTextSize;
 extern char DLLEXPORT strMudEmuText[EMULATOR_BUFFER_SIZE];
+
+extern int DLLEXPORT nScrollSize;
 
 //vls-begin// #system
 extern CRITICAL_SECTION DLLEXPORT secSystemExec;

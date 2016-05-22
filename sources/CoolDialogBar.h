@@ -39,6 +39,8 @@ public:
 	int  m_mY;
 //vls-end//
 
+	void Resize(int Width, int Height);
+
 // Operations
 public:
 

@@ -34,6 +34,23 @@ public:
     virtual void SetGroup(char* group = NULL);
 };
 
+class CPCRE {
+public:
+	CPCRE();
+	~CPCRE();
+
+	std::string m_strSource;
+	BOOL m_bContainVars, m_bMultiline, m_bIgnoreCase;
+
+	pcre *m_pPcre;
+	pcre_extra *m_pExtra;
+
+	void Clear(BOOL ResetSource);
+	BOOL SetSource(const std::string Source, BOOL Multiline, BOOL IgnoreCase);
+
+	BOOL Recompile(const char *Pattern = NULL);
+};
+typedef CPCRE* PCPCRE;
 
 class ALIAS : public GROUPED_NODE {
 public:
@@ -42,17 +59,13 @@ public:
 
     std::string m_strRight;
     std::string m_strLeft;
-	std::string m_strRegex;
-	pcre* m_pPcre;
-	pcre_extra *m_pExtra;
-
-	BOOL m_bIgnoreCase;
+	
+	CPCRE m_PCRE;
 
 	BOOL m_bDeleted;
 	BOOL m_bRecompile;
 
 	BOOL SetLeft(char *left);
-	BOOL CreatePattern(char *left = NULL);
 	
 };
 typedef ALIAS* PALIAS;
@@ -63,22 +76,20 @@ public:
     ACTION();
     ~ACTION();
     int m_nPriority;
+
     std::string m_strLeft;
     std::string m_strRight;
-    std::string m_strRegex;
-    pcre* m_pPcre;
-    pcre_extra*  m_pExtra;
+    
+	CPCRE m_PCRE;
 
-	BOOL m_bMultiline, m_bIgnoreCase;
+	BOOL m_bGlobal;
 
     BOOL m_bDeleted;
 
 	enum ActionType {
 		Action_TEXT = 0,
 		Action_RAW = 1,
-		Action_ANSI = 2,
-		Action_SMAUG = 3,
-		Action_SOW = 4
+		Action_COLOR = 2
 	};
 	ActionType m_InputType;
 
@@ -89,7 +100,6 @@ public:
     BOOL m_bRecompile;
 
     BOOL SetLeft(char* left);
-    BOOL CreatePattern(char* left = NULL);
 };
 typedef ACTION* PACTION;
 typedef ACTION** PPACTION;

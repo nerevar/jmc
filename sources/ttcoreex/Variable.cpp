@@ -13,8 +13,6 @@ extern char *get_arg_in_braces();
 extern struct listnode *search_node_with_wild();
 extern struct listnode *searchnode_list();
 
-bool is_allowed_symbol(char arg);
-
 /*************************/
 /* the #variable command */
 /*************************/
@@ -57,20 +55,41 @@ void var_command(char *arg)
     char strVal[BUFFER_SIZE - MAX_VARNAME_LENGTH - 32];
     substitute_myvars(right, strVal, sizeof(strVal));
 
+	bool changed = false;
     if ( ind != VarList.end() ) {
         pvar = ind->second;
-        pvar->m_strVal = strVal;
+		if (pvar->m_strVal != strVal) {
+			changed = true;
+			pvar->m_strVal = strVal;
+		}
     }
     else {
+		changed = true;
         pvar = new VAR(strVal);
         VarList[left] = pvar;
     }
-    if ( !strcmp(gname, "global" ) ) 
-        pvar->m_bGlobal = TRUE;
-    else 
-        pvar->m_bGlobal = FALSE;
 
-    if (mesvar[MSG_VAR]) {
+	BOOL glob;
+    if ( !strcmp(gname, "global" ) ) 
+        glob = TRUE;
+    else 
+        glob = FALSE;
+	
+	if (pvar->m_bGlobal != glob) {
+		pvar->m_bGlobal = glob;
+		changed = true;
+	}
+
+	if (changed) {
+		VARTOPCRE::iterator pcres = VarPcreDeps.find(left);
+		if (pcres != VarPcreDeps.end())
+			for (std::set<CPCRE*>::iterator ind = pcres->second.begin(); ind != pcres->second.end(); ind++) {
+				CPCRE* p = *ind;
+				p->Recompile();
+			}
+	}
+
+    if (changed && mesvar[MSG_VAR]) {
 		int maxlen = sizeof(temp) - strlen(pvar->m_bGlobal ? rs::rs(1216) : rs::rs(1217)) - 1;
 		int len = _snprintf(temp, maxlen, rs::rs(1215), left, strVal);
 		if( len < 0 )
@@ -417,6 +436,16 @@ void variable_value_random(char *arg)
 	sprintf(arg, "%u", tmp);
 }
 
+extern char MUDHostName[256];
+void variable_value_hostname(char *arg)
+{
+	if (!MUDAddress.sin_addr.s_addr) {
+		*arg = '\0';
+		return;
+	}
+	strcpy(arg, MUDHostName);
+}
+
 void variable_value_hostip(char *arg)
 {
 	if (!MUDAddress.sin_addr.s_addr) {
@@ -441,7 +470,7 @@ void variable_value_hostport(char *arg)
 
 void variable_value_eop(char *arg)
 {
-	sprintf(arg, "%c", 0x1);
+	sprintf(arg, "%c", END_OF_PROMPT_MARK);
 }
 
 void variable_value_eol(char *arg)
@@ -451,7 +480,7 @@ void variable_value_eol(char *arg)
 
 void variable_value_esc(char *arg)
 {
-	sprintf(arg, "%c", 0x1B);
+	sprintf(arg, "%c", ESC_SEQUENCE_MARK);
 }
 
 void variable_value_ping(char *arg)

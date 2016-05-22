@@ -23,7 +23,9 @@
 
 #include "../recore/pcre.h"
 #include <string>
+#include <vector>
 #include <map>
+#include <set>
 #include <list>
 #include <fstream>
 
@@ -70,6 +72,7 @@ using namespace std;
 #define DEFAULT_GROUP_MESS TRUE
 #define DEFAULT_HOTKEY_MESS TRUE
 #define DEFAULT_LOG_MESS TRUE
+#define DEFAULT_TELNET_MESS FALSE
 
 enum {
     MSG_ALIAS = 0, 
@@ -79,12 +82,12 @@ enum {
     MSG_HIGH,
     MSG_VAR, 
     MSG_GRP, 
-//vls-begin// script files
-//    MSG_HOT
     MSG_HOT,
     MSG_SF,
-	MSG_LOG
-//vls-end//
+	MSG_LOG,
+	MSG_TELNET,
+
+	MSG_MAXNUM
 };
 
 /**************************************************************************/
@@ -128,10 +131,7 @@ struct completenode {
 
 extern int verbatim;
 extern int echo;
-//vls-begin// script files
-//extern int mesvar[8];
-extern int mesvar[10];
-//vls-end//
+extern int mesvar[MSG_MAXNUM];
 extern int acnum,subnum,hinum,antisubnum;
 extern int verbose;
 extern int presub;
@@ -143,6 +143,9 @@ extern BOOL bPathing;
 //vls-begin// #logadd + #logpass
 extern BOOL bLogPassedLine;
 //vls-end//
+
+extern std::vector<unsigned char> vEnabledTelnetOptions;
+extern BOOL DLLEXPORT bTelnetDebugEnabled;
 
 //* en
 extern BOOL bContinuedAction; //next
@@ -202,6 +205,14 @@ extern sockaddr_in MUDAddress;
 extern LONG DLLEXPORT lPingMUD;
 extern LONG DLLEXPORT lPingProxy;
 
+typedef struct {
+	DWORD timestamp;
+	string line;
+} ScrollLineRec;
+extern ScrollLineRec *pScrollLinesBuffer;
+extern int ScrollBufferCapacity, ScrollBufferBegin, ScrollBufferEnd;
+void add_line_to_scrollbuffer(const char *line);
+
 extern UINT DLLEXPORT uBroadcastMessage;
 
 /* ------ Extern functions implemented in exe file ----- */
@@ -237,15 +248,20 @@ int match(char *regex, char *string);
 char *mystrdup(char *s);
 char *space_out(char* s);
 void add_codes(char *line, char *result, char *htype, BOOL bAddTAil= TRUE);
+void remove_ansi_codes(const char *input, char *output);
+void convert_ansi_to_colored(const char *input, char *output, int maxlength, int &initial_state);
+void convert_colored_to_ansi(const char *input, char *output, int maxlength);
 void tintin_puts(char *cptr);
+bool is_allowed_symbol(char arg);
 void substitute_myvars(char *arg, char *result, int maxlength);
-int check_one_action(char *line, ACTION *action);
+int check_one_action(char *line, ACTION *action, int *offset = NULL);
 int check_one_action(char* line, char* action);
 void parse_input(char *input, BOOL bExecuteNow = FALSE);
 int check_a_action(char *line, char *action);
 BOOL show_aliases(char* left = NULL, CGROUP* pGroup= NULL);
 char *get_arg_in_braces( char *s, char *arg, int flag);
-int is_abrev( char *s1, char *s2);
+int is_all_digits(const char *number);
+int is_abrev(const char *s1, const char *s2);
 void prepare_actionalias( char *string, char *result, int maxlength);
 void substitute_vars(char *arg, char *result, int maxlength);
 int eval_expression(char *arg);
@@ -373,6 +389,7 @@ void sos_command(char *arg);
 // ttcoreex.cpp
 void wdock_command(char *arg);
 void wpos_command(char *arg);
+void wsize_command(char *arg);
 // parse.cpp
 void prefix_command(char *arg);
 //* /en
@@ -383,6 +400,7 @@ void read_command(char* filename);
 void connect_command(char* arg);
 void drop_command(char* arg);
 void nodrop_command(char* arg);
+void replace_command(char* arg);
 void MultiactionCommand(char* arg);
 void MultiHlightCommand(char* arg);
 void SetHotKey(char* arg);
@@ -407,9 +425,10 @@ void proxy_command(char *arg);
 int proxy_connect(int, const struct sockaddr *, int);
 int proxy_close(int);
 
-//MCCP support
-void mccp_command(char *arg);
-
+//Telnet routines
+void get_telnet_option_name(unsigned char num, char *buf);
+void send_telnet_subnegotiation(unsigned char option, const char *output, int length);
+void telnet_command(char *arg);
 void promptend_command(char *arg);
 
 // VARIABLES:
@@ -428,6 +447,7 @@ void variable_value_clockms(char *arg);
 void variable_value_clock(char *arg);
 void variable_value_color_default(char *arg);
 void variable_value_random(char *arg);
+void variable_value_hostname(char *arg);
 void variable_value_hostip(char *arg);
 void variable_value_hostport(char *arg);
 void variable_value_eop(char *arg);
@@ -438,7 +458,7 @@ void variable_value_ping_proxy(char *arg);
 
 BOOL show_actions(char* left = NULL, CGROUP* pGroup = NULL);
 int do_one_antisub(char *line);
-extern int SocketFlags;
+extern unsigned int SocketFlags;
 extern unsigned char State;
 void telnet_push_back(const char *src, int size);
 int telnet_more_coming();
@@ -449,10 +469,10 @@ void do_telnet_protecol(const unsigned char* input, int length, int *used, unsig
 void StopLogging();
 void log(string st);
 void log(int wnd, string st);
-string processLine(char *strInput);
+string processLine(const char *strInput, DWORD TimeStamp = 0);
 string processTEXT(string strInput);
-string processRMA(string strInput);
-string processHTML(string strInput);
+string processRMA(string strInput, DWORD TimeStamp);
+string processHTML(string strInput, DWORD TimeStamp);
 //vls-end//
 struct listnode *init_list(void);
 struct listnode *init_pathdir_list(void);
@@ -489,6 +509,19 @@ typedef std::map <std::string, VAR*> VARLIST;
 typedef VARLIST::iterator VAR_INDEX ;
 extern VARLIST  VarList;
 
+/*These structure is needed to avoid C4503 warning:
+    'identifier' : decorated name length exceeded, name was truncated
+  this way of warning resolving is recommended by MSDN
+*/
+//typedef struct { std::set<pcre*> List; } SPCRELIST;
+typedef std::set<CPCRE*> PCRESET;
+typedef std::map <std::string, PCRESET> VARTOPCRE;
+extern VARTOPCRE VarPcreDeps;
+//typedef std::map <std::string, SACTIONLIST> VARTOACTION;
+//typedef std::map <std::string, SALIASLIST> VARTOALIAS;
+//extern VARTOACTION VarActionDeps;
+//extern VARTOALIAS VarAliasDeps;
+
 typedef std::map <std::string, HLIGHT*> HLIGHTLIST ;
 typedef HLIGHTLIST::iterator HLIGHT_INDEX ;
 extern HLIGHTLIST HlightList;
@@ -509,7 +542,7 @@ extern void* JMCObjRet[1000];
 // --END
 
 //* en:JMC functions struct. look cmds.h
-const int JMC_CMDS_NUM=125;
+const int JMC_CMDS_NUM=127;
 typedef struct jmc_cmd 
 	{
 	char*alias;
@@ -519,7 +552,7 @@ typedef struct jmc_cmd
 //*/en
 
 
-const int JMC_SPECIAL_VARIABLES_NUM = 22;
+const int JMC_SPECIAL_VARIABLES_NUM = 23;
 typedef struct jmc_special_variable_struct {
 	char *name;
 	void (*jmcfn)(char*);

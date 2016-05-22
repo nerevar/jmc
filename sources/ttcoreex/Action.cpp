@@ -13,6 +13,8 @@ char *var_ptr[10];
 /***********************/
 
 static BOOL bDroppedLine;
+static BOOL bReplacedLine;
+static char strReplacedLine[BUFFER_SIZE];
 
 //* en
 BOOL bContinuedAction = FALSE;
@@ -28,14 +30,8 @@ const DLLEXPORT char * act_type_to_str(int type)
 	case ACTION::Action_RAW:
 		return "RAW";
 		break;
-	case ACTION::Action_ANSI:
-		return "ANSI";
-		break;
-	case ACTION::Action_SMAUG:
-		return "SMAUG";
-		break;
-	case ACTION::Action_SOW:
-		return "SOW";
+	case ACTION::Action_COLOR:
+		return "COLOR";
 		break;
 	}
 }
@@ -84,14 +80,8 @@ void action_command(char *arg)
 	} else if (is_abrev(left, "raw")) {
 		type = ACTION::Action_RAW;
 		arg=get_arg_in_braces(arg, left,  STOP_SPACES);
-	} else if (is_abrev(left, "ansi")) {
-		type = ACTION::Action_ANSI;
-		arg=get_arg_in_braces(arg, left,  STOP_SPACES);
-	} else if (is_abrev(left, "smaug")) {
-		type = ACTION::Action_SMAUG;
-		arg=get_arg_in_braces(arg, left,  STOP_SPACES);
-	} else if (is_abrev(left, "sow")) {
-		type = ACTION::Action_SOW;
+	} else if (is_abrev(left, "color")) {
+		type = ACTION::Action_COLOR;
 		arg=get_arg_in_braces(arg, left,  STOP_SPACES);
 	}
 
@@ -203,7 +193,6 @@ void unaction_command(char* arg)
 /**************************************************************************/
 void prepare_actionalias(char *string, char *result, int maxlength)
 {
-
   char arg[BUFFER_SIZE];
   *result='\0';
   substitute_vars(string,arg,sizeof(arg));
@@ -321,7 +310,10 @@ void substitute_vars(char *arg, char *result, int maxlength)
   *result++='\0';
 }
 
-static void remove_ansi_codes(const char *input, char *output)
+static const char color_codes[8] = {'d', 'r', 'g', 'y', 'b', 'p', 'c', 'w'};
+static std::map <char, std::string> color_commands;
+
+void remove_ansi_codes(const char *input, char *output)
 {
     while (*input)  {
         switch ( *input ) {
@@ -340,9 +332,9 @@ static void remove_ansi_codes(const char *input, char *output)
     *output = 0;
 }
 
-static void canonize_ansi_codes(const char *input, char *output, int maxlength)
+void convert_ansi_to_colored(const char *input, char *output, int maxlength, int &initial_state)
 {
-	static int state = 37;
+	int state = initial_state; //37;
 	int last_printed = -1;
 	while ((*input) && maxlength) {
 		if (input[0] == 0x1B && input[1] == '[') {
@@ -376,16 +368,24 @@ static void canonize_ansi_codes(const char *input, char *output, int maxlength)
 			continue;
 		}
 		if ((*input) < 0 || isprint((unsigned char)(*input)) || (*input) == '\n') {
-			if (!isspace((unsigned char)(*input)) && last_printed != state && maxlength >= 8) {
-				(*output++) = 0x1B;
-				(*output++) = '[';
-				(*output++) = '0' + (state >> 8);
-				(*output++) = ';';
-				(*output++) = '3';
-				(*output++) = '0' + ((state & 0xFF) - 30);
-				(*output++) = 'm';
-				maxlength -= 7;
+			if (!isspace((unsigned char)(*input)) && last_printed != state && maxlength > 2) {
+				(*output++) = '&';
+				
+				int index = (state & 0xFF) - 30;
+				if (index < 0 || index >= sizeof(color_codes))
+					index = sizeof(color_codes) - 1;
+
+				if(state >> 8)
+					(*output++) = toupper(color_codes[index]);
+				else
+					(*output++) = color_codes[index];
+				
+				maxlength -= 2;
 				last_printed = state;
+			}
+			if (maxlength > 1 && *input == '&') {
+				(*output++) = *input;
+				maxlength--;
 			}
 			(*output++) = *input;
 			maxlength--;
@@ -393,75 +393,39 @@ static void canonize_ansi_codes(const char *input, char *output, int maxlength)
 		input++;
 	}
 	*output = '\0';
+	initial_state = state;
 }
 
-static void replace_all_inplace(char *inout, const char *search_for, const char *replace_with)
+void convert_colored_to_ansi(const char *input, char *output, int maxlength)
 {
-	int len1 = strlen(replace_with);
-	int len2 = strlen(search_for);
-	int length = strlen(inout);
-
-	char *ptr = inout;
-	while ((ptr = strstr(ptr, search_for))) {
-		int rest = length - (ptr - inout);
-		if (len1 != len2)
-			memmove(ptr + len1, ptr + len2, rest - len2);
-		memmove(ptr, replace_with, len1);
-		ptr += len1;
-		length = length - len2 + len1;
-		inout[length] = '\0';
+	int i;
+	if (color_commands.size() == 0) {
+		char buf[64];
+		for (i = 0; i < sizeof(color_codes); i++) {
+			sprintf(buf, "\x1B[0;3%dm", i);
+			color_commands[color_codes[i]] = buf;
+			sprintf(buf, "\x1B[1;3%dm", i);
+			color_commands[toupper(color_codes[i])] = buf;
+		}
+		color_commands['&'] = "&";
 	}
-}
-static void translate_to_smaug(const char *canonized, char *output)
-{
-	strcpy(output, canonized);
 
-	replace_all_inplace(output, "&", "&&");
-
-	replace_all_inplace(output, "\x1b[0;30m", "&x");
-	replace_all_inplace(output, "\x1b[0;31m", "&r");
-	replace_all_inplace(output, "\x1b[0;32m", "&g");
-	replace_all_inplace(output, "\x1b[0;33m", "&O");
-	replace_all_inplace(output, "\x1b[0;34m", "&b");
-	replace_all_inplace(output, "\x1b[0;35m", "&p");
-	replace_all_inplace(output, "\x1b[0;36m", "&c");
-	replace_all_inplace(output, "\x1b[0;37m", "&w");
-
-	replace_all_inplace(output, "\x1b[1;30m", "&z");
-	replace_all_inplace(output, "\x1b[1;31m", "&R");
-	replace_all_inplace(output, "\x1b[1;32m", "&G");
-	replace_all_inplace(output, "\x1b[1;33m", "&Y");
-	replace_all_inplace(output, "\x1b[1;34m", "&B");
-	replace_all_inplace(output, "\x1b[1;35m", "&P");
-	replace_all_inplace(output, "\x1b[1;36m", "&C");
-	replace_all_inplace(output, "\x1b[1;37m", "&W");
-}
-static void translate_to_sow(const char *canonized, char *output)
-{
-	strcpy(output, canonized);
-
-	replace_all_inplace(output, "[", "[[");
-	replace_all_inplace(output, "]", "]]");
-	replace_all_inplace(output, "{", "{{");
-	replace_all_inplace(output, "}", "}}");
-
-	replace_all_inplace(output, "\x1b[[0;30m", "[0]");
-	replace_all_inplace(output, "\x1b[[0;31m", "[1]");
-	replace_all_inplace(output, "\x1b[[0;32m", "[2]");
-	replace_all_inplace(output, "\x1b[[0;33m", "[3]");
-	replace_all_inplace(output, "\x1b[[0;34m", "[4]");
-	replace_all_inplace(output, "\x1b[[0;35m", "[5]");
-	replace_all_inplace(output, "\x1b[[0;36m", "[6]");
-	replace_all_inplace(output, "\x1b[[0;37m", "[7]");
-
-	replace_all_inplace(output, "\x1b[[1;30m", "{0}");
-	replace_all_inplace(output, "\x1b[[1;31m", "{1}");
-	replace_all_inplace(output, "\x1b[[1;32m", "{2}");
-	replace_all_inplace(output, "\x1b[[1;33m", "{3}");
-	replace_all_inplace(output, "\x1b[[1;34m", "{4}");
-	replace_all_inplace(output, "\x1b[[1;35m", "{5}");
-	replace_all_inplace(output, "\x1b[[1;36m", "{6}");
-	replace_all_inplace(output, "\x1b[[1;37m", "{7}");
+	std::map <char, std::string>::iterator it;
+	while (*input && maxlength) {
+		if (*input != '&' || (it = color_commands.find(*(input + 1))) == color_commands.end()) {
+			*output++ = *input++;
+			maxlength--;
+		} else {
+			input += 2;
+			int len = it->second.length();
+			if (len > maxlength)
+				len = maxlength;
+			for (i = 0; i < len; i++)
+				*output++ = it->second[i];
+			maxlength -= len;
+		}
+	}
+	*output = '\0';
 }
 
 /**********************************************/
@@ -471,26 +435,26 @@ void check_all_actions(char *line, bool multiline)
 {
     static char strng[BUFFER_SIZE];
 
-	static char uncolored_text[MULTILINE_BUFFER_SIZE];
-	static char colored_ansi[MULTILINE_BUFFER_SIZE];
-	static char colored_smaug[MULTILINE_BUFFER_SIZE*2];
-	static char colored_sow[MULTILINE_BUFFER_SIZE*2];
+	static char uncolored[MULTILINE_BUFFER_SIZE];
+	static char colored[MULTILINE_BUFFER_SIZE];
+
+	static int singleline_state = 37;
+	static int multiline_state = 37;
 	
-	uncolored_text[0] = '\0';
-	colored_ansi[0] = '\0';
-	colored_smaug[0] = '\0';
-	colored_sow[0] = '\0';
+	uncolored[0] = '\0';
+	colored[0] = '\0';
 
     // Do check 
 
-    bDroppedLine = FALSE;
+    bDroppedLine = bReplacedLine = FALSE;
+	strReplacedLine[0] = '\0';
   
 
     ACTION_INDEX ind = ActionList.begin();
     while (ind  != ActionList.end() ) {
         // CActionPtr pac = *ind;
         ACTION* pac = *ind;
-        if(pac->m_pGroup->m_bEnabled && !pac->m_bDeleted && pac->m_bMultiline == (multiline ? TRUE : FALSE)) {
+        if(pac->m_pGroup->m_bEnabled && !pac->m_bDeleted && pac->m_PCRE.m_bMultiline == (multiline ? TRUE : FALSE)) {
 			char *input;
 
 			switch (pac->m_InputType) {
@@ -499,32 +463,20 @@ void check_all_actions(char *line, bool multiline)
 				input = line;
 				break;
 			case ACTION::Action_TEXT:
-				if (!uncolored_text[0])
-					remove_ansi_codes(line, uncolored_text);
-				input = uncolored_text;
+				if (!uncolored[0])
+					remove_ansi_codes(line, uncolored);
+				input = uncolored;
 				break;
-			case ACTION::Action_ANSI:
-				if (!colored_ansi[0])
-					canonize_ansi_codes(line, colored_ansi, sizeof(colored_ansi) - 1);
-				input = colored_ansi;
-				break;
-			case ACTION::Action_SMAUG:
-				if (!colored_ansi[0])
-					canonize_ansi_codes(line, colored_ansi, sizeof(colored_ansi) - 1);
-				if (!colored_smaug[0])
-					translate_to_smaug(colored_ansi, colored_smaug);
-				input = colored_smaug;
-				break;
-			case ACTION::Action_SOW:
-				if (!colored_ansi[0])
-					canonize_ansi_codes(line, colored_ansi, sizeof(colored_ansi) - 1);
-				if (!colored_sow[0])
-					translate_to_sow(colored_ansi, colored_sow);
-				input = colored_sow;
+			case ACTION::Action_COLOR:
+				if (!colored[0])
+					convert_ansi_to_colored(line, colored,  sizeof(colored) - 1,
+					                        multiline ? multiline_state : singleline_state);
+				input = colored;
 				break;
 			}
 
-			if (check_one_action(input, pac)) {
+			int offset = 0;
+			while (check_one_action(input, pac, &offset)) {
 				char buffer[BUFFER_SIZE];
 				prepare_actionalias((char*)pac->m_strRight.data(), buffer, sizeof(buffer));
 				if(echo ) { 
@@ -537,9 +489,15 @@ void check_all_actions(char *line, bool multiline)
 					line[1] = 0;
 					return;
 				}
+				if ( bReplacedLine ) {
+					strcpy(line, strReplacedLine);
+					strReplacedLine[0] = '\0';
+				}
 				if ( !bMultiAction && !bContinuedAction) 
 					return;
 				bContinuedAction = FALSE;
+				if (!pac->m_bGlobal)
+					break;
 			}
 		}
         ind++;
@@ -579,10 +537,10 @@ int check_one_action(char* line, char* action)
 }
 
 
-int check_one_action(char *line, ACTION* action)
+int check_one_action(char *line, ACTION* action, int *offset)
 {
     // first check for action need to be recompiled !
-    if ( action->m_strRegex.length () == 0  ) {
+    if ( !action->m_PCRE.m_pPcre ) {
         char left[BUFFER_SIZE];
         if ( action->m_bRecompile ) 
             substitute_myvars((char*)action->m_strLeft.data(),left, sizeof(left));
@@ -600,9 +558,10 @@ int check_one_action(char *line, ACTION* action)
             return FALSE;
     }
     
+	int start_offset = offset ? (*offset) : 0;
     int offsets[33];
-    int captured = pcre_exec(action->m_pPcre , action->m_pExtra , 
-        line, strlen(line), 0, 0, offsets, 33);
+    int captured = pcre_exec(action->m_PCRE.m_pPcre , action->m_PCRE.m_pExtra , 
+        line, strlen(line), start_offset, 0, offsets, 33);
     if ( captured > 0 ) { // copy strings to vars[] array
 		int i;
         for ( i = 0 ; i < 10 ; i++ ) 
@@ -615,6 +574,8 @@ int check_one_action(char *line, ACTION* action)
                 *(vars[i-1]+size)='\0'; 
             }
         }
+		if (offset)
+			*offset = offsets[1];
         return TRUE;   
     }
     return FALSE;
@@ -788,6 +749,16 @@ void drop_command(char *arg)
 void nodrop_command(char *arg)
 {
     bDroppedLine = FALSE;
+}
+void replace_command(char *arg)
+{
+    char left[BUFFER_SIZE];
+    
+    arg = get_arg_in_braces(arg, left, WITH_SPACES);
+
+	prepare_actionalias(left, strReplacedLine, sizeof(strReplacedLine));   
+
+	bReplacedLine = TRUE;
 }
 
 void next_command(char*arg)

@@ -71,8 +71,6 @@ public:
 
     BOOL m_bFrozen;
 
-    inline int GetMaxLines() const {return m_nScrollSize;};
-    int m_nScrollSize;
 //vls-begin// multiple output
 //    int m_nWindowCharsSize, m_nOutWindowCharsSize;
     int m_nWindowCharsSize;

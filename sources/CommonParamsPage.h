@@ -32,7 +32,6 @@ public:
 	CString	m_strCommandDelimiter;
 	UINT	m_nHistorySize;
 	BOOL	m_bDisplayCommands;
-	BOOL	m_bDisplayInput;
 	BOOL	m_bClearInput;
 	BOOL	m_bTokenInput;
 	BOOL	m_bKillOneToken;
@@ -49,6 +48,8 @@ public:
 	BOOL	m_bSelectRect;
 	BOOL	m_bRemoveESC;
 	BOOL	m_bShowHidden;
+	BOOL	m_bShowPing;
+	int		m_nUserInputHide;
 	//}}AFX_DATA
 
 

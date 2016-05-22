@@ -1,0 +1,46 @@
+##   CHECK VARIABLE-DEPENDENT ACTIONS AND ALIASES WITH REGULAR EXPRESSIONS
+
+#alias {/test-alias (\d+) $SomeVar (\d+)/} {#math Sum {%0 + %1}}
+#var SomeVar qwerty
+
+#var SumCorrect 123
+#var Sum 123
+test-alias 12 asdfg 23
+assertEqual ALIAS_VARIABLE_DEPENDENT Sum SumCorrect
+
+#var SumCorrect 35
+test-alias 12 qwerty 23
+assertEqual ALIAS_VARIABLE_DEPENDENT Sum SumCorrect
+
+#var SomeVar asdfg
+test-alias 123 qwerty 234
+assertEqual ALIAS_VARIABLE_DEPENDENT Sum SumCorrect
+
+#var SumCorrect 357
+test-alias 123 asdfg 234
+assertEqual ALIAS_VARIABLE_DEPENDENT Sum SumCorrect
+
+
+#action {/test-action (\d+) $SomeVar (\d+)/} {#math Sum {%0 + %1}}
+#var SomeVar qwerty
+
+#var SumCorrect 123
+#var Sum 123
+#loopback {test-action 12 asdfg 23}
+#sync
+assertEqual ACTION_VARIABLE_DEPENDENT Sum SumCorrect
+
+#var SumCorrect 35
+#loopback {test-action 12 qwerty 23}
+#sync
+assertEqual ACTION_VARIABLE_DEPENDENT Sum SumCorrect
+
+#var SomeVar asdfg
+#loopback {test-action 123 qwerty 234}
+#sync
+assertEqual ACTION_VARIABLE_DEPENDENT Sum SumCorrect
+
+#var SumCorrect 357
+#loopback {test-action 123 asdfg 234}
+#sync
+assertEqual ACTION_VARIABLE_DEPENDENT Sum SumCorrect
