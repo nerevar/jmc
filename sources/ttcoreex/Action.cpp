@@ -38,7 +38,7 @@ const DLLEXPORT char * act_type_to_str(int type)
 
 BOOL show_actions(char* left, CGROUP* pGroup)
 {
-	static char temp[BUFFER_SIZE];
+	char temp[BUFFER_SIZE];
     BOOL bFound = FALSE;
 
     if ( !left || !*left ) 
@@ -433,7 +433,7 @@ void convert_colored_to_ansi(const char *input, char *output, int maxlength)
 /**********************************************/
 void check_all_actions(char *line, bool multiline)
 {
-    static char strng[BUFFER_SIZE];
+    char strng[BUFFER_SIZE];
 
 	static char uncolored[MULTILINE_BUFFER_SIZE];
 	static char colored[MULTILINE_BUFFER_SIZE];

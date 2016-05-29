@@ -77,7 +77,7 @@
 #define TN_DONT         0376    /* Stop ~ing!, or nack for WILL */
 #define TN_IAC          0377    /* telnet Is A Command character */
 
-#define TELNET_OPTIONS_NUM 12
+#define TELNET_OPTIONS_NUM 13
 typedef struct
 {
 	unsigned char Code;

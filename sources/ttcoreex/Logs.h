@@ -5,18 +5,17 @@
 //decrease fps to 25Hz max.
 const int MIN_HTML_FRAMES_DELAY_MS = 40;
 
-const string
-	HTML_TAG = "i",
-	TAG_OPEN = "<i>",
-	TAG_CLOSE = "</i>",
-	BR = "\n",
-	CSS_LIGHT_COLOR = "l";
+const char
+	HTML_TAG[] = "i",
+	TAG_OPEN[] = "<i>",
+	TAG_CLOSE[] = "</i>",
+	BR[] = "\n",
+	CSS_LIGHT_COLOR[] = "l";
 
-string html_footer(
-	"\n</pre></div></body></html>"
-);
+const char html_footer[] =
+	"\n</pre></div></body></html>";
 
-static const string css_colors[] = 
+const char css_colors[][3] = 
 {
 	"bl",	
 	"r",	
@@ -28,7 +27,7 @@ static const string css_colors[] =
 	"w",
 };
 
-static const string css_bg_colors[] = 
+const char css_bg_colors[][5] = 
 {
 	"b_bl",	
 	"b_r",	

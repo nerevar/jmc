@@ -7,6 +7,7 @@ copy jmc.exe %release%
 copy ttcoreex.dll %release%
 copy recore.dll %release%
 copy zlib.dll %release%
+copy wolfssl.dll %release%
 copy html.log.template %release%
 copy language.ini %release%
 copy changelog.txt %release%

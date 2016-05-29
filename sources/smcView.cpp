@@ -8,8 +8,10 @@
 #include "smcDoc.h"
 #include "smcView.h"
 
-
-
+	/* 01234567890
+	 * [00:00:00] 
+	 */
+int TimeStampLen = 10;
 //  checked in/out
 
 #ifdef _DEBUG
@@ -90,6 +92,7 @@ static int LengthWithoutANSI(const char* str)
 			ret++;
 		}
 	}
+
 	return ret;
 }
 static int NumOfLines(int StrLength, int LineWidth) 
@@ -128,6 +131,9 @@ void CSmcView::OnDraw(CDC* pDC)
 
 		int length = LengthWithoutANSI((const char*)str);
 		int lines = pDoc->m_bLineWrap ? NumOfLines(length, m_nLineWidth) : 1;
+
+		if (lines <= 0) //nothing can be drawn
+			lines++;
 
 		m_LineCountsList.push_back(lines);
 		total_lines += lines;
@@ -217,9 +223,9 @@ void CSmcView::OnInitialUpdate()
 
     CSmcDoc* pDoc = (CSmcDoc*)GetDocument();
 
-
-    while ( m_strList.GetCount () < nScrollSize ) 
+    while ( m_strList.GetCount () < nScrollSize ) {
         m_strList.AddTail("");
+	}
 
 	m_TotalLinesReceived = 0;
 
@@ -487,7 +493,6 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
     // Lets do different drawing code for selected/unselected mode. Doing to to
     // keep high speed of drawing while unselected mode
 
-
     if ( m_bSelected && nStrPos <= m_nEndSelectY && nStrPos >= m_nStartSelectY) {
         BOOL  bOldInvert = !pDoc->m_bRectangleSelection && (nStrPos > m_nStartSelectY);
         BOOL bNewInvert = bOldInvert;
@@ -547,6 +552,9 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
 				int index = 0;
 				while ( pDoc->m_bLineWrap && LeftSide + XShift > rect.Width() ) {
 					int len = (rect.Width() - LeftSide) / pDoc->m_nCharX;
+
+					if (len < 1) //nothing can be drawn
+						break;
 
 					OutRect = rect;
 					OutRect.left += LeftSide;
@@ -762,7 +770,7 @@ void CSmcView::OnLButtonUp(UINT nFlags, CPoint point)
 
         // Good, getting reall numbers of strings
         int ScrollIndex = GetScrollPos(SB_VERT)+1;
-        ASSERT(m_nStartSelectY>=0);
+		m_nStartSelectY = max(0, m_nStartSelectY);
         POSITION pos = m_strList.FindIndex(ScrollIndex+m_nStartSelectY);
         ASSERT(pos);
         int i = m_nStartSelectY;
@@ -909,8 +917,19 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 				m_TotalLinesReceived = 0;
 			}
 
+
+			CString timestr;
+			SYSTEMTIME st;
+			if (pDoc->m_bShowTimestamps) {
+				GetLocalTime(&st);
+				timestr.Format("\x1b[1;30m[%02d:%02d:%02d] ",
+					st.wHour, st.wMinute, st.wSecond);
+			}
+
 			CString str = pDoc->m_strTempList.GetHead();
 			str.Replace((char)END_OF_PROMPT_MARK, (char)' ');
+			if (pDoc->m_bShowTimestamps)
+				str = timestr + str;
 	        m_strList.SetAt(m_strList.GetTailPosition(), str);
 	        // pDoc->m_strTempList.RemoveHead();
 
@@ -928,7 +947,10 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 			int new_lines = 0;
 	        while(pos) {
 		        str = pDoc->m_strTempList.GetNext(pos);
-				str.Replace((char)0x1, (char)' ');
+				str.Replace((char)END_OF_PROMPT_MARK, (char)' ');
+
+				if (pDoc->m_bShowTimestamps)
+					str = timestr + str;
 
 		        m_strList.AddTail(str);
 		        m_strList.RemoveHead();

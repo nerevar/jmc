@@ -38,6 +38,7 @@ CCommonParamsPage::CCommonParamsPage() : CPropertyPage(CCommonParamsPage::IDD, I
 	m_bBCastLocalIP = FALSE;
 	m_bBCastSamePort = FALSE;
 	m_bLineWrap = TRUE;
+	m_bShowTimestamps = FALSE;
 	m_bSelectRect = FALSE;
 	m_bRemoveESC = TRUE;
 	m_bShowHidden = TRUE;
@@ -78,6 +79,7 @@ void CCommonParamsPage::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_BCAST_LOCAL_IP, m_bBCastLocalIP);
 	DDX_Check(pDX, IDC_BCAST_SAME_PORT, m_bBCastSamePort);
 	DDX_Check(pDX, IDC_CHK_LINEWRAP, m_bLineWrap);
+	DDX_Check(pDX, IDC_DISPLAY_TIMESTAMPS, m_bShowTimestamps);
 	DDX_Check(pDX, IDC_CHK_SELECTRECT, m_bSelectRect);
 	DDX_Check(pDX, IDC_CHK_REMOVEESC, m_bRemoveESC);
 	DDX_Check(pDX, IDC_CHK_SHOWHIDDEN, m_bShowHidden);

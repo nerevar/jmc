@@ -37,6 +37,13 @@ static char *pstack = NULL;
 static int stack_ptr = 0, stack_capacity = 0, stack_length = 0;
 static BOOL parsing_stack = FALSE;
 
+void free_parse_stack() {
+	if (pstack)
+		free(pstack);
+	pstack = NULL;
+	stack_ptr = stack_capacity = stack_length = 0;
+}
+
 static BOOL stack_maintain(int need_capacity) {
 	if( pstack && need_capacity <= stack_capacity ) {
 		return TRUE;
@@ -44,6 +51,7 @@ static BOOL stack_maintain(int need_capacity) {
 	int to_allocate = need_capacity + BUFFER_SIZE*2;
 	if( !pstack ) {
 		pstack = (char*)malloc(to_allocate);
+		
 		stack_length = 0;
 		if( pstack ) {
 			stack_ptr = BUFFER_SIZE;
@@ -147,7 +155,7 @@ static void stack_pop_front(char *upto) {
 void parse_input(char *input, BOOL bExecuteNow)
 {
     char command[BUFFER_SIZE], arg[BUFFER_SIZE];
-	static char result[BUFFER_SIZE];
+	char result[BUFFER_SIZE];
     char *input2;
 
     if(*input=='\0') {
@@ -156,7 +164,7 @@ void parse_input(char *input, BOOL bExecuteNow)
     }
 
     if ( verbatim  && *input == cCommandChar && *(input+1) == 'v' ) {// check verbatim command
-        static char command[BUFFER_SIZE];
+        char command[BUFFER_SIZE];
         char* input2=get_arg_stop_spaces(input+1, command);
         if(command[0] == 'v' && is_abrev(command, "verbatim")){
             char arg[BUFFER_SIZE];
@@ -214,7 +222,7 @@ void parse_input(char *input, BOOL bExecuteNow)
 //* en:prefix
 		if(s_prefix[0] && command[0] != cCommandChar)
 		{
-			static char p_command[BUFFER_SIZE];
+			char p_command[BUFFER_SIZE];
 			strcpy(p_command,command);
 			strcat(p_command," ");
 			strcat(p_command,arg);
@@ -226,7 +234,7 @@ void parse_input(char *input, BOOL bExecuteNow)
 		{
 			if (bDisplayCommands) {
 				// output command in square brackets
-				static char strInputCommand[BUFFER_SIZE], strOutputBuffer[BUFFER_SIZE];
+				char strInputCommand[BUFFER_SIZE], strOutputBuffer[BUFFER_SIZE];
 				strcpy(strInputCommand, "\n[");
 				strcat(strInputCommand, command);
 				if (*arg != '\0') {

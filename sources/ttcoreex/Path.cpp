@@ -130,10 +130,12 @@ void savepath_command(char* arg)
                 }
             } else {
 	            tintin_puts2(rs::rs(1153));
+				free(nodes);
 	            return;
             }
             i--;
         }
+		free(nodes);
     }
     
     strcat(result, "}");

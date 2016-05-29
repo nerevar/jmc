@@ -476,7 +476,7 @@ STDMETHODIMP CJmcObj::ToText(BSTR bstrANSI, BSTR *bstrText)
 
 	*bstrText = ret.Copy();
 
-	delete text;
+	delete[] text;
 
 	return S_OK;
 }
@@ -498,7 +498,7 @@ STDMETHODIMP  CJmcObj::ToColored(BSTR bstrANSI, BSTR *bstrColored)
 
 	*bstrColored = ret.Copy();
 
-	delete colored;
+	delete[] colored;
 
 	return S_OK;
 }
@@ -526,7 +526,7 @@ STDMETHODIMP CJmcObj::FromColored(BSTR bstrColored, BSTR *bstrANSI)
 
 	*bstrANSI = ret.Copy();
 
-	delete ansi;
+	delete[] ansi;
 
 	return S_OK;
 }

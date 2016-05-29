@@ -14,7 +14,7 @@
 
 #include "ttcoreex_i.c"
 
-#include "winsock.h"
+#include <winsock.h>
 #include "tintin.h"
 #include "JmcSite.h"
 #include "JmcObj.h"
@@ -41,8 +41,8 @@ HANDLE hPingThread;
 DWORD dwPingThreadID;
 
 // ------ Importnant variables for global session ------
-struct listnode *common_subs;
-struct listnode *common_antisubs, *common_pathdirs, *common_path;
+struct listnode *common_subs = NULL;
+struct listnode *common_antisubs = NULL, *common_pathdirs = NULL, *common_path = NULL;
 
 SOCKET MUDSocket;
 char MUDHostName[256];
@@ -256,6 +256,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
         DeleteCriticalSection(&secSystemList);
         DeleteCriticalSection(&secSystemExec);
 //vls-end//
+
         DeleteCriticalSection(&secSubstSection);
         DeleteCriticalSection(&secHotkeys);
         DeleteCriticalSection(&secStatusSection);
@@ -354,19 +355,13 @@ void output_command(char* arg)
 void write_line_mud(char *line)
 {
     int len, OriginalLen;
-    static char* buff = NULL;
-	static int buff_size = 0;
+    char buff[BUFFER_SIZE*2 + 4];
     int ret = 0;
 
     if ( !MUDSocket ) {
         tintin_puts(rs::rs(1182) );
     } else {
         OriginalLen = len = strlen(line);
-
-		if(buff_size < 2*len+3) {
-			buff_size = 2*len+3;
-			buff = (char*)realloc(buff, buff_size);
-		}
         
         if ( bIACSendSingle ) 
             strcpy (buff, line);
@@ -390,7 +385,7 @@ void write_line_mud(char *line)
         }
 
 
-        ret = send(MUDSocket,buff, len, 0 );
+        ret = tls_send(MUDSocket, buff, len);
     }
 
 //* en
@@ -398,7 +393,7 @@ void write_line_mud(char *line)
 	int daalen = 0;
 	if (bDaaMessage) {
 		daaString[daalen++] = '<';
-		for(int i = 0; i < strlen(line); i++)
+		for(int i = 0; i < strlen(line) && i < BUFFER_SIZE; i++)
 			daaString[daalen++]='*';
 		daaString[daalen++] = '>';
 	}
@@ -493,11 +488,30 @@ START1:
         tintin_puts2(rs::rs(1188));
 
 	BOOL enable_opt = TRUE;
-	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&enable_opt, sizeof(enable_opt)) < 0) {
-		// something weird happens
+	/*
+	 Something more than TCP_NODELAY should be done in case MUD server frequently sends tiny packets.
+	 For example, if server sends prompt-line and IAC-GA in separate calls of send() then the first
+	 packet (prompt) wouldn't ACKed by windows core for 200 milliseconds regardless of Nagle's algorithm,
+	 leading to IAC-GA delayed for the same time. It's not a problem for visualising since now JMC
+	 printing out all incoming data immidiately; but processing of prompt line in described situation
+	 by #acion and jmc.Incoming handlers will be delayed for 200 ms or value of Uncomplete line delay
+	 setting in case it is less than 200.
+	 Setting registry value on the client's machine (TcpAckFrequency := 1) is ugly, but effective solution.
+	 No other solution (i.e. disabling delayed acknowledgement for particular socket) was found for
+	 WinSock/WinSock2, WinXP/Vista/Win7/Win8. So it is responsibility of MUD servers to do wise and
+	 accurate TCP bufferisation, though obviously it is possible only in MUDs where the smallest time period
+	 between events (game-state updating period, "tick", time-quant) is less than 200ms.
+	 At this point I give up to solve this issue completely and mark it as part 
+	 of global MUD problem called "Telnet Curse",
+	*/
+	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&enable_opt, sizeof(enable_opt))) {
 		tintin_puts2("#Can't disable Nagle's algorithm");
 	}
-	
+	int size = 0;
+	//if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&size, sizeof(size))) {
+	//	tintin_puts2("#Can't disable send bufferization");
+	//}
+
     sockaddr.sin_family=AF_INET;
 
 
@@ -507,7 +521,7 @@ START1:
     tintin_puts2(rs::rs(1189));
     connectresult=proxy_connect(sock,(struct sockaddr *)&sockaddr, sizeof(sockaddr));
 
-    if(connectresult) {
+    if(connectresult || tls_open(sock) < 0) {
         proxy_close(sock);
         switch(connectresult) {
         case WSAECONNREFUSED:
@@ -526,6 +540,7 @@ START1:
         else 
             return 0;
     }
+
     if ( bConnectBeep ) 
         MessageBeep(MB_OK);
     MUDSocket = sock;
@@ -653,11 +668,17 @@ void ShowError (char* strError)
     MessageBox(hwndMAIN, strError , rs::rs(1195) , MB_OK | MB_ICONSTOP );
 }
 
+void add_line_to_multiline(char *line);
+void do_one_line(char *line);
+void do_multiline();
 
 void tintin_puts(char *cptr)
 {
-    tintin_puts2(cptr);  
-    check_all_actions(cptr, false); 
+	// allow substitutions and script-handling
+	//check_all_actions(cptr, false);
+	do_one_line(cptr);
+	if (strcmp(cptr, "."))
+		tintin_puts2(cptr);
 }
 
 
@@ -737,31 +758,19 @@ void  DLLEXPORT CloseState(void)
         delete ptm;
     }
 
+	KillAll(END, "0");
+	if (pScrollLinesBuffer)
+		free(pScrollLinesBuffer);
+	free_telnet_buffer();
+	free_parse_stack();
 }
-
-//* en:fix to allow DROPPING reload message
-void add_line_to_multiline(char *line);
-void do_one_line(char *line);
-void do_multiline();
-//*/en
 
 void  DLLEXPORT ReloadScriptEngine(LPCSTR strScriptText, GUID guidEngine, LPCSTR strProfile)
 {
     pJmcObj->m_bstrProfile = strProfile;
     pSite->InitSite (hwndMAIN, strScriptText,  guidEngine);
-//* en:fix to allow DROPPING reload message
-    //tintin_puts(rs::rs(1196));
-	char* buff = rs::rs(1196);
-                    do_one_line(buff);
-                    if ( !(*buff== '.' && *(buff+1) == 0 ) ) {
-						tintin_puts2(buff);
-                    }
-//*/en
+	tintin_puts(rs::rs(1196));
 }
-
-//* en:fix to allow DROPPING reload message
-//void do_one_line(char *line);
-//*/en
 
 void DLLEXPORT CompileInput(char* str)
 {
@@ -828,21 +837,13 @@ static void tick_func()
       if(bTickStatus) {
           if(iSecToTick==tick_size && !Done ){
               if ( MUDSocket ) {
-                    char* buff = rs::rs(1197);
-                    do_one_line(buff);
-                    if ( !(*buff== '.' && *(buff+1) == 0 ) ) {
-						tintin_puts2(buff);
-                    }
+                    tintin_puts(rs::rs(1197));
               }
             Done = 1;
           }
         if(iSecToTick==10 && Done ){
             if ( MUDSocket ) {
-                char* buff = rs::rs(1198);
-                do_one_line(buff); 
-                if ( !(*buff== '.' && *(buff+1) == 0 ) ) {
-					tintin_puts2(buff);
-                }
+                tintin_puts(rs::rs(1198));
             }
           Done = 0;
         }
@@ -1046,8 +1047,10 @@ void read_mud(void )
 			int to_read = len;
 			if( to_read > sizeof(buffer) )
 				to_read = sizeof(buffer);
-			if( (didget = recv(MUDSocket, buffer, to_read, 0)) <= 0 ) {
+			if( (didget = tls_recv(MUDSocket, buffer, to_read)) < 0 ) {
 				error = true;
+				break;
+			} else if (didget == 0) {
 				break;
 			}
 			len -= didget;
@@ -1107,13 +1110,7 @@ void read_mud(void )
 
 	if(error) {
 		cleanup_session();
-//* en:fix to allow ACTING zap message
-		char* buff = rs::rs(1199);
-        do_one_line(buff);
-        if ( !(*buff== '.' && *(buff+1) == 0 ) ) {
-			tintin_puts2(buff);
-        }
-//*/en
+		tintin_puts(rs::rs(1199));
         MUDSocket = NULL;
 		memset(&MUDAddress, 0, sizeof(MUDAddress));
         if ( WaitForSingleObject (eventAllObjectEvent, 0) == WAIT_OBJECT_0  ) {
@@ -1424,7 +1421,7 @@ void woutput_command(char* arg)
     arg=get_arg_in_braces(arg, right,  WITH_SPACES);
 
     if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
-        tintin_puts(rs::rs(1239));
+        tintin_puts2(rs::rs(1239));
         return;
     }
 
@@ -1448,7 +1445,7 @@ void wshow_command(char *arg)
     arg=get_arg_in_braces(arg, option, STOP_SPACES);
 
     if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
-        tintin_puts(rs::rs(1240));
+        tintin_puts2(rs::rs(1240));
         return;
     }
 
@@ -1459,7 +1456,7 @@ void wshow_command(char *arg)
     else if ( option[0] == 's' && is_abrev(option, "show") )
         opt = 2;
     else {
-        tintin_puts(rs::rs(1240));
+        tintin_puts2(rs::rs(1240));
         return;
     }
 
@@ -1476,7 +1473,7 @@ void wname_command(char *arg)
     arg=get_arg_in_braces(arg, option, STOP_SPACES);
 
     if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
-        tintin_puts(rs::rs(1244));
+        tintin_puts2(rs::rs(1244));
         return;
     }
 
@@ -1511,7 +1508,7 @@ void wdock_command(char *arg)
 		enable = 5;
 
     if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
-        tintin_puts(rs::rs(1260));
+        tintin_puts2(rs::rs(1260));
         return;
     }
 
@@ -1536,7 +1533,7 @@ void wpos_command(char *arg)
 	p2 = (atoi(point2) > 2048) ? 2048 : atoi(point2);
 
     if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
-        tintin_puts(rs::rs(1244));
+        tintin_puts2(rs::rs(1244));
         return;
     }
 
@@ -1575,7 +1572,7 @@ void wsize_command(char *arg)
     if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) ||
 		!is_all_digits(width)  || !sscanf(width,  "%d", &w  ) ||
 		!is_all_digits(height) || !sscanf(height, "%d", &h  ) ) {
-        tintin_puts(rs::rs(1281));
+        tintin_puts2(rs::rs(1281));
         return;
     }
 	if(wnd < 0 || wnd >= MAX_OUTPUT)

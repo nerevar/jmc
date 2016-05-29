@@ -108,6 +108,9 @@ void CAnsiWnd::OnPaint()
 		int length = LengthWithoutANSI((const char*)str);
 		int lines = pDoc->m_bLineWrap ? NumOfLines(length, m_nLineWidth) : 1;
 
+		if (lines <= 0) //nothing can be drawn
+			lines++;
+
 		m_LineCountsList.push_back(lines);
 		total_lines += lines;
 
@@ -418,6 +421,9 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
 				while ( pDoc->m_bLineWrap && LeftSide + XShift > rect.Width() ) {
 					int len = (rect.Width() - LeftSide) / pDoc->m_nCharX;
 
+					if (len < 1) //nothing can be drawn
+						break;
+
 					OutRect = rect;
 					OutRect.left += LeftSide;
 					OutRect.top += TopSide;
@@ -628,7 +634,7 @@ void CAnsiWnd::OnLButtonUp(UINT nFlags, CPoint point)
 
         // Good, getting reall numbers of strings
         int ScrollIndex = GetScrollPos(SB_VERT)+1;
-        ASSERT(m_nStartSelectY>=0);
+        m_nStartSelectY = max(0, m_nStartSelectY);
         POSITION pos = m_strList.FindIndex(ScrollIndex+m_nStartSelectY);
         ASSERT(pos);
         int i = m_nStartSelectY;

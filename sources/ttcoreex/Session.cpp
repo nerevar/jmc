@@ -13,7 +13,6 @@ void show_session();
 
 extern char *get_arg_in_braces();
 extern char *space_out();
-extern char *mystrdup();
 extern struct listnode *copy_list();
 extern struct listnode *init_list();
 
@@ -23,11 +22,20 @@ extern struct listnode *init_list();
 /**********************************/
 void  newactive_session()
 {
+	if (common_subs)
+		kill_list(common_subs);
+	if (common_antisubs)
+		kill_list(common_antisubs);
+	if (common_pathdirs)
+		kill_list(common_pathdirs);
+	if (common_path)
+		kill_list(common_path);
 
     common_subs=init_list();
     common_antisubs=init_list();
     common_pathdirs=init_pathdir_list();
     common_path=init_list();
+
     mesvar[MSG_ALIAS]=DEFAULT_ALIAS_MESS;
     mesvar[MSG_ACTION]=DEFAULT_ACTION_MESS;
     mesvar[MSG_SUB]=DEFAULT_SUB_MESS;
@@ -47,6 +55,7 @@ void  newactive_session()
 /*****************************************************************************/
 void cleanup_session(void)
 {
+	tls_close(MUDSocket);
     proxy_close(MUDSocket);
     MUDSocket = NULL;
 	memset(&MUDAddress, 0, sizeof(MUDAddress));
@@ -55,7 +64,7 @@ void cleanup_session(void)
 
 void connect_command(char* arg)
 {
-  char *host, *port;
+  char host[BUFFER_SIZE], port[BUFFER_SIZE];
 
   State = 0;
 
@@ -68,18 +77,14 @@ void connect_command(char* arg)
         tintin_puts2(rs::rs(1162));
         return;
   }
-  
-  port=host=space_out(mystrdup(arg));
 
+  arg = get_arg_in_braces(arg, host, STOP_SPACES);
+  arg = get_arg_in_braces(arg, port, STOP_SPACES);
+  
   if(!*host) {
     tintin_puts2(rs::rs(1164));
     return ;
   }
-
-  while(*port && !isspace(*port))
-    port++;
-  *port++='\0';
-  port=space_out(port);
 
   if(!*port) {
     tintin_puts2(rs::rs(1165));

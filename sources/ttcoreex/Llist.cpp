@@ -8,7 +8,6 @@
 #include "stdafx.h"
 #include "tintin.h"
 
-
 void insertnode_list(struct listnode *listhead,char *ltext, char *rtext,char *prtext,int mode);
 
 /***************************************/
@@ -79,8 +78,6 @@ void KillAll(int mode, char *arg)
     }
     HotkeyList.clear ();
 
-    GroupList[DEFAULT_GROUP_NAME] = new CGROUP(DEFAULT_GROUP_NAME);
-
 //vls-begin// script files
     SCRIPTFILE_INDEX sfind = ScriptFileList.begin();
     while ( sfind != ScriptFileList.end() ) {
@@ -92,6 +89,8 @@ void KillAll(int mode, char *arg)
 
 switch (mode) {
   case CLEAN:
+	GroupList[DEFAULT_GROUP_NAME] = new CGROUP(DEFAULT_GROUP_NAME);
+
     kill_list(common_subs);
     common_subs=init_list();
     kill_list(common_antisubs);

@@ -127,6 +127,7 @@ jmc_cmdi jmc_cmds[JMC_CMDS_NUM]={
 		   {"telnet", &telnet_command, "\0"},
 		   {"promptend", &promptend_command, "\0"},
 		   {"wsize", &wsize_command, "\0"},
-		   {"replace", &replace_command, "\0"}
+		   {"replace", &replace_command, "\0"},
+		   {"secure", &secure_command, "\0"}
 	   };
 #endif

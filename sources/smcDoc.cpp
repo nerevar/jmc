@@ -468,6 +468,7 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
 	m_bRectangleSelection = ::GetPrivateProfileInt("Options" , "RectangleSelection" , 0, szGLOBAL_PROFILE);
 	m_bRemoveESCSelection = ::GetPrivateProfileInt("Options" , "RemoveESCSelection" , 1, szGLOBAL_PROFILE);
 	m_bLineWrap = ::GetPrivateProfileInt("Options" , "LineWrap" , 1, szGLOBAL_PROFILE);
+	m_bShowTimestamps = ::GetPrivateProfileInt("Options" , "LineTimeStamps" , 0, szGLOBAL_PROFILE);
 	m_bShowHiddenText = ::GetPrivateProfileInt("Options" , "ShowHiddenText" , 1, szGLOBAL_PROFILE);
 
     nScripterrorOutput  = ::GetPrivateProfileInt("Script" , "ErrOutput", 0 , szGLOBAL_PROFILE);
@@ -531,7 +532,8 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
         CloseHandle(hFile);
         FillTabWords(buff);
         delete buff;
-    } 
+    }
+	FillTabWords(NULL);
 }
 
 CSmcDoc::~CSmcDoc()
@@ -550,6 +552,7 @@ CSmcDoc::~CSmcDoc()
 	::WritePrivateProfileInt("Options" , "RectangleSelection" , m_bRectangleSelection , szGLOBAL_PROFILE);
 	::WritePrivateProfileInt("Options" , "RemoveESCSelection" , m_bRemoveESCSelection , szGLOBAL_PROFILE);
 	::WritePrivateProfileInt("Options" , "LineWrap" , m_bLineWrap , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt("Options" , "LineTimeStamps" , m_bShowTimestamps , szGLOBAL_PROFILE);
 	::WritePrivateProfileInt("Options" , "ShowHiddenText", m_bShowHiddenText , szGLOBAL_PROFILE);
 
     ::WritePrivateProfileInt("Script" , "ErrOutput", nScripterrorOutput , szGLOBAL_PROFILE);
@@ -1106,9 +1109,15 @@ void CSmcDoc::OnBreakScript()
 
 void CSmcDoc::FillTabWords(LPCSTR strWords)
 {
-    m_lstTabWords.RemoveAll ();
-    
-	unsigned char* ptr  = (UCHAR*)strWords;
+    unsigned char* ptr  = (UCHAR*)strWords;
+	char *commands = NULL;
+
+	if (!ptr) {
+		int len = GetCommandsList(NULL);
+		commands = new char[len + 1];
+		GetCommandsList(commands);
+		ptr = (unsigned char*)commands;
+	}
     
 	while ( *ptr ) {
         while ( *ptr && *ptr <= ' ' ) 
@@ -1128,30 +1137,8 @@ void CSmcDoc::FillTabWords(LPCSTR strWords)
         delete[] buff;
     }
 
-	int len = GetCommandsList(NULL);
-	char *commands = new char[len + 1];
-	GetCommandsList(commands);
-
-	ptr = (unsigned char*)commands;
-	while ( *ptr ) {
-        while ( *ptr && *ptr <= ' ' ) 
-            ptr++;
-        if ( !*ptr ) 
-            break;
-
-        unsigned char* ptrWord = ptr++;
-        while ( *ptr && *ptr > ' ' ) 
-            ptr++;
-
-        int size = ptr-ptrWord;
-        char* buff = new char[size+1];
-        strncpy((char*)buff, (LPCSTR)ptrWord, size);
-        buff[size] = 0;
-        m_lstTabWords.AddTail(buff);
-        delete[] buff;
-    }
-
-	delete[] commands;
+	if (commands)
+		delete[] commands;
 }
 
 void CSmcDoc::OnOptionsKeywords() 
@@ -1160,11 +1147,15 @@ void CSmcDoc::OnOptionsKeywords()
 
     POSITION pos = m_lstTabWords.GetHeadPosition ();
     while ( pos ) {
-        dlg.m_strKeys += m_lstTabWords.GetNext (pos) + "\r\n";
+		CString str = m_lstTabWords.GetNext (pos);
+		if (str[0] != cCommandChar)
+			dlg.m_strKeys += str + "\r\n";
     }
 
     if ( dlg.DoModal() ) {
+		m_lstTabWords.RemoveAll ();
         FillTabWords(dlg.m_strKeys);
+		FillTabWords(NULL);
     }
 }
 

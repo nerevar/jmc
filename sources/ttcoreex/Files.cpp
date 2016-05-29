@@ -12,8 +12,8 @@ char DLLEXPORT szBASE_DIR[MAX_PATH];
 char DLLEXPORT szSETTINGS_DIR[MAX_PATH];
 
 struct completenode *complete_head;
-void prepare_for_write(char *command, const char *type, char *left, char *right, char *pr, char* group, char *result);
-void prepare_for_write(char *command, char *left, char *right, char *pr, char* group, char *result);
+void prepare_for_write(const char *command, const char *type, const char *left, const char *right, const char *pr, const char* group, char *result);
+void prepare_for_write(const char *command, const char *left, const char *right, const char *pr, const char* group, char *result);
 
 //* en
 BOOL bSosExact = FALSE;
@@ -506,6 +506,31 @@ void write_command(char *arg)
 	}
 	fputs(buffer, myfile);
 
+	//save secure settings
+	switch (lTLSType) {
+	default:
+	case TLS_DISABLED:
+		prepare_for_write("secure", "disable", "", "", "", buffer);
+		break;
+	case TLS_SSL3:
+		prepare_for_write("secure", "ssl3", "ca", 
+			(strCAFile.size() ? strCAFile.c_str() : "clear"), "", buffer);
+		break;
+	case TLS_TLS1:
+		prepare_for_write("secure", "tls1", "ca", 
+			(strCAFile.size() ? strCAFile.c_str() : "clear"), "", buffer);
+		break;
+	case TLS_TLS1_1:
+		prepare_for_write("secure", "tls1.1", "ca", 
+			(strCAFile.size() ? strCAFile.c_str() : "clear"), "", buffer);
+		break;
+	case TLS_TLS1_2:
+		prepare_for_write("secure", "tls1.2", "ca", 
+			(strCAFile.size() ? strCAFile.c_str() : "clear"), "", buffer);
+		break;
+	}
+	fputs(buffer, myfile);
+
 	//save telnet options
 	for(int opt = 0; opt < vEnabledTelnetOptions.size(); opt++) {
 		char optname[64];
@@ -533,7 +558,7 @@ void write_command(char *arg)
     tintin_puts2(rs::rs(1046));
 }
 
-void prepare_for_write(char *command, const char *type, char *left, char *right, char *pr, char* group, char *result)
+void prepare_for_write(const char *command, const char *type, const char *left, const char *right, const char *pr, const char* group, char *result)
 {
   /* char tmpbuf[BUFFER_SIZE]; */
   *result=cCommandChar;
@@ -564,7 +589,7 @@ void prepare_for_write(char *command, const char *type, char *left, char *right,
   strcat(result,"\n");
 }
 
-void prepare_for_write(char *command, char *left, char *right, char *pr, char* group, char *result)
+void prepare_for_write(const char *command, const char *left, const char *right, const char *pr, const char* group, char *result)
 {
   prepare_for_write(command, NULL, left, right, pr, group, result);
 }

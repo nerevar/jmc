@@ -575,6 +575,7 @@ void CMainFrame::OnOptionsOptions()
 	pg1.m_bBCastLocalIP = bBCastFilterIP;
 	pg1.m_bBCastSamePort = bBCastFilterPort;
 	pg1.m_bLineWrap = pDoc->m_bLineWrap;
+	pg1.m_bShowTimestamps = pDoc->m_bShowTimestamps;
 	pg1.m_bSelectRect = pDoc->m_bRectangleSelection;
 	pg1.m_bRemoveESC = pDoc->m_bRemoveESCSelection;
 	pg1.m_bShowHidden = pDoc->m_bShowHiddenText;
@@ -666,6 +667,7 @@ void CMainFrame::OnOptionsOptions()
 			reopen_bcast_socket();
 		}
 		pDoc->m_bLineWrap = pg1.m_bLineWrap;
+		pDoc->m_bShowTimestamps = pg1.m_bShowTimestamps;
 		pDoc->m_bRectangleSelection = pg1.m_bSelectRect;
 		pDoc->m_bRemoveESCSelection = pg1.m_bRemoveESC;
 		pDoc->m_bShowHiddenText = pg1.m_bShowHidden;

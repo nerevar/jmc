@@ -38,20 +38,6 @@ int is_abrev(const char *s1, const char *s2)
 //vls-end//
 }
 
-/********************************/
-/* strdup - duplicates a string */
-/* return: address of duplicate */
-/********************************/
-char *mystrdup(char *s)
-{
-  char *dup;
-
-  if((dup=(char *)malloc(strlen(s)+1))==NULL)
-    syserr(rs::rs(1210));
-  strcpy(dup, s);
-  return dup;
-}
-
 
 /*************************************************/
 /* print system call error message and terminate */

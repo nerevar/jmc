@@ -104,7 +104,6 @@ enum {
 /*************************************************************************/
 
 #define DEFAULT_GROUP_NAME "default" 
-
 /**************************************************************************/ 
 /* The stuff below here shouldn't be modified unless you know what you're */
 /* doing........                                                          */
@@ -202,8 +201,19 @@ extern int ignore;
 
 extern SOCKET MUDSocket;
 extern sockaddr_in MUDAddress;
+
 extern LONG DLLEXPORT lPingMUD;
 extern LONG DLLEXPORT lPingProxy;
+
+typedef enum {
+	TLS_DISABLED = 0,
+	TLS_SSL3,
+	TLS_TLS1,
+	TLS_TLS1_1,
+	TLS_TLS1_2
+} TLSType;
+extern TLSType DLLEXPORT lTLSType;
+extern string DLLEXPORT strCAFile;
 
 typedef struct {
 	DWORD timestamp;
@@ -245,7 +255,6 @@ struct listnode *searchnode_list_begin(struct listnode *listhead, char* cptr, in
 void kill_list(struct listnode *nptr);
 void addnode_list(struct listnode *listhead, char *ltext, char *rtext, char *prtext);
 int match(char *regex, char *string);
-char *mystrdup(char *s);
 char *space_out(char* s);
 void add_codes(char *line, char *result, char *htype, BOOL bAddTAil= TRUE);
 void remove_ansi_codes(const char *input, char *output);
@@ -257,6 +266,7 @@ void substitute_myvars(char *arg, char *result, int maxlength);
 int check_one_action(char *line, ACTION *action, int *offset = NULL);
 int check_one_action(char* line, char* action);
 void parse_input(char *input, BOOL bExecuteNow = FALSE);
+void free_parse_stack();
 int check_a_action(char *line, char *action);
 BOOL show_aliases(char* left = NULL, CGROUP* pGroup= NULL);
 char *get_arg_in_braces( char *s, char *arg, int flag);
@@ -425,7 +435,16 @@ void proxy_command(char *arg);
 int proxy_connect(int, const struct sockaddr *, int);
 int proxy_close(int);
 
+//SSL/TLS support
+void secure_command(char *arg);
+int tls_open(SOCKET sock);
+int tls_send(SOCKET sock, const char *buffer, int length);
+int tls_recv(SOCKET sock, char *buffer, int maxlength);
+int tls_close(SOCKET sock);
+
+
 //Telnet routines
+int get_telnet_option_num(const char *name);
 void get_telnet_option_name(unsigned char num, char *buf);
 void send_telnet_subnegotiation(unsigned char option, const char *output, int length);
 void telnet_command(char *arg);
@@ -460,6 +479,7 @@ BOOL show_actions(char* left = NULL, CGROUP* pGroup = NULL);
 int do_one_antisub(char *line);
 extern unsigned int SocketFlags;
 extern unsigned char State;
+void free_telnet_buffer();
 void telnet_push_back(const char *src, int size);
 int telnet_more_coming();
 int telnet_pop_front(char *dst, int maxsize);
@@ -509,18 +529,9 @@ typedef std::map <std::string, VAR*> VARLIST;
 typedef VARLIST::iterator VAR_INDEX ;
 extern VARLIST  VarList;
 
-/*These structure is needed to avoid C4503 warning:
-    'identifier' : decorated name length exceeded, name was truncated
-  this way of warning resolving is recommended by MSDN
-*/
-//typedef struct { std::set<pcre*> List; } SPCRELIST;
 typedef std::set<CPCRE*> PCRESET;
 typedef std::map <std::string, PCRESET> VARTOPCRE;
 extern VARTOPCRE VarPcreDeps;
-//typedef std::map <std::string, SACTIONLIST> VARTOACTION;
-//typedef std::map <std::string, SALIASLIST> VARTOALIAS;
-//extern VARTOACTION VarActionDeps;
-//extern VARTOALIAS VarAliasDeps;
 
 typedef std::map <std::string, HLIGHT*> HLIGHTLIST ;
 typedef HLIGHTLIST::iterator HLIGHT_INDEX ;
@@ -542,7 +553,7 @@ extern void* JMCObjRet[1000];
 // --END
 
 //* en:JMC functions struct. look cmds.h
-const int JMC_CMDS_NUM=127;
+const int JMC_CMDS_NUM=128;
 typedef struct jmc_cmd 
 	{
 	char*alias;

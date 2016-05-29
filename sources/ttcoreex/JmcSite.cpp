@@ -154,7 +154,7 @@ HRESULT STDMETHODCALLTYPE CJmcSite::OnScriptError(/* [in] */ IActiveScriptError 
         ::MessageBox(m_hwndSiteWindow, strError, rs::rs(1090), MB_OK | MB_ICONSTOP );
     }
     
-    delete strError;
+    delete[] strError;
 
 	return S_OK;
 	

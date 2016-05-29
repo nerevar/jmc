@@ -502,7 +502,6 @@ void tabadd_command(char* arg)
     char msg[BUFFER_SIZE];
     sprintf(msg,rs::rs(1139), word);
     tintin_puts2(msg);
-
 }
 
 void tabdel_command(char* arg)
@@ -1081,7 +1080,7 @@ void wclear_command(char *arg)
     arg=get_arg_in_braces(arg, number, STOP_SPACES);
     
     if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
-        tintin_puts(rs::rs(1261));
+        tintin_puts2(rs::rs(1261));
         return;
     }
 

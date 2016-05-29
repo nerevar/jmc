@@ -627,6 +627,7 @@ STRINGTABLE DISCARDABLE
 BEGIN
     1280                    "#unknown telnet option: %s"
     1281                    "#FORMAT: #wsize <window> <width> <height>"
+    1282                    "#secure settings: protocol %s; CA %s"
 END
 
 #endif    // English (U.S.) resources

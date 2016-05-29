@@ -641,7 +641,7 @@ void wlog_command(char *arg)
     arg=get_arg_in_braces(arg, right, WITH_SPACES);
 
     if (!sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT /*|| !*left*/) {
-        tintin_puts(rs::rs(1241));
+        tintin_puts2(rs::rs(1241));
         return;
     }
     if ( StartLog(wnd, left, right) && mesvar[MSG_LOG]) {

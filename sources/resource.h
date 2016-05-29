@@ -170,6 +170,7 @@
 #define IDC_INPUT_ON_PROMPT             1132
 #define IDC_INPUT_ON_NEW_LINE           1133
 #define IDC_DISPLAY_PING                1134
+#define IDC_DISPLAY_TIMESTAMPS          1135
 #define ID_OPTIONS_SCROLLBUFFER         32771
 #define ID_OPTIONS_FONT                 32772
 #define ID_OPTIONS_HOTKEYS              32774

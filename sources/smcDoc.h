@@ -82,6 +82,7 @@ public:
 	BOOL m_bRectangleSelection;
 	BOOL m_bRemoveESCSelection;
 	BOOL m_bLineWrap;
+	BOOL m_bShowTimestamps;
 	BOOL m_bShowHiddenText;
     void RecalcCharSize();
 

@@ -113,7 +113,6 @@ CGROUP::~CGROUP()
         }else 
             hind++;
     }
-
 }
 
 CPCRE::CPCRE()

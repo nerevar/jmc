@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "winsock.h"
+#include <winsock.h>
 #include "tintin.h"
 #include "Proxy.h"
 
@@ -210,6 +210,7 @@ int proxy_connect(int sock, const struct sockaddr * sockaddr, int socketlen)
 			break;
 		
 		default:
+			free(serv);
 			return PROXY_KO;
 			break;
 	}/* switch socks_version */
@@ -285,6 +286,7 @@ static int socks5_in_all (struct sockaddr * serv, int a, int command,unsigned lo
 				free (socks_req2);
 				return PROXY_KO;
 			}
+			free (socks_req2);
 			break;
 
 		default:

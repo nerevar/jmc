@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "winsock.h"
+#include <winsock.h>
 #include "tintin.h"
 #include "telnet.h"
 
@@ -9,6 +9,7 @@
 #include <vector>
 
 const TelnetOption TelnetOptions[TELNET_OPTIONS_NUM] = {
+	{TN_EOR_OPT,   "EOR",   "End-of-record"},						/* should be controlled by JMC */
 	{TN_ECHO,      "ECHO",  "Server echoes user's input"},			/* should be controlled by JMC */
 	{TN_NAWS,      "NAWS",  "Negotiate about window size"},			/* should be controlled by JMC */
 	{TN_TTYPE,     "MTTS",  "MUD Terminal Type Standard"},			/* should be controlled by JMC */
@@ -29,7 +30,7 @@ std::vector<char> SubnegotiationBuffer;
 extern GET_WNDSIZE_FUNC GetWindowSize;
 extern CComObject<CJmcObj>* pJmcObj;
 
-static int get_telnet_option_num(const char *name)
+int get_telnet_option_num(const char *name)
 {
 	int i;
 	if(is_all_digits(name) && strlen(name) > 0)
@@ -175,7 +176,7 @@ void SendCmd(int cmd, int opt)
 	if (opt)
 		szBuf[len++] = (char)opt;
 
-	send(MUDSocket, szBuf, len, 0 );
+	tls_send(MUDSocket, szBuf, len);
     
 	TelnetMsg("send", cmd, opt);
 }
@@ -265,11 +266,9 @@ void telnet_command(char *arg)
 		else
 			bTelnetDebugEnabled = FALSE;
 
-		if ( mesvar[MSG_TELNET] ) {
-			sprintf(tmp, rs::rs(1267), "debug",
-				bTelnetDebugEnabled ? "ON" : "OFF");
+		sprintf(tmp, rs::rs(1267), "debug",
+			bTelnetDebugEnabled ? "ON" : "OFF");
 			tintin_puts2(tmp);
-		}
 	} else {
 		int opt = get_telnet_option_num(option);
 		if(opt <= 0 || opt >= 255) {
@@ -288,13 +287,11 @@ void telnet_command(char *arg)
 						}
 				}
 			}
-			if ( mesvar[MSG_TELNET] ) {
-				get_telnet_option_name(opt, option);
-				sprintf(tmp, rs::rs(1267), 
-					option,
-					telnet_option_enabled(opt) ? "ON" : "OFF");
-				tintin_puts2(tmp);
-			}
+			get_telnet_option_name(opt, option);
+			sprintf(tmp, rs::rs(1267), 
+				option,
+				telnet_option_enabled(opt) ? "ON" : "OFF");
+			tintin_puts2(tmp);
 		}
 
 	}
@@ -336,6 +333,18 @@ int OutputCapacity = 0;
 int InputSize = 0;
 int DecompressedSize = 0;
 int OutputSize = 0;
+
+void free_telnet_buffer() {
+	if (pInputData)
+		free(pInputData);
+	if (pDecompressedData)
+		free(pDecompressedData);
+	if (pOutputData)
+		free(pOutputData);
+	pInputData = pDecompressedData = pOutputData = NULL;
+	InputCapacity = DecompressedCapacity = OutputCapacity = 0;
+	InputSize = DecompressedSize = OutputSize = 0;
+}
 
 void increase_capacity(char **ppBuf, int *capacity, int needed) {
 	if (needed > *capacity) {
@@ -450,13 +459,13 @@ void send_telnet_subnegotiation(unsigned char option, const char *output, int le
 	buf.push_back((char)TN_IAC);
 	buf.push_back((char)TN_SE);
 	
-	send(MUDSocket, buf.begin(), buf.size(), 0);
+	tls_send(MUDSocket, buf.begin(), buf.size());
 
 	if (mesvar[MSG_TELNET]) {
 		char buf[BUFFER_SIZE], optname[64];
 		get_telnet_option_name(option, optname);
 		sprintf(buf, "#TELNET SB-%s: send %d byte(s)", optname, length);
-		tintin_puts2(buf);
+		tintin_puts(buf);
 	}
 }
 
@@ -468,7 +477,7 @@ void recv_telnet_subnegotiation(unsigned char option, const char *input, int len
 		char buf[BUFFER_SIZE], optname[64];
 		get_telnet_option_name(option, optname);
 		sprintf(buf, "#TELNET SB-%s: recv %d byte(s)", optname, length);
-		tintin_puts2(buf);
+		tintin_puts(buf);
 	}
 
 	pJmcObj->m_pvarEventParams[0] = (input);
@@ -602,10 +611,6 @@ void do_telnet_protecol(const unsigned char* input, int length, int *used, unsig
 					case TN_ECHO:
 						SocketFlags |= SOCKECHO;
 						SendCmd(TN_DO, TN_ECHO);
-						break;
-					case TN_EOR_OPT:
-						SocketFlags |= SOCKEOR;
-						SendCmd(TN_DO, TN_EOR_OPT);
 						break;
 					case TN_TTYPE:
 						MttsCounter = 0;
