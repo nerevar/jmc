@@ -44,7 +44,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "_TTCORE_DLL" /FR /Yu"stdafx.h" /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\wolfssl" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "_TTCORE_DLL" /FR /Yu"stdafx.h" /FD /GZ /c
 # ADD BASE RSC /l 0x419 /d "_DEBUG"
 # ADD RSC /l 0x419 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -52,7 +52,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib ../recore/debug/recore.lib UUID.lib /nologo /subsystem:windows /dll /debug /machine:I386 /out:"../ttcoreex.dll" /pdbtype:sept
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib ../recore/debug/recore.lib UUID.lib /nologo /subsystem:windows /dll /map /debug /machine:I386 /out:"../ttcoreex.dll" /pdbtype:sept
 
 !ELSEIF  "$(CFG)" == "ttcoreex - Win32 Release MinDependency"
 
@@ -80,8 +80,8 @@ LINK32=link.exe
 # SUBTRACT LINK32 /debug
 # Begin Custom Build - Performing registration
 OutDir=.\ReleaseMinDependency
-TargetPath=\JMC\SOURCES\ttcoreex.dll
-InputPath=\JMC\SOURCES\ttcoreex.dll
+TargetPath=\trash\arda\jmc-clone\jmc\sources\ttcoreex.dll
+InputPath=\trash\arda\jmc-clone\jmc\sources\ttcoreex.dll
 SOURCE="$(InputPath)"
 
 "$(OutDir)\regsvr32.trg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -105,7 +105,7 @@ SOURCE="$(InputPath)"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O1 /D "NDEBUG" /D "_ATL_STATIC_REGISTRY" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "_TTCORE_DLL" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /D "NDEBUG" /D "_ATL_STATIC_REGISTRY" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "_TTCORE_DLL" /FR /Yu"stdafx.h" /FD /c
+# ADD CPP /nologo /MT /W3 /GX /Zi /O2 /I "..\wolfssl" /D "NDEBUG" /D "_ATL_STATIC_REGISTRY" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "_TTCORE_DLL" /FR /Yu"stdafx.h" /FD /c
 # ADD BASE RSC /l 0x419 /d "NDEBUG"
 # ADD RSC /l 0x419 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -114,7 +114,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib odbc32.lib odbccp32.lib wsock32.lib ../recore/release/recore.lib ad1.lib /nologo /subsystem:windows /dll /machine:I386 /out:"../ttcoreex.dll"
 # SUBTRACT BASE LINK32 /debug
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib wsock32.lib winmm.lib ../recore/release/recore.lib /nologo /subsystem:windows /dll /machine:I386 /out:"../ttcoreex.dll"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib wsock32.lib winmm.lib ../recore/release/recore.lib /nologo /subsystem:windows /dll /machine:I386 /out:"../ttcoreex.dll" /libpath:"OpenSSL/lib"
 # SUBTRACT LINK32 /debug /nodefaultlib
 
 !ENDIF 
@@ -197,11 +197,19 @@ SOURCE=.\Path.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\Proxy.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ressup.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\Scrfiles.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\Secure.cpp
 # End Source File
 # Begin Source File
 
@@ -223,10 +231,6 @@ SOURCE=.\System.cpp
 # Begin Source File
 
 SOURCE=.\telnet.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\Proxy.cpp
 # End Source File
 # Begin Source File
 
@@ -287,6 +291,10 @@ SOURCE=.\Logs.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\Proxy.H
+# End Source File
+# Begin Source File
+
 SOURCE=.\Resource.h
 # End Source File
 # Begin Source File
@@ -300,10 +308,6 @@ SOURCE=.\StdAfx.h
 # Begin Source File
 
 SOURCE=.\telnet.H
-# End Source File
-# Begin Source File
-
-SOURCE=.\Proxy.H
 # End Source File
 # Begin Source File
 
