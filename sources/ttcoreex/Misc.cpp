@@ -11,9 +11,8 @@
 BOOL bDaaMessage = FALSE;
 BOOL bColon = FALSE;
 int iWaitState =0;
-char mQueue[BUFFER_SIZE];
-//char *queue = mQueue;
-char cCommentChar;
+wchar_t mQueue[BUFFER_SIZE];
+wchar_t cCommentChar = '#';
 
 const int sTimersV = 16;
 sTimer sTimers[sTimersV];
@@ -26,7 +25,7 @@ extern CLEAR_WINDOW_FUNC ClearWindowFunction;
 extern SOCKET BCASTSocket;
 extern WORD DLLEXPORT wBCastUdpPort;
 
-extern char LoopBackBuffer[BUFFER_SIZE];
+extern wchar_t LoopBackBuffer[BUFFER_SIZE];
 extern LoopBackCount;
 
 GET_WNDSIZE_FUNC GetWindowSize = 0;
@@ -41,29 +40,29 @@ void DLLEXPORT InitWindowSizeFunc(GET_WNDSIZE_FUNC GetWndFunc, SET_WNDSIZE_FUNC 
 /****************************/
 /* the cr command           */
 /****************************/
-void cr_command(char*arg)
+void cr_command(wchar_t*arg)
 {
-    write_line_mud("\n");
+    write_line_mud(L"\n");
 }
 
 /****************************/
 /* the verbatim command,    */
 /* used as a toggle         */
 /****************************/
-void verbatim_command(char * arg)
+void verbatim_command(wchar_t * arg)
 {
-    char flag[BUFFER_SIZE];
+    wchar_t flag[BUFFER_SIZE];
 
 //* en
 //* due to an error in tintin.h (messed up STOP_SPACES and WITH_SPACES)
-//    arg = get_arg_in_braces(arg,flag,STOP_SPACES);
-    arg = get_arg_in_braces(arg,flag,WITH_SPACES);
+//    arg = get_arg_in_braces(arg,flag,STOP_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,flag,WITH_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
 //* /en
 
     if ( *flag == 0 ) 
         verbatim=!verbatim;
     else {
-        if ( !_strcmpi(flag, "on" ) )
+        if ( !wcsicmp(flag, L"on" ) )
             verbatim = TRUE;
         else 
             verbatim = FALSE;
@@ -79,7 +78,7 @@ void verbatim_command(char * arg)
 /*********************/
 /* the #bell command */
 /*********************/
-void bell_command(char*arg)
+void bell_command(wchar_t*arg)
 {
     MessageBeep(MB_OK);
 }
@@ -89,26 +88,26 @@ void bell_command(char*arg)
 /*********************/
 /* the #char command */
 /*********************/
-void char_command(char *arg)
+void char_command(wchar_t *arg)
 {
-    char strng[80];
-//* en//    get_arg_in_braces(arg, arg, WITH_SPACES);
+    wchar_t strng[80];
+//* en//    get_arg_in_braces(arg,arg,WITH_SPACES,sizeof(arg)/sizeof(wchar_t)-1);
 //vls-begin// bugfix
 // now checks valid char again
 ///*  if(ispunct(*arg)); {
 //    cCommandChar= *arg;
-//    sprintf(strng, rs::rs(1098), cCommandChar);
+//    swprintf(strng, rs::rs(1098), cCommandChar);
 //    tintin_puts2(strng);
 //  }
 //  else
 //    tintin_puts2("#SPECIFY A PROPER COMMAND-CHAR! SOMETHING LIKE # OR /!");
 //*/
 //    cCommandChar= *arg;
-//    sprintf(strng, rs::rs(1098), cCommandChar);
+//    swprintf(strng, rs::rs(1098), cCommandChar);
 //    tintin_puts2(strng);
   if(ispunct(*arg)) {
       cCommandChar= *arg;
-      sprintf(strng, rs::rs(1098), cCommandChar);
+      swprintf(strng, rs::rs(1098), cCommandChar);
       tintin_puts2(strng);
   }
   else
@@ -120,19 +119,19 @@ void char_command(char *arg)
 /*********************/
 /* the #echo command */
 /*********************/
-void echo_command(char* arg)
+void echo_command(wchar_t* arg)
 {
-    char flag[BUFFER_SIZE];
+    wchar_t flag[BUFFER_SIZE];
 //* en
 //* due to an error in tintin.h (messed up STOP_SPACES and WITH_SPACES)
-//    arg = get_arg_in_braces(arg,flag,STOP_SPACES);
-    arg = get_arg_in_braces(arg,flag,WITH_SPACES);
+//    arg = get_arg_in_braces(arg,flag,STOP_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,flag,WITH_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
 //* /en
 
     if ( *flag == 0 ) 
         echo=!echo;
     else {
-        if ( !_strcmpi(flag, "on" ) )
+        if ( !wcsicmp(flag, L"on" ) )
             echo= TRUE;
         else 
             echo= FALSE;
@@ -148,19 +147,19 @@ void echo_command(char* arg)
 /***********************/
 /* the #ignore command */
 /***********************/
-void ignore_command(char* arg)
+void ignore_command(wchar_t* arg)
 {
-    char flag[BUFFER_SIZE];
+    wchar_t flag[BUFFER_SIZE];
 //* en
 //* due to an error in tintin.h (messed up STOP_SPACES and WITH_SPACES)
-//    arg = get_arg_in_braces(arg,flag,STOP_SPACES);
-    arg = get_arg_in_braces(arg,flag,WITH_SPACES);
+//    arg = get_arg_in_braces(arg,flag,STOP_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,flag,WITH_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
 //* /en
 
     if ( *flag == 0 ) 
         ignore=!ignore;
     else {
-        if ( !_strcmpi(flag, "on" ) )
+        if ( !wcsicmp(flag, L"on" ) )
             ignore = TRUE;
         else 
             ignore = FALSE;
@@ -175,19 +174,19 @@ void ignore_command(char* arg)
 /**********************/
 /* the #presub command*/
 /**********************/
-void presub_command(char* arg)
+void presub_command(wchar_t* arg)
 {
-    char flag[BUFFER_SIZE];
+    wchar_t flag[BUFFER_SIZE];
 //* en
 //* due to an error in tintin.h (messed up STOP_SPACES and WITH_SPACES)
-//    arg = get_arg_in_braces(arg,flag,STOP_SPACES);
-    arg = get_arg_in_braces(arg,flag,WITH_SPACES);
+//    arg = get_arg_in_braces(arg,flag,STOP_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,flag,WITH_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
 //* /en
 
     if ( *flag == 0 ) 
         presub=!presub;
     else {
-        if ( !_strcmpi(flag, "on" ) )
+        if ( !wcsicmp(flag, L"on" ) )
             presub= TRUE;
         else 
             presub= FALSE;
@@ -202,19 +201,19 @@ void presub_command(char* arg)
 /**************************/
 /* the #togglesubs command*/
 /**************************/
-void togglesubs_command(char* arg)
+void togglesubs_command(wchar_t* arg)
 {
-    char flag[BUFFER_SIZE];
+    wchar_t flag[BUFFER_SIZE];
 //* en
 //* due to an error in tintin.h (messed up STOP_SPACES and WITH_SPACES)
-//    arg = get_arg_in_braces(arg,flag,STOP_SPACES);
-    arg = get_arg_in_braces(arg,flag,WITH_SPACES);
+//    arg = get_arg_in_braces(arg,flag,STOP_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,flag,WITH_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
 //* /en
 
     if ( *flag == 0 ) 
         togglesubs=!togglesubs;
     else {
-        if ( !_strcmpi(flag, "on" ) )
+        if ( !wcsicmp(flag, L"on" ) )
             togglesubs = TRUE;
         else 
             togglesubs = FALSE;
@@ -229,24 +228,24 @@ void togglesubs_command(char* arg)
 /***********************/
 /* the #showme command */
 /***********************/
-void showme_command(char *arg)
+void showme_command(wchar_t *arg)
 { 
-    char left[BUFFER_SIZE], right[BUFFER_SIZE];
-    char result[BUFFER_SIZE], strng[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE];
+    wchar_t result[BUFFER_SIZE], strng[BUFFER_SIZE];
     
-    arg=get_arg_in_braces(arg, left, WITH_SPACES);
-    arg=get_arg_in_braces(arg, right, WITH_SPACES);
+    arg=get_arg_in_braces(arg,left,WITH_SPACES,sizeof(left)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
 
     if ( !right[0] ) {  // no colors
-        prepare_actionalias(left,strng, sizeof(strng)); 
+        prepare_actionalias(left,strng, sizeof(strng)/sizeof(wchar_t)); 
     } else {
-        prepare_actionalias(right,result, sizeof(result)); 
+        prepare_actionalias(right,result, sizeof(result)/sizeof(wchar_t)); 
         add_codes(result, strng, left);
     }
 
 	if (bLogAsUserSeen) {
 		log(processLine(strng));
-		log("\n");
+		log(L"\n");
 		add_line_to_scrollbuffer(strng);
 	}
     tintin_puts2(strng);
@@ -254,31 +253,31 @@ void showme_command(char *arg)
 /***********************/
 /* the #loop command   */
 /***********************/
-void loop_command(char* arg)
+void loop_command(wchar_t* arg)
 {
-  char //*pt,
- 	   express[BUFFER_SIZE] = "\0",
-	   command[BUFFER_SIZE] = "\0";
+  wchar_t //*pt,
+ 	   express[BUFFER_SIZE] = L"\0",
+	   command[BUFFER_SIZE] = L"\0";
   int a1 = 0,
 	  a2 = 0,
 	  a3 = 0,
 	  a4 = 0;
 
-  arg=get_arg_in_braces(arg,express, STOP_SPACES);
+  arg=get_arg_in_braces(arg,express,STOP_SPACES,sizeof(express)/sizeof(wchar_t)-1);
 
-  substitute_myvars(express, command, sizeof(command));
-  strcpy(express, command);
+  substitute_myvars(express, command, sizeof(command)/sizeof(wchar_t));
+  wcscpy(express, command);
 
-  arg=get_arg_in_braces(arg,command, WITH_SPACES);
+  arg=get_arg_in_braces(arg,command,WITH_SPACES,sizeof(command)/sizeof(wchar_t)-1);
 
   
 
-  if(isdigit(*express))
+  if(iswdigit(*express))
   {
-	  sscanf(express,"%d,%d|%d:%d",&a1,&a2,&a3,&a4);
-	  sscanf(express,"%d,%d:%d|%d",&a1,&a2,&a4,&a3);
-	  sscanf(express,"%d:%d|%d",&a1,&a4,&a3);
-	  sscanf(express,"%d|%d:%d",&a1,&a3,&a4);
+	  swscanf(express,L"%d,%d|%d:%d",&a1,&a2,&a3,&a4);
+	  swscanf(express,L"%d,%d:%d|%d",&a1,&a2,&a4,&a3);
+	  swscanf(express,L"%d:%d|%d",&a1,&a4,&a3);
+	  swscanf(express,L"%d|%d:%d",&a1,&a3,&a4);
   }
   else
 	tintin_puts2(rs::rs(1107));
@@ -291,25 +290,27 @@ void loop_command(char* arg)
 /************************/
 /* the #message command */
 /************************/
-void message_command(char *arg)
+void message_command(wchar_t *arg)
 {
   int mestype;
 //vls-begin// script files
 //  char ms[8][20], tpstr[80];
 //* en:logs
 //  char ms[9][20], tpstr[80];
-  char ms[MSG_MAXNUM][20], tpstr[80];
+  wchar_t ms[MSG_MAXNUM][20], tpstr[80];
 //*/en
 //vls-end//
-    char type[BUFFER_SIZE], flag[BUFFER_SIZE];
+    wchar_t type[BUFFER_SIZE], flag[BUFFER_SIZE];
 
-  arg = get_arg_in_braces(arg,type, STOP_SPACES);
-  arg = get_arg_in_braces(arg,flag, STOP_SPACES);
+  arg = get_arg_in_braces(arg,type,STOP_SPACES,sizeof(type)/sizeof(wchar_t)-1);
+  arg = get_arg_in_braces(arg,flag,STOP_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
 
-  sscanf("aliases actions substitutes antisubstitutes highlights variables groups hotkeys uses logs telnet",
-    "%s %s %s %s %s %s %s %s %s %s %s",ms[0],ms[1],ms[2],ms[3],ms[4],ms[5],ms[6], ms[7], ms[8], ms[9], ms[10]);
+  memset(ms, 0, sizeof(ms));
   
-  
+  const wchar_t messages[] = L"aliases actions substitutes antisubstitutes highlights variables groups hotkeys uses logs telnet";
+  swscanf(messages, L"%ls %ls %ls %ls %ls %ls %ls %ls %ls %ls %ls",
+	  ms[0],ms[1],ms[2],ms[3],ms[4],ms[5],ms[6], ms[7], ms[8], ms[9], ms[10]);
+ 
   mestype=0;
   while (!is_abrev(type,ms[mestype]) && mestype< MSG_MAXNUM ) 
     mestype++;
@@ -320,14 +321,14 @@ void message_command(char *arg)
       if ( !*flag ) 
             mesvar[mestype]=!mesvar[mestype];
       else 
-          if ( !_strcmpi(flag , "on" ) )
+          if ( !wcsicmp(flag , L"on" ) )
               mesvar[mestype]=1;
           else 
               mesvar[mestype]=0;
-    char* t1 = new char[16];
-    strcpy(t1, mesvar[mestype] ? rs::rs(1125) : rs::rs(1126));
+    wchar_t* t1 = new wchar_t[16];
+    wcscpy(t1, mesvar[mestype] ? rs::rs(1125) : rs::rs(1126));
     
-    sprintf(tpstr,rs::rs(1109),
+    swprintf(tpstr,rs::rs(1109),
         ms[mestype],t1);
     delete[]t1;
     tintin_puts2(tpstr);
@@ -337,20 +338,20 @@ void message_command(char *arg)
 /**************************/
 /* the #speedwalk command */
 /**************************/
-void speedwalk_command(char* arg)
+void speedwalk_command(wchar_t* arg)
 {
-//* en//    char flag[BUFFER_SIZE];
+//* en//    wchar_t flag[BUFFER_SIZE];
 //* en
 //* due to an error in tintin.h (messed up STOP_SPACES and WITH_SPACES)
-//    arg = get_arg_in_braces(arg,flag,STOP_SPACES);
-//* en//    arg = get_arg_in_braces(arg,flag,WITH_SPACES);
+//    arg = get_arg_in_braces(arg,flag,STOP_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
+//* en//    arg = get_arg_in_braces(arg,flag,WITH_SPACES,sizeof(flag)/sizeof(wchar_t)-1);
 //* /en
 //* en//    if ( *flag == 0 ) 
     if ( *arg == 0 ) 
         speedwalk=!speedwalk;
     else {
-//* en//        if ( !strcmpi(flag, "on" ) )
-        if ( !_strcmpi(arg, "on" ) )
+//* en//        if ( !wcsicmp(flag, "on" ) )
+        if ( !wcsicmp(arg, L"on" ) )
             speedwalk = TRUE;
         else 
             speedwalk = FALSE;
@@ -366,7 +367,7 @@ void speedwalk_command(char* arg)
 /********************/
 /* the #zap command */
 /********************/
-void zap_command(char *arg)
+void zap_command(wchar_t *arg)
 {
     if ( WaitForSingleObject(hConnThread , 0 ) == WAIT_TIMEOUT ) {
         TerminateThread(hConnThread, 0);
@@ -390,37 +391,37 @@ void zap_command(char *arg)
 }
 
 
-void display_info(char*arg)
+void display_info(wchar_t*arg)
 {
-    char buf[BUFFER_SIZE];
+    wchar_t buf[BUFFER_SIZE];
 
 	tintin_puts2(rs::rs(1117));
-    sprintf(buf,rs::rs(1118), ActionList.size());
+    swprintf(buf,rs::rs(1118), ActionList.size());
     tintin_puts2(buf);
-    sprintf(buf,rs::rs(1119), AliasList.size());
+    swprintf(buf,rs::rs(1119), AliasList.size());
     tintin_puts2(buf);
-    sprintf(buf,rs::rs(1120), count_list(common_subs));
+    swprintf(buf,rs::rs(1120), count_list(common_subs));
     tintin_puts2(buf);
-    sprintf(buf,rs::rs(1121), count_list(common_antisubs));
+    swprintf(buf,rs::rs(1121), count_list(common_antisubs));
     tintin_puts2(buf);
-    sprintf(buf,rs::rs(1122), VarList.size());
+    swprintf(buf,rs::rs(1122), VarList.size());
     tintin_puts2(buf);
-    sprintf(buf,rs::rs(1123), HlightList.size());
+    swprintf(buf,rs::rs(1123), HlightList.size());
     tintin_puts2(buf);
-    sprintf(buf,rs::rs(1247), HotkeyList.size());
+    swprintf(buf,rs::rs(1247), HotkeyList.size());
     tintin_puts2(buf);
-    char* t1 = new char[16];
-    char* t2 = new char[16];
-    strcpy(t1, echo ? rs::rs(1125) : rs::rs(1126));
-    strcpy(t2, speedwalk ? rs::rs(1125) : rs::rs(1126));
-    sprintf(buf,rs::rs(1124), t1 , t2);
+    wchar_t* t1 = new wchar_t[16];
+    wchar_t* t2 = new wchar_t[16];
+    wcscpy(t1, echo ? rs::rs(1125) : rs::rs(1126));
+    wcscpy(t2, speedwalk ? rs::rs(1125) : rs::rs(1126));
+    swprintf(buf,rs::rs(1124), t1 , t2);
     tintin_puts2(buf);
     
-    char* t3 = new char[16];
-    strcpy(t1, togglesubs ? rs::rs(1125) : rs::rs(1126));
-    strcpy(t2, ignore ? rs::rs(1125) : rs::rs(1126));
-    strcpy(t3, presub ? rs::rs(1125) : rs::rs(1126));
-    sprintf(buf,rs::rs(1129), t1, t2, t3);
+    wchar_t* t3 = new wchar_t[16];
+    wcscpy(t1, togglesubs ? rs::rs(1125) : rs::rs(1126));
+    wcscpy(t2, ignore ? rs::rs(1125) : rs::rs(1126));
+    wcscpy(t3, presub ? rs::rs(1125) : rs::rs(1126));
+    swprintf(buf,rs::rs(1129), t1, t2, t3);
     tintin_puts2(buf);
     delete[]t1;
     delete[]t2;
@@ -428,26 +429,26 @@ void display_info(char*arg)
 }
 
 // format #status N {text} [{color}]
-void status_command(char* arg)
+void status_command(wchar_t* arg)
 {
-    char left[BUFFER_SIZE], right[BUFFER_SIZE], color[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE], color[BUFFER_SIZE];
     
-    arg=get_arg_in_braces(arg, left,  STOP_SPACES);
-    arg=get_arg_in_braces(arg, right, WITH_SPACES);
-    arg=get_arg_in_braces(arg, color, WITH_SPACES);
+    arg=get_arg_in_braces(arg,left,STOP_SPACES,sizeof(left)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,color,WITH_SPACES,sizeof(color)/sizeof(wchar_t)-1);
 
-    if ( !*left || !isdigit(*left) ) {
+    if ( !*left || !iswdigit(*left) ) {
         tintin_puts2(rs::rs(1136));
         return;
     }
 
-    int statNum = atoi(left);
+    int statNum = _wtoi(left);
     if ( statNum < 1 || statNum > 5 ) {
         tintin_puts2(rs::rs(1137));
         return;
     }
 
-    char* dest = strInfo1;
+    wchar_t* dest = strInfo1;
     switch ( statNum ) {
     case 1:
         dest = strInfo1;
@@ -468,110 +469,109 @@ void status_command(char* arg)
         break;
     };
 
-    char buff[BUFFER_SIZE];
-    substitute_myvars (right, buff, sizeof(buff));
+    wchar_t buff[BUFFER_SIZE];
+    substitute_myvars (right, buff, sizeof(buff)/sizeof(wchar_t));
 
     EnterCriticalSection(&secStatusSection);
     if ( *color ) {
         add_codes(buff, dest, color, FALSE);
-        strcat(dest, buff);
+        wcscat(dest, buff);
     } else 
-        strcpy(dest, buff);
+        wcscpy(dest, buff);
     LeaveCriticalSection(&secStatusSection);
 }
 
-void tabadd_command(char* arg)
+void tabadd_command(wchar_t* arg)
 {
-    char word[BUFFER_SIZE];
+    wchar_t word[BUFFER_SIZE];
 //* en
 //* due to an error in tintin.h (messed up STOP_SPACES and WITH_SPACES)
-//    get_arg_in_braces(arg, word, STOP_SPACES);
-    get_arg_in_braces(arg, word, STOP_SPACES);
+//    get_arg_in_braces(arg,word,STOP_SPACES,sizeof(word)/sizeof(wchar_t)-1);
+    get_arg_in_braces(arg,word,STOP_SPACES,sizeof(word)/sizeof(wchar_t)-1);
 //* /en
     if ( !*word ) {
         tintin_puts2(rs::rs(1138));
         return;
     }
 
-    HGLOBAL hg = GlobalAlloc(GHND, strlen(word)+2);
-    char* p = (char*)GlobalLock(hg);
-    strcpy(p, word);
+    HGLOBAL hg = GlobalAlloc(GHND, wcslen(word)+2);
+    wchar_t* p = (wchar_t*)GlobalLock(hg);
+    wcscpy(p, word);
     GlobalUnlock (hg);
 
     PostMessage(hwndMAIN, WM_USER+200, 0, (LPARAM)hg);
-    char msg[BUFFER_SIZE];
-    sprintf(msg,rs::rs(1139), word);
+    wchar_t msg[BUFFER_SIZE];
+    swprintf(msg,rs::rs(1139), word);
     tintin_puts2(msg);
 }
 
-void tabdel_command(char* arg)
+void tabdel_command(wchar_t* arg)
 {
-    char word[BUFFER_SIZE];
-    get_arg_in_braces(arg, word, STOP_SPACES);
+    wchar_t word[BUFFER_SIZE];
+    get_arg_in_braces(arg,word,STOP_SPACES,sizeof(word)/sizeof(wchar_t)-1);
     if ( !*word ) {
         tintin_puts2(rs::rs(1140));
         return;
     }
 
-    HGLOBAL hg = GlobalAlloc(GHND, strlen(word)+2);
-    char* p = (char*)GlobalLock(hg);
-    strcpy(p, word);
+    HGLOBAL hg = GlobalAlloc(GHND, wcslen(word)+2);
+    wchar_t* p = (wchar_t*)GlobalLock(hg);
+    wcscpy(p, word);
     GlobalUnlock (hg);
 
     PostMessage(hwndMAIN, WM_USER+201, 0, (LPARAM)hg);
-    char msg[BUFFER_SIZE];
-    sprintf(msg,rs::rs(1141), word);
+    wchar_t msg[BUFFER_SIZE];
+    swprintf(msg,rs::rs(1141), word);
     tintin_puts2(msg);
 }
 
-LONG  DLLEXPORT GetCommandsList(char *List)
+LONG  DLLEXPORT GetCommandsList(wchar_t *List)
 {
 	int i, ret = 0;
 
 	for (i = 0; i < JMC_CMDS_NUM; i++) {
-		ret += 1 + strlen(jmc_cmds[i].alias) + 1;
+		ret += 1 + wcslen(jmc_cmds[i].alias) + 1;
 		if (List)
-			List += sprintf(List, "%c%s ", cCommandChar, jmc_cmds[i].alias);
+			List += swprintf(List, L"%lc%ls ", cCommandChar, jmc_cmds[i].alias);
 	}
 
 	return ret;
 }
 
 //vls-begin// #quit
-void quit_command(char *arg)
-{
-    PostMessage(hwndMAIN, WM_USER+400, 0, 0);
+void quit_command(wchar_t *arg) {
+ PostMessage(hwndMAIN, WM_USER+400, 0, 0);
 }
 //vls-end//
 
-void loopback_command(char *arg)
+void loopback_command(wchar_t *arg)
 {
-	char result[BUFFER_SIZE], strng[BUFFER_SIZE];
+	wchar_t result[BUFFER_SIZE], strng[BUFFER_SIZE];
     
-	arg=get_arg_in_braces(arg, strng, WITH_SPACES);
+	arg=get_arg_in_braces(arg,strng,WITH_SPACES,sizeof(strng)/sizeof(wchar_t)-1);
 
-	prepare_actionalias(strng,result, sizeof(result)); 
+	prepare_actionalias(strng,result, sizeof(result)/sizeof(wchar_t)); 
 	
 	//tintin_puts(result);
-	int len = strlen(result);
-	if (LoopBackCount + len + 2 > sizeof(LoopBackBuffer))
-		len = sizeof(LoopBackBuffer) - LoopBackCount - 2;
-	memcpy(&LoopBackBuffer[LoopBackCount], result, len);
+	int len = wcslen(result);
+	if (LoopBackCount + len + 2 > sizeof(LoopBackBuffer)/sizeof(wchar_t))
+		len = sizeof(LoopBackBuffer)/sizeof(wchar_t) - LoopBackCount - 2;
+	memcpy(&LoopBackBuffer[LoopBackCount], result, len*sizeof(wchar_t));
 	LoopBackCount += len;
-	LoopBackBuffer[LoopBackCount++] = '\n';
-	LoopBackBuffer[LoopBackCount] = '\0';
+	LoopBackBuffer[LoopBackCount++] = L'\n';
+	LoopBackBuffer[LoopBackCount] = L'\0';
 }
 
-void broadcast_command(char *arg)
+void broadcast_command(wchar_t *arg)
 {
 	if( BCASTSocket == INVALID_SOCKET ) {
 		tintin_puts2(rs::rs(1263));
 	} else {
-		char result[BUFFER_SIZE], strng[BUFFER_SIZE];
+		wchar_t result[BUFFER_SIZE], strng[BUFFER_SIZE];
     
-		arg=get_arg_in_braces(arg, strng, WITH_SPACES);
+		arg=get_arg_in_braces(arg,strng,WITH_SPACES,sizeof(strng)/sizeof(wchar_t)-1);
 
-		prepare_actionalias(strng,result, sizeof(result)); 
+		prepare_actionalias(strng,result, sizeof(result)/sizeof(wchar_t)); 
 
         struct sockaddr_in local;
 
@@ -579,56 +579,57 @@ void broadcast_command(char *arg)
 		local.sin_addr.S_un.S_addr = htonl(INADDR_BROADCAST);
         local.sin_port = htons(wBCastUdpPort);
 
-        int len = strlen(result), sent;
-        sent = sendto(BCASTSocket, result, len, 0, (const sockaddr*)&local, sizeof(local));
+        int len = wcslen(result) * sizeof(wchar_t), sent;
+
+        sent = sendto(BCASTSocket, (const char*)result, len, 0, (const sockaddr*)&local, sizeof(local));
         if(sent != len) {
-			char msg[BUFFER_SIZE];
-			sprintf(msg,rs::rs(1264), sent, len);
+			wchar_t msg[BUFFER_SIZE];
+			swprintf(msg,rs::rs(1264), sent, len);
 			tintin_puts(msg);
 		}
 	}
 }
 
-void srandom_command(char *arg)
+void srandom_command(wchar_t *arg)
 {
-    char seed_str[BUFFER_SIZE];
+    wchar_t seed_str[BUFFER_SIZE];
     
-    arg = get_arg_in_braces(arg, seed_str,  STOP_SPACES);
+    arg = get_arg_in_braces(arg,seed_str,STOP_SPACES,sizeof(seed_str)/sizeof(wchar_t)-1);
 	int seed;
-	if (strlen(seed_str) == 0) {
+	if (wcslen(seed_str) == 0) {
 		seed = (int)time(NULL);
 	} else {
-		seed = atoi(seed_str);
+		seed = _wtoi(seed_str);
 	}
 
 	srand(seed);
 
-	char msg[BUFFER_SIZE];
-	sprintf(msg,rs::rs(1265), seed);
+	wchar_t msg[BUFFER_SIZE];
+	swprintf(msg,rs::rs(1265), seed);
 	tintin_puts2(msg);
 }
 
-void random_command(char *arg)
+void random_command(wchar_t *arg)
 {
-	char var[BUFFER_SIZE], bound1[BUFFER_SIZE], bound2[BUFFER_SIZE], result[BUFFER_SIZE];
+	wchar_t var[BUFFER_SIZE], bound1[BUFFER_SIZE], bound2[BUFFER_SIZE], result[BUFFER_SIZE];
 	
-	arg = get_arg_in_braces(arg, var,  STOP_SPACES);
-	arg = get_arg_in_braces(arg, bound1, STOP_SPACES);
-	arg = get_arg_in_braces(arg, bound2, STOP_SPACES);
+	arg = get_arg_in_braces(arg,var,STOP_SPACES,sizeof(var)/sizeof(wchar_t)-1);
+	arg = get_arg_in_braces(arg,bound1,STOP_SPACES,sizeof(bound1)/sizeof(wchar_t)-1);
+	arg = get_arg_in_braces(arg,bound2,STOP_SPACES,sizeof(bound2)/sizeof(wchar_t)-1);
   
-	substitute_vars(bound1, result, sizeof(result));
-	substitute_myvars(result, bound1, sizeof(bound1));
+	substitute_vars(bound1, result, sizeof(result)/sizeof(wchar_t));
+	substitute_myvars(result, bound1, sizeof(bound1)/sizeof(wchar_t));
 
-	substitute_vars(bound2, result, sizeof(result));
-	substitute_myvars(result, bound2, sizeof(bound2));
+	substitute_vars(bound2, result, sizeof(result)/sizeof(wchar_t));
+	substitute_myvars(result, bound2, sizeof(bound2)/sizeof(wchar_t));
 
 	int minval = 0, maxval = 100;
 
-	if (strlen(bound1) > 0 && strlen(bound2) > 0) {
-		minval = atoi(bound1);
-		maxval = atoi(bound2);
-	} else if (strlen(bound1) > 0) {
-		maxval = atoi(bound1);
+	if (wcslen(bound1) > 0 && wcslen(bound2) > 0) {
+		minval = _wtoi(bound1);
+		maxval = _wtoi(bound2);
+	} else if (wcslen(bound1) > 0) {
+		maxval = _wtoi(bound1);
 	}
 
 	int period = maxval - minval;
@@ -644,7 +645,7 @@ void random_command(char *arg)
 		val += minval;
 	}
 
-	sprintf(result, "%d", val);
+	swprintf(result, L"%d", val);
 
     VAR_INDEX ind = VarList.find(var);
     VAR* pvar;
@@ -658,29 +659,83 @@ void random_command(char *arg)
     }
 }
 
-void sync_command(char *arg)
+void bar_command(wchar_t *arg)
+{
+	wchar_t var[BUFFER_SIZE], length[BUFFER_SIZE], 
+		fill_left[BUFFER_SIZE], fill_right[BUFFER_SIZE],
+		value[BUFFER_SIZE], maximum[BUFFER_SIZE];
+	
+	arg = get_arg_in_braces(arg,var,STOP_SPACES,sizeof(var)/sizeof(wchar_t)-1);
+	arg = get_arg_in_braces(arg,length,STOP_SPACES,sizeof(length)/sizeof(wchar_t)-1);
+	arg = get_arg_in_braces(arg,fill_left,STOP_SPACES,sizeof(fill_left)/sizeof(wchar_t)-1);
+	arg = get_arg_in_braces(arg,fill_right,STOP_SPACES,sizeof(fill_right)/sizeof(wchar_t)-1);
+	arg = get_arg_in_braces(arg,value,STOP_SPACES,sizeof(value)/sizeof(wchar_t)-1);
+	arg = get_arg_in_braces(arg,maximum,STOP_SPACES,sizeof(maximum)/sizeof(wchar_t)-1);
+
+	if (wcslen(maximum) == 0) {
+		tintin_puts2(rs::rs(1283));
+		return;
+	}
+
+	if (!is_all_digits(length) ||
+		!is_all_digits(value) ||
+		!is_all_digits(maximum)) {
+		tintin_puts2(rs::rs(1283));
+		return;
+	}
+
+	int len = min(_wtoi(length), sizeof(value)/sizeof(wchar_t)-1);
+	int val = _wtoi(value);
+	int maxv = _wtoi(maximum);
+
+	wstring bar = L"";
+	/*
+	 len(left)*cnt / length = value / maximum
+	 cnt = value * length / (maximum * len(left))
+	 */
+	int cnt_left = (val * len) / (maxv * wcslen(fill_left));
+	for (int i = 0; i < cnt_left; i++)
+		bar += fill_left;
+	while (bar.length() + wcslen(fill_right) <= len)
+		bar += fill_right;
+
+	wcscpy(value, bar.c_str());
+	
+	VAR_INDEX ind = VarList.find(var);
+    VAR* pvar;
+    if ( ind != VarList.end() ) {
+        pvar = ind->second;
+        pvar->m_strVal = value;
+    }
+    else {
+        pvar = new VAR(value);
+        VarList[var] = pvar;
+    }
+}
+
+void sync_command(wchar_t *arg)
 {
 	ReadMud();
 }
 
-void hidewindow_command(char *arg)
+void hidewindow_command(wchar_t *arg)
 {
     PostMessage(hwndMAIN, WM_USER+410, 0, 0);
 }
 
-void restorewindow_command(char *arg)
+void restorewindow_command(wchar_t *arg)
 {
     PostMessage(hwndMAIN, WM_USER+420, 0, 0);
 }
 
-void systray_command(char *arg)
+void systray_command(wchar_t *arg)
 {
-	char cmd[BUFFER_SIZE];
-	get_arg_in_braces(arg, cmd, STOP_SPACES);
+	wchar_t cmd[BUFFER_SIZE];
+	get_arg_in_braces(arg,cmd,STOP_SPACES,sizeof(cmd)/sizeof(wchar_t)-1);
 	
-	if ( cmd[0] == 'h' && is_abrev(cmd, "hide") ) {
+	if ( is_abrev(cmd, L"hide") ) {
 		PostMessage(hwndMAIN, WM_USER+430, 0, 0);
-	} else if ( cmd[0] == 's' && is_abrev(cmd, "show") ) {
+	} else if ( is_abrev(cmd, L"show") ) {
 		PostMessage(hwndMAIN, WM_USER+440, 0, 0);
 	} else {
         tintin_puts2(rs::rs(1259));
@@ -689,20 +744,20 @@ void systray_command(char *arg)
 }
 
 //vls-begin// #reloadscripts
-void reloadscripts_command(char *arg)
+void reloadscripts_command(wchar_t *arg)
 {
     PostMessage(hwndMAIN, WM_USER+300, 0, 0);
 }
 //vls-end//
 
 //vls-begin// #run
-void run_command(char *arg)
+void run_command(wchar_t *arg)
 {
-    char cmd[BUFFER_SIZE];
-    char params[BUFFER_SIZE];
+    wchar_t cmd[BUFFER_SIZE];
+    wchar_t params[BUFFER_SIZE];
 
-    arg = get_arg_in_braces(arg, cmd,    STOP_SPACES);
-    arg = get_arg_in_braces(arg, params, WITH_SPACES);
+    arg = get_arg_in_braces(arg,cmd,STOP_SPACES,sizeof(cmd)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,params,WITH_SPACES,sizeof(params)/sizeof(wchar_t)-1);
 
     if ( !*cmd ) {
         tintin_puts2(rs::rs(1229));
@@ -713,19 +768,19 @@ void run_command(char *arg)
 //vls-end//
 
 //vls-begin// #play
-void play_command(char *arg)
+void play_command(wchar_t *arg)
 {
 //* en//    char wave[MAX_PATH+2];
 //* en
-//    get_arg_in_braces(arg, wave, STOP_SPACES);
-//* en//    get_arg_in_braces(arg, wave, WITH_SPACES);
+//    get_arg_in_braces(arg,wave,STOP_SPACES,sizeof(wave)/sizeof(wchar_t)-1);
+//* en//    get_arg_in_braces(arg,wave,WITH_SPACES,sizeof(wave)/sizeof(wchar_t)-1);
 //* /en
 //* en//    if ( !*wave ) {
     if ( !*arg ) {
         tintin_puts2(rs::rs(1230));
         return;
     }
-    char fn[MAX_PATH+2];
+    wchar_t fn[MAX_PATH+2];
 //* en//    MakeAbsolutePath(fn, wave, szBASE_DIR);
     MakeAbsolutePath(fn, arg, szBASE_DIR);
     PlaySound(fn, NULL, SND_ASYNC | SND_FILENAME);
@@ -733,16 +788,16 @@ void play_command(char *arg)
 //vls-end//
 
 //vls-begin// #flash
-void flash_command(char *arg)
+void flash_command(wchar_t *arg)
 {
     SetForegroundWindow(hwndMAIN);
 }
 //vls-end//
 
 //* en
-void daa_command(char *arg)
+void daa_command(wchar_t *arg)
 {
-	if(strlen(arg)<1)
+	if(wcslen(arg)<1)
 	{
         tintin_puts2(rs::rs(1246));
 		return;
@@ -751,14 +806,14 @@ void daa_command(char *arg)
     write_line_mud(arg);
 }
 
-void colon_command(char *arg)
+void colon_command(wchar_t *arg)
 {
-	char cmd[BUFFER_SIZE];
-	get_arg_in_braces(arg,cmd,STOP_SPACES);
-    if ( cmd[0] == 'l' && is_abrev(cmd, "leave") )
+	wchar_t cmd[BUFFER_SIZE];
+	get_arg_in_braces(arg,cmd,STOP_SPACES,sizeof(cmd)/sizeof(wchar_t)-1);
+    if ( is_abrev(cmd, L"leave") )
         bColon = FALSE;
     else 
-	if ( cmd[0] == 'r' && is_abrev(cmd, "replace") )
+	if ( is_abrev(cmd, L"replace") )
         bColon = TRUE;
 	else 
         bColon = !bColon;
@@ -773,9 +828,9 @@ int is_workable_timer(int id)
 		 && sTimers[id].command[0];
 }
 
-void do_cycle(int b1, int b2, int step, int delay, char *command)
+void do_cycle(int b1, int b2, int step, int delay, wchar_t *command)
 {
-    char result[BUFFER_SIZE];
+    wchar_t result[BUFFER_SIZE];
     int flag, counter;
     flag=1;
     counter=b1;
@@ -785,8 +840,8 @@ void do_cycle(int b1, int b2, int step, int delay, char *command)
 	{//non-timer, just run cycle
 	  while(flag==1) 
 	  {
-        sprintf(vars[0], "%d", counter);
-        substitute_vars(command,result, sizeof(result));
+        swprintf(vars[0], L"%d", counter);
+        substitute_vars(command,result, sizeof(result)/sizeof(wchar_t));
         parse_input(result, TRUE);
         if (b1<b2) {
           counter+=step;
@@ -822,11 +877,11 @@ void do_cycle(int b1, int b2, int step, int delay, char *command)
 		sTimers[fort].delay      = delay-1;
 		sTimers[fort].counter    =      b1;
 		sTimers[fort].capacity   =   delay;
-		char *ptr1=command;
-		char *ptr2=sTimers[fort].command;
-		for(;*ptr1&&*ptr1!='\0';)
+		wchar_t *ptr1=command;
+		wchar_t *ptr2=sTimers[fort].command;
+		for(;*ptr1&&*ptr1!=L'\0';)
 			*ptr2++=*ptr1++;
-		*ptr2++='\0';
+		*ptr2++=L'\0';
 
 	  }
 
@@ -835,30 +890,26 @@ void do_cycle(int b1, int b2, int step, int delay, char *command)
 
 }
 
-void wt_command(char *arg)
+void wt_command(wchar_t *arg)
 {
-//    char 
-//      params[BUFFER_SIZE];
-
-//    arg = get_arg_in_braces(arg, params, STOP_SPACES);
-	if(is_abrev(arg,"cancel"))
+	if(is_abrev(arg,L"cancel"))
 	{
-		mQueue[0]='\0';
+		mQueue[0]=L'\0';
 		iWaitState = 0;
 		return;
 	}
 
-	if(isdigit(*arg))
-	  iWaitState=atoi(arg);
-	if(!iWaitState && strlen(mQueue))
+	if(iswdigit(*arg))
+	  iWaitState=_wtoi(arg);
+	if(!iWaitState && wcslen(mQueue))
 	{
 	  parse_input(mQueue);
-	  mQueue[0]='\0';
+	  mQueue[0]=L'\0';
 	}
 
 }
 
-void comment_command(char *arg)
+void comment_command(wchar_t *arg)
 {
   if(ispunct(*arg)) {
       cCommentChar = *arg;
@@ -867,18 +918,18 @@ void comment_command(char *arg)
       tintin_puts2(rs::rs(1245));
 }
 
-void MultiSub_command(char* arg)
+void MultiSub_command(wchar_t* arg)
 {
-    char status[BUFFER_SIZE];
-    arg=get_arg_in_braces(arg, status, STOP_SPACES);
+    wchar_t status[BUFFER_SIZE];
+    arg=get_arg_in_braces(arg,status,STOP_SPACES,sizeof(status)/sizeof(wchar_t)-1);
 
     if (*status) 
 	{
-        if(!_strcmpi("on", status))
+        if(!wcsicmp(L"on", status))
             bMultiSub = TRUE;
         else 
 		{
-          if(!_strcmpi("off", status))
+          if(!wcsicmp(L"off", status))
             bMultiSub = FALSE;
           else 
             bMultiSub = !bMultiSub;
@@ -898,14 +949,14 @@ void clear_timer(int id)
 	  sTimers[id].delay      =   0 ;
 	  sTimers[id].counter    =   0 ;
 	  sTimers[id].capacity   =   0 ;
-	  sTimers[id].command[0] = '\0';
+	  sTimers[id].command[0] = L'\0';
 
 }
 
 void update_timers(int nTime)
 {
 	static int pTime = 0;
-	char result[BUFFER_SIZE];
+	wchar_t result[BUFFER_SIZE];
     if(pTime != nTime)
 	{
 	  for(int i=0; i<sTimersV;i++)
@@ -915,8 +966,8 @@ void update_timers(int nTime)
 		  sTimers[i].delay++;
 		  if(sTimers[i].delay>=sTimers[i].capacity)
 		  {
-            sprintf(vars[0], "%d", sTimers[i].counter);
-            substitute_vars(sTimers[i].command,result, sizeof(result));
+            swprintf(vars[0], L"%d", sTimers[i].counter);
+            substitute_vars(sTimers[i].command,result, sizeof(result)/sizeof(wchar_t));
 			parse_input(result);
 			sTimers[i].delay = 0;
             if (sTimers[i].startV<sTimers[i].endV) 
@@ -942,26 +993,26 @@ void update_timers(int nTime)
 }
 
 
-void break_timer_command(char *arg)
+void break_timer_command(wchar_t *arg)
 {
 
-	char uid[BUFFER_SIZE];
+	wchar_t uid[BUFFER_SIZE];
 	int tID = -1;
-	arg = get_arg_in_braces(arg, uid, STOP_SPACES);
+	arg = get_arg_in_braces(arg,uid,STOP_SPACES,sizeof(uid)/sizeof(wchar_t)-1);
 
-	if(!_strcmpi(uid,"all"))
+	if(!wcsicmp(uid,L"all"))
 	{
-	    char bf[BUFFER_SIZE];
+	    wchar_t bf[BUFFER_SIZE];
 	    for(int i=0;i<sTimersV;i++)
 		{
-		    sprintf(bf,"%d",i);
+		    swprintf(bf,L"%d",i);
 		    break_timer_command(bf);
 		}
 		return;
 	}
 
-	if( isdigit(uid[0]))
-		tID = atoi(uid);
+	if( iswdigit(uid[0]))
+		tID = _wtoi(uid);
 	if( tID < 0 || tID >= sTimersV)
 		return;
 	if(sTimers[tID].isActive)
@@ -973,26 +1024,26 @@ void break_timer_command(char *arg)
 }
 
 
-void continue_timer_command(char *arg)
+void continue_timer_command(wchar_t *arg)
 {
 
-	char uid[BUFFER_SIZE];
+	wchar_t uid[BUFFER_SIZE];
 	int tID = -1;
 
-	arg = get_arg_in_braces(arg, uid, STOP_SPACES);
-	if(!_strcmpi(uid,"all"))
+	arg = get_arg_in_braces(arg,uid,STOP_SPACES,sizeof(uid)/sizeof(wchar_t)-1);
+	if(!wcsicmp(uid,L"all"))
 	{
-	    char bf[BUFFER_SIZE];
+	    wchar_t bf[BUFFER_SIZE];
 	    for(int i=0;i<sTimersV;i++)
 		{
-		    sprintf(bf,"%d",i);
+		    swprintf(bf,L"%d",i);
 		    continue_timer_command(bf);
 		}
 		return;
 	}
 
-	if( isdigit(uid[0]))
-		tID = atoi(uid);
+	if( iswdigit(uid[0]))
+		tID = _wtoi(uid);
 	if( tID < 0 || tID > sTimersV)
 		return;
 
@@ -1000,15 +1051,15 @@ void continue_timer_command(char *arg)
  	    sTimers[tID].isActive = TRUE;
 }
 
-void tm_list_command(char*arg)
+void tm_list_command(wchar_t*arg)
 {
-	char bf[BUFFER_SIZE];
+	wchar_t bf[BUFFER_SIZE];
 	tintin_puts2(rs::rs(1248));
 	for(int i=0;i<sTimersV;i++)
 	{
 	  if(sTimers[i].isActive == FALSE)
 		  continue;
-		  sprintf(bf,rs::rs(1249),
+		  swprintf(bf,rs::rs(1249),
 			  i,sTimers[i].startV,sTimers[i].endV,sTimers[i].step,sTimers[i].counter,sTimers[i].capacity,
 			  sTimers[i].command);
 	  tintin_puts2(bf);
@@ -1016,21 +1067,21 @@ void tm_list_command(char*arg)
 
 }
 
-void help_command(char* arg)
+void help_command(wchar_t* arg)
 {
-  char command[BUFFER_SIZE];
-  char file[BUFFER_SIZE] = "\0";
-  char buffer[BUFFER_SIZE] = "\0";
+  wchar_t command[BUFFER_SIZE];
+  wchar_t file[BUFFER_SIZE] = L"\0";
+  wchar_t buffer[BUFFER_SIZE] = L"\0";
   bool found = FALSE;
 
-    arg=get_arg_in_braces(arg,command,STOP_SPACES);
+    arg=get_arg_in_braces(arg,command,STOP_SPACES,sizeof(command)/sizeof(wchar_t)-1);
 
     for(int i = 0; i<JMC_CMDS_NUM; i++)
 	{
 		CharLower(command);	
 	    if(command[0] == *jmc_cmds[i].alias && is_abrev(command, jmc_cmds[i].alias))
 		{
-			strcpy(file, (*jmc_cmds[i].hlpfile)?jmc_cmds[i].hlpfile:jmc_cmds[i].alias);
+			wcscpy(file, (*jmc_cmds[i].hlpfile)?jmc_cmds[i].hlpfile:jmc_cmds[i].alias);
 		    found = TRUE;
 			break;
 		}
@@ -1038,26 +1089,26 @@ void help_command(char* arg)
 
     if(!found) 
 	{
-		strcpy(buffer,"  \0");
+		wcscpy(buffer,L"  \0");
 		for(int i=0;i<JMC_CMDS_NUM;i++)
 		{
 			if(!((i+1)%8))
-				strcat(buffer,"\n  ");
-			strcat(buffer,jmc_cmds[i].alias);
+				wcscat(buffer,L"\n  ");
+			wcscat(buffer,jmc_cmds[i].alias);
 			if((i+1) && ((i+1)<JMC_CMDS_NUM))
-				strcat(buffer,", ");
+				wcscat(buffer,L", ");
 		}
 		tintin_puts2(rs::rs(1251));
 		tintin_puts2(buffer);
 	    return;
 	}
 	tintin_puts2(rs::rs(1252));
-    sprintf(buffer,"{help/%s.jht} {%cshowme {-\?- %%0}} {s}",file, cCommandChar);
+    swprintf(buffer,L"{help/%ls.jht} {%lcshowme {-\?- %%0}} {s}",file, cCommandChar);
     spit_command(buffer);
     return;
 }
 
-void clean_command(char *arg)
+void clean_command(wchar_t *arg)
 {
     PostMessage(hwndMAIN, WM_USER+600, 0, 0);
 }
@@ -1065,21 +1116,21 @@ void clean_command(char *arg)
 /***********************/
 /* the #clear command  */
 /***********************/
-void clear_command(char *arg)
+void clear_command(wchar_t *arg)
 {
 	ClearWindowFunction(0);
 }
 /***********************/
 /* the #wclear command */
 /***********************/
-void wclear_command(char *arg)
+void wclear_command(wchar_t *arg)
 {
-	char number[BUFFER_SIZE];
+	wchar_t number[BUFFER_SIZE];
     int wnd = MAX_OUTPUT;
 
-    arg=get_arg_in_braces(arg, number, STOP_SPACES);
+    arg=get_arg_in_braces(arg,number,STOP_SPACES,sizeof(number)/sizeof(wchar_t)-1);
     
-    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !swscanf(number, L"%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts2(rs::rs(1261));
         return;
     }
@@ -1090,44 +1141,44 @@ void wclear_command(char *arg)
 // these are commands for WM_COMMAND to winamp
 // you can add other easily
 #define max_wamp 20
-struct wamp_cmd{char*id;WORD msg;} 
+struct wamp_cmd{wchar_t*id;WORD msg;} 
 	   wamp_cmds[] = {
-		{"previous",   44},
-		{"next",       48},
-		{"play",       45},
-		{"pause",      46},
-		{"stop",       47},
-		{"fadeout",   147},
-		{"stopafter", 157},
-		{"rewind",    144},
-		{"forward",   148},
-		{"start",     154},
-		{"end",       158},
-		{"elapsed",    37},
-		{"remaining",  38},
-		{"ontop",      19},
-		{"doublesize",165},
-		{"volume+",    58},
-		{"volume-",    59},
-		{"repeat",     22},
-		{"shuffle",    23},
-		{"close",       1}
-/*		{"",    0}
-		{"",    0}
-		{"",    0}
-		{"",    0}
-		{"",    0}
+		{L"previous",   44},
+		{L"next",       48},
+		{L"play",       45},
+		{L"pause",      46},
+		{L"stop",       47},
+		{L"fadeout",   147},
+		{L"stopafter", 157},
+		{L"rewind",    144},
+		{L"forward",   148},
+		{L"start",     154},
+		{L"end",       158},
+		{L"elapsed",    37},
+		{L"remaining",  38},
+		{L"ontop",      19},
+		{L"doublesize",165},
+		{L"volume+",    58},
+		{L"volume-",    59},
+		{L"repeat",     22},
+		{L"shuffle",    23},
+		{L"close",       1}
+/*		{L"",    0}
+		{L"",    0}
+		{L"",    0}
+		{L"",    0}
+		{L"",    0}
 */
 		};
 
-void winamp_command(char*arg)
+void winamp_command(wchar_t*arg)
 {
-  char comm[BUFFER_SIZE] = "\0";
-  char mode[BUFFER_SIZE] = "\0";
+  wchar_t comm[BUFFER_SIZE] = L"\0";
+  wchar_t mode[BUFFER_SIZE] = L"\0";
 
   DWORD mean = 0;
 
-  HWND wamp = FindWindow("Winamp v1.x",NULL);
+  HWND wamp = FindWindow(L"Winamp v1.x",NULL);
 
 	if(!wamp)
 	{
@@ -1135,9 +1186,9 @@ void winamp_command(char*arg)
 		//return;
 	}
 
-    arg=get_arg_in_braces(arg, comm, STOP_SPACES);
+    arg=get_arg_in_braces(arg,comm,STOP_SPACES,sizeof(comm)/sizeof(wchar_t)-1);
     
-	char bf[BUFFER_SIZE];
+	wchar_t bf[BUFFER_SIZE];
 	int i;
 	for(i=0;i<max_wamp;i++)
 		if(is_abrev(comm, wamp_cmds[i].id))
@@ -1146,15 +1197,15 @@ void winamp_command(char*arg)
 			return;
 		}
 
-	strcpy(bf,"  \0");
+	wcscpy(bf,L"  \0");
 	for(i=0;i<max_wamp;)
 	{
 		++i;
 		if(!(i%8))
-			strcat(bf,"\n  ");
-		strcat(bf,wamp_cmds[i-1].id);
+			wcscat(bf,L"\n  ");
+		wcscat(bf,wamp_cmds[i-1].id);
 		if(i<max_wamp)
-			strcat(bf,", ");
+			wcscat(bf,L", ");
 	}
 	tintin_puts2(rs::rs(1254));
 	tintin_puts2(bf);
@@ -1162,24 +1213,24 @@ void winamp_command(char*arg)
 }
 
 
-void nope_command(char*arg){return;};
+void nope_command(wchar_t*arg){return;};
 
-void abort_timer_command(char*arg)
+void abort_timer_command(wchar_t*arg)
 {
 	break_timer_command(arg);
 	break_timer_command(arg);
 }
 
-void autoreconnect_command(char*arg)
+void autoreconnect_command(wchar_t*arg)
 {
-   char bf[BUFFER_SIZE];
-   if(is_abrev(arg,"on"))
+   wchar_t bf[BUFFER_SIZE];
+   if(is_abrev(arg,L"on"))
 	   bAutoReconnect = TRUE;
-   else if(is_abrev(arg,"off"))
+   else if(is_abrev(arg,L"off"))
 	   bAutoReconnect = FALSE;
    else 
 	   bAutoReconnect = !bAutoReconnect;
-   sprintf(bf,rs::rs(1257),bAutoReconnect?"ON":"OFF");
+   swprintf(bf,rs::rs(1257),bAutoReconnect?L"ON":L"OFF");
    tintin_puts2(bf);
 
 }

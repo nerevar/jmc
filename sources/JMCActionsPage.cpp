@@ -73,7 +73,7 @@ END_MESSAGE_MAP()
 BOOL CJMCActionsPage::OnInitDialog() 
 {
 	CPropertyPage::OnInitDialog();
-    AddPage("action", this);
+    AddPage(L"action", this);
 
     m_ImageList.Create(IDB_GROUP_ICONS, 16 , 2, (COLORREF)0xFFFFFF);
 
@@ -165,24 +165,24 @@ int CJMCActionsPage::AddItem(void* p)
     ZeroMemory(&lvi , sizeof(lvi));
     lvi.mask = LVIF_IMAGE | LVIF_TEXT;
     lvi.iItem = i;
-    lvi.pszText  = (LPSTR)pAct->m_strLeft.data();
+    lvi.pszText  = (LPWSTR)(const wchar_t*)pAct->m_strLeft.c_str();
     lvi.iImage = pAct->m_pGroup->m_bGlobal ? 1 : 0 ;
     int ind = m_cActionsList.InsertItem(&lvi);
 
     lvi.iItem = ind;
     lvi.iSubItem = 1;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)pAct->m_strRight.data();
+    lvi.pszText  = (LPWSTR)(const wchar_t*)pAct->m_strRight.c_str();
     m_cActionsList.SetItem (&lvi);
 
     lvi.iSubItem = 2;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)pAct->m_pGroup->m_strName.data();
+    lvi.pszText  = (LPWSTR)(const wchar_t*)pAct->m_pGroup->m_strName.c_str();
     m_cActionsList.SetItem (&lvi);
     m_cActionsList.SetItemData(ind, (DWORD)p);
 
-    char buff[16];
-    sprintf(buff, "%d", pAct->m_nPriority );
+    wchar_t buff[16];
+    swprintf(buff, L"%d", pAct->m_nPriority );
     lvi.iSubItem = 3;
     lvi.mask = LVIF_TEXT ;
     lvi.pszText  = buff;
@@ -191,7 +191,7 @@ int CJMCActionsPage::AddItem(void* p)
 
 	lvi.iSubItem = 4;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)act_type_to_str((int)pAct->m_InputType);
+    lvi.pszText  = (LPWSTR)act_type_to_str((int)pAct->m_InputType);
     m_cActionsList.SetItem (&lvi);
     m_cActionsList.SetItemData(ind, (DWORD)p);
 
@@ -223,7 +223,7 @@ void CJMCActionsPage::OnChangeText()
     ASSERT(pos >= 0 );
     PACTION pAct = (PACTION )m_cActionsList.GetItemData(pos);
     ASSERT(pAct);
-	SetActionText(pAct, (LPSTR)(LPCSTR)m_strText) ;
+	SetActionText(pAct, m_strText) ;
     //SetAction((LPSTR)pAct->m_strLeft.data(), (LPSTR)(LPCSTR)m_strText, pAct->m_nPriority , NULL);
     //pAct->m_strRight = m_strText;
 
@@ -232,7 +232,7 @@ void CJMCActionsPage::OnChangeText()
     lvi.iItem = pos;
     lvi.iSubItem = 1;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)(LPCSTR)m_strText;
+    lvi.pszText  = (LPWSTR)(const wchar_t*)m_strText;
     m_cActionsList.SetItem (&lvi);
 }
 
@@ -253,7 +253,7 @@ void CJMCActionsPage::OnSelchangeGrp()
     lvi.iItem = pos;
     lvi.iSubItem = 2;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)pG->m_strName.data();
+    lvi.pszText  = (LPWSTR)pG->m_strName.data();
     m_cActionsList.SetItem (&lvi);
 
     lvi.iSubItem = 0;
@@ -269,7 +269,7 @@ void CJMCActionsPage::OnAdd()
 	GetDlgItem(IDC_GRP)->EnableWindow(TRUE);
     m_strName.Empty ();
     m_strText.Empty();
-    PCGROUP pGrp = GetGroup ("default");
+    PCGROUP pGrp = GetGroup (L"default");
     m_cGroup.SelectGroup (pGrp);
     UpdateData(FALSE);
     m_bNewItem = TRUE;
@@ -289,7 +289,7 @@ void CJMCActionsPage::OnRemove()
 		m_cActionsList.SetItemState(min(pos, m_cActionsList.GetItemCount () -1),
             LVNI_SELECTED | LVNI_FOCUSED ,  LVNI_SELECTED | LVNI_FOCUSED);
 	}else{
-		MessageBox("Error deleting action!." , "JMC" , MB_OK | MB_ICONSTOP);
+		MessageBox(L"Error deleting action!." , L"JMC" , MB_OK | MB_ICONSTOP);
 	}
 	SetControls();
 }
@@ -309,7 +309,7 @@ void CJMCActionsPage::OnKillfocusName()
             return;
         }
 */
-        PACTION pAct = SetAction((ACTION::ActionType)m_nInputType, (LPSTR)(LPCSTR)m_strName, "", 5, NULL );
+        PACTION pAct = SetAction((ACTION::ActionType)m_nInputType, (const wchar_t*)m_strName, L"", 5, NULL );
         if ( !pAct ) 
             return;
         int i = AddItem(pAct);
@@ -340,13 +340,13 @@ void CJMCActionsPage::OnSelchangePriority()
     pAct->m_nPriority = m_nPriority;
     // SetAction((LPSTR)pAct->m_strLeft.data(), (LPSTR)(LPCSTR)m_strText, m_nPriority, NULL);
 
-    char buff[32];
+    wchar_t buff[32];
     LV_ITEM lvi;
     ZeroMemory(&lvi , sizeof(lvi));
     lvi.iItem = pos;
     lvi.iSubItem = 3;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = itoa(m_nPriority, buff, 10);
+    lvi.pszText  = _itow(m_nPriority, buff, 10);
     m_cActionsList.SetItem (&lvi);
 }
 
@@ -365,7 +365,7 @@ void CJMCActionsPage::OnSelchangeInputType()
     lvi.iItem = pos;
 	lvi.iSubItem = 4;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)act_type_to_str((int)pAct->m_InputType);
+    lvi.pszText  = (LPWSTR)act_type_to_str((int)pAct->m_InputType);
     m_cActionsList.SetItem (&lvi);
 }
 
@@ -389,6 +389,6 @@ void CJMCActionsPage::OnChangeName()
     lvi.iItem = pos;
     lvi.iSubItem = 0;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)(LPCSTR)m_strName;
+    lvi.pszText  = (LPWSTR)(const wchar_t*)m_strName;
     m_cActionsList.SetItem (&lvi);
 }

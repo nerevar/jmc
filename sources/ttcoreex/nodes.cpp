@@ -19,12 +19,12 @@ SCRIPTFILELIST ScriptFileList;
 //vls-end//
 
 
-static std::list<std::string> extract_varnames(const char *line) 
+static std::list<std::wstring> extract_varnames(const wchar_t *line) 
 {
-	std::list<std::string> ret;
+	std::list<std::wstring> ret;
 
-	while (line = strchr(line, '$')) {
-		std::string varname = "";
+	while (line = wcschr(line, L'$')) {
+		std::wstring varname = L"";
 		line++;
 		while (is_allowed_symbol(line[0])) {
 			varname += line[0];
@@ -37,11 +37,11 @@ static std::list<std::string> extract_varnames(const char *line)
 	return ret;
 }
 
-static int add_dependencies(CPCRE *pPcre, const std::string line)
+static int add_dependencies(CPCRE *pPcre, const std::wstring line)
 {
-	std::list<std::string> varnames = extract_varnames(line.c_str());
+	std::list<std::wstring> varnames = extract_varnames(line.c_str());
 
-	for (std::list<std::string>::iterator it = varnames.begin(); it != varnames.end(); it++)
+	for (std::list<std::wstring>::iterator it = varnames.begin(); it != varnames.end(); it++)
 		VarPcreDeps[*it].insert(pPcre);
 
 	return varnames.size();
@@ -69,7 +69,7 @@ CGROUP::CGROUP()
     m_bGlobal = FALSE;
 }
 
-CGROUP::CGROUP(char* name, BOOL bGlobal )
+CGROUP::CGROUP(const wchar_t* name, BOOL bGlobal )
 {
     m_bEnabled = TRUE;
     m_bGlobal = bGlobal;
@@ -117,7 +117,7 @@ CGROUP::~CGROUP()
 
 CPCRE::CPCRE()
 {
-	m_strSource = "";
+	m_strSource = L"";
 	m_pPcre = NULL;
 	m_pExtra = NULL;
 	m_bContainVars = FALSE;
@@ -133,22 +133,22 @@ CPCRE::~CPCRE()
 void CPCRE::Clear(BOOL ResetSource)
 {
 	if ( m_pPcre ) {
-        pcre_free(m_pPcre);
+        pcre16_free(m_pPcre);
 		m_pPcre = NULL;
 	}
     if ( m_pExtra ) {
-        pcre_free(m_pExtra);
+        pcre16_free(m_pExtra);
 		m_pExtra = NULL;
 	}
 
 	if ( ResetSource ) {
-		m_strSource = "";
+		m_strSource = L"";
 		m_bContainVars = FALSE;
 		m_bMultiline = m_bIgnoreCase = FALSE;
 	}
 }
 
-BOOL CPCRE::SetSource(const std::string Source, BOOL Multiline, BOOL IgnoreCase)
+BOOL CPCRE::SetSource(const std::wstring Source, BOOL Multiline, BOOL IgnoreCase)
 {
 	Clear(TRUE);
 
@@ -160,42 +160,45 @@ BOOL CPCRE::SetSource(const std::string Source, BOOL Multiline, BOOL IgnoreCase)
 	return Recompile();
 }
 
-BOOL CPCRE::Recompile(const char *Pattern)
+BOOL CPCRE::Recompile(const wchar_t *Pattern)
 {
+	USES_CONVERSION;
+
 	if ( !Pattern ) 
-        Pattern = (char*)m_strSource.data ();
+        Pattern = m_strSource.c_str();
 
     Clear(FALSE);
 
 	int options = 0;
+	options |= PCRE_UTF16 | PCRE_UCP;
 	if (m_bMultiline)
 		options |= PCRE_MULTILINE;
 	if (m_bIgnoreCase)
 		options |= PCRE_CASELESS;
 	
 	if (!pcre_tables) 
-		pcre_tables = pcre_maketables();
+		pcre_tables = pcre16_maketables();
 
-	char expression[BUFFER_SIZE];
+	wchar_t expression[BUFFER_SIZE];
 	if (m_bContainVars) {
-		prepare_actionalias((char *)Pattern, expression, sizeof(expression));
+		prepare_actionalias(Pattern, expression, sizeof(expression)/sizeof(wchar_t));
 		Pattern = expression;
 	}
 
     const char* err;
     int err_offset;
-    m_pPcre = pcre_compile(Pattern, options, &err, &err_offset, pcre_tables);
+    m_pPcre = pcre16_compile(Pattern, options, &err, &err_offset, pcre_tables);
     if ( !m_pPcre ) {
-        std::string  errstr(rs::rs(1142));
-        errstr += err;
-        tintin_puts2((char*)errstr.data ());
+        std::wstring  errstr(rs::rs(1142));
+        errstr += A2W(err);
+        tintin_puts2(errstr.c_str());
         return FALSE;
     }
-    m_pExtra = pcre_study(m_pPcre, 0 , &err);
+    m_pExtra = pcre16_study(m_pPcre, 0 , &err);
     if ( err ) {
-        std::string  errstr(rs::rs(1142));
-        errstr += err;
-        tintin_puts2((char*)errstr.data ());
+        std::wstring  errstr(rs::rs(1142));
+        errstr += A2W(err);
+        tintin_puts2(errstr.c_str());
         return FALSE;
     }
     return TRUE;
@@ -212,24 +215,24 @@ ALIAS::~ALIAS()
 {
 }
 
-BOOL ALIAS::SetLeft(char* left)
+BOOL ALIAS::SetLeft(const wchar_t* left)
 {
     m_PCRE.Clear(TRUE);
 
     m_strLeft = left;
 	BOOL i_flag = FALSE;
-	std::string regexp = "";
+	std::wstring regexp = L"";
 
-    if ( *left == '/' ) {
+    if ( *left == L'/' ) {
 		regexp = left + 1;
         
         int size = regexp.size();
 		
 		for (int i = size - 1; i >= 0; i--) {
-			if (regexp[i] == 'i') {
+			if (regexp[i] == L'i') {
 				size--;
 				i_flag = TRUE;
-			} else if (regexp[i] == '/') {
+			} else if (regexp[i] == L'/') {
 				size--;
 				break;
 			} else {
@@ -245,7 +248,7 @@ BOOL ALIAS::SetLeft(char* left)
         return m_PCRE.SetSource(regexp, FALSE, i_flag);
 	}
 	
-	if (strchr(left, '$' ))
+	if (wcschr(left, L'$' ))
         m_bRecompile = TRUE;
 	return TRUE;
 }
@@ -265,30 +268,30 @@ ACTION::~ACTION()
 {
 }
 
-BOOL ACTION::SetLeft(char* left)
+BOOL ACTION::SetLeft(const wchar_t* left)
 {
     m_PCRE.Clear(TRUE);
 
     m_strLeft = left;
 	BOOL i_flag = FALSE, m_flag = FALSE, g_flag = FALSE;
-	std::string regexp = "";
+	std::wstring regexp = L"";
 
-    if ( *left == '/' ) {
+    if ( *left == L'/' ) {
 		regexp = left + 1;
         
         int size = regexp.size();
 		
 		for (int i = size - 1; i >= 0; i--) {
-			if (regexp[i] == 'i') {
+			if (regexp[i] == L'i') {
 				size--;
 				i_flag = TRUE;
-			} else if (regexp[i] == 'm') {
+			} else if (regexp[i] == L'm') {
 				size--;
 				m_flag = TRUE;
-			} else if (regexp[i] == 'g') {
+			} else if (regexp[i] == L'g') {
 				size--;
 				g_flag = TRUE;
-			} else if (regexp[i] == '/') {
+			} else if (regexp[i] == L'/') {
 				size--;
 				break;
 			} else {
@@ -306,7 +309,7 @@ BOOL ACTION::SetLeft(char* left)
         return m_PCRE.SetSource(regexp, m_flag, i_flag);
 	}
 	
-	if (strchr(left, '$' ))
+	if (wcschr(left, L'$' ))
         m_bRecompile = TRUE;
 	return TRUE;
 }
@@ -316,7 +319,7 @@ GROUPED_NODE::GROUPED_NODE()
     m_pGroup = NULL;
 }
 
-void GROUPED_NODE::SetGroup(char* group )
+void GROUPED_NODE::SetGroup(const wchar_t* group )
 {
     if ( !group || *group == 0 ) 
         if ( m_pGroup ) 
@@ -336,46 +339,46 @@ void GROUPED_NODE::SetGroup(char* group )
 }
 
 
-VAR::VAR(char* val, BOOL bGlobal )
+VAR::VAR(wchar_t* val, BOOL bGlobal )
 {
     if ( val ) 
         m_strVal = val;
     bGlobal= bGlobal;
 }
 
-static int is_high_arg(char *s)
+static int is_high_arg(const wchar_t *s)
 {
   int code;
-  sscanf(s, "%d", &code);
-  if (is_abrev(s, "red") || is_abrev(s, "blue") || is_abrev(s, "cyan") ||
-     is_abrev(s, "green") || is_abrev(s, "yellow") ||
-     is_abrev(s, "magenta") || is_abrev(s, "white") ||
-     is_abrev(s, "grey") || is_abrev(s, "black") ||
-     is_abrev(s, "brown") || is_abrev(s, "charcoal") ||
-     is_abrev(s, "light red") || is_abrev(s, "light blue") ||
-     is_abrev(s, "light cyan") || is_abrev(s, "light magenta") ||
-     is_abrev(s, "light green") || is_abrev(s, "b red") ||
-     is_abrev(s, "b blue") || is_abrev(s, "b cyan") ||
-     is_abrev(s, "b green") || is_abrev(s, "b yellow") ||
-     is_abrev(s, "b magenta") || is_abrev(s, "b white") ||
-     is_abrev(s, "b grey") || is_abrev(s, "b black") ||
-     is_abrev(s, "b brown") || is_abrev(s, "b charcoal") ||
-     is_abrev(s, "b light red") || is_abrev(s, "b light blue") ||
-     is_abrev(s, "b light cyan") || is_abrev(s, "b light magenta") ||
-     is_abrev(s, "b light green") || is_abrev(s, "bold") ||
-     is_abrev(s, "faint") || is_abrev(s, "blink") ||
-     is_abrev(s, "italic") || is_abrev(s, "reverse") || 
-     (isdigit(*s) && code<33 && code>0)) return TRUE;
+  swscanf(s, L"%d", &code);
+  if (is_abrev(s, L"red") || is_abrev(s, L"blue") || is_abrev(s, L"cyan") ||
+     is_abrev(s, L"green") || is_abrev(s, L"yellow") ||
+     is_abrev(s, L"magenta") || is_abrev(s, L"white") ||
+     is_abrev(s, L"grey") || is_abrev(s, L"black") ||
+     is_abrev(s, L"brown") || is_abrev(s, L"charcoal") ||
+     is_abrev(s, L"light red") || is_abrev(s, L"light blue") ||
+     is_abrev(s, L"light cyan") || is_abrev(s, L"light magenta") ||
+     is_abrev(s, L"light green") || is_abrev(s, L"b red") ||
+     is_abrev(s, L"b blue") || is_abrev(s, L"b cyan") ||
+     is_abrev(s, L"b green") || is_abrev(s, L"b yellow") ||
+     is_abrev(s, L"b magenta") || is_abrev(s, L"b white") ||
+     is_abrev(s, L"b grey") || is_abrev(s, L"b black") ||
+     is_abrev(s, L"b brown") || is_abrev(s, L"b charcoal") ||
+     is_abrev(s, L"b light red") || is_abrev(s, L"b light blue") ||
+     is_abrev(s, L"b light cyan") || is_abrev(s, L"b light magenta") ||
+     is_abrev(s, L"b light green") || is_abrev(s, L"bold") ||
+     is_abrev(s, L"faint") || is_abrev(s, L"blink") ||
+     is_abrev(s, L"italic") || is_abrev(s, L"reverse") || 
+     (iswdigit(*s) && code<33 && code>0)) return TRUE;
      else return FALSE;
 }
 
 
-BOOL HLIGHT::SetColor(char* color)
+BOOL HLIGHT::SetColor(const wchar_t* color)
 {
 /*    if ( !is_high_arg(color) ) 
         return FALSE;
 */
-    char buff[BUFFER_SIZE];
+    wchar_t buff[BUFFER_SIZE];
     add_codes(NULL, buff, color, FALSE);
     m_strAnsi = buff;
     m_strColor = color;

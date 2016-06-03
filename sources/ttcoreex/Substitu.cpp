@@ -8,7 +8,7 @@
 #include "stdafx.h"
 #include "tintin.h"
 
-extern char *get_arg_in_braces();
+extern wchar_t *get_arg_in_braces();
 extern struct listnode *search_node_with_wild();
 extern struct listnode *searchnode_list();
 
@@ -20,13 +20,13 @@ BOOL bMultiSub = FALSE;
 /***************************/
 /* the #substitute command */
 /***************************/
-void parse_sub(char *arg)
+void parse_sub(wchar_t *arg)
 {
-  char left[BUFFER_SIZE], right[BUFFER_SIZE], result[BUFFER_SIZE];
+  wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE], result[BUFFER_SIZE];
   struct listnode *mysubs, *ln;
   mysubs=common_subs;
-  arg=get_arg_in_braces(arg, left,STOP_SPACES);
-  arg=get_arg_in_braces(arg, right,WITH_SPACES);
+  arg=get_arg_in_braces(arg,left,STOP_SPACES,sizeof(left)/sizeof(wchar_t)-1);
+  arg=get_arg_in_braces(arg,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
 
   if(!*left) {
     tintin_puts2(rs::rs(1166));
@@ -49,12 +49,12 @@ void parse_sub(char *arg)
       deletenode_list(mysubs, ln);
       subnum--;
     }
-    insertnode_list(mysubs, left, right, "0", ALPHA);
+    insertnode_list(mysubs, left, right, L"0", ALPHA);
     subnum++;
-    if (strcmp(right,".")!=0)
-      sprintf(result, rs::rs(1168),right,left);
+    if (wcscmp(right,L".")!=0)
+      swprintf(result, rs::rs(1168),right,left);
     else
-      sprintf(result, rs::rs(1169), left);
+      swprintf(result, rs::rs(1169), left);
     if (mesvar[MSG_SUB])
       tintin_puts2(result);
   }
@@ -65,22 +65,22 @@ void parse_sub(char *arg)
 /* the #unsubstitute command */
 /*****************************/
 
-void unsubstitute_command(char *arg)
+void unsubstitute_command(wchar_t *arg)
 {
-  char left[BUFFER_SIZE] ,result[BUFFER_SIZE];
+  wchar_t left[BUFFER_SIZE] ,result[BUFFER_SIZE];
   struct listnode *mysubs, *ln;
   struct listnode TempPointerHolder;
   int flag;
   flag=FALSE;
   mysubs=common_subs;
-  arg=get_arg_in_braces(arg,left,WITH_SPACES);
+  arg=get_arg_in_braces(arg,left,WITH_SPACES,sizeof(left)/sizeof(wchar_t)-1);
   TempPointerHolder.next = common_subs->next;
   while ((ln=search_node_with_wild(&TempPointerHolder, left))!=NULL) {
     if (mesvar[MSG_SUB]) {
-      if (*(ln->right)=='.' && !*(ln->right+1))
-        sprintf(result, rs::rs(1170), ln->left);
+      if ( !wcscmp(ln->right, L".") )
+        swprintf(result, rs::rs(1170), ln->left);
       else
-        sprintf(result, rs::rs(1171), ln->left);
+        swprintf(result, rs::rs(1171), ln->left);
       tintin_puts2(result);
     }
     TempPointerHolder.next=ln->next;
@@ -95,7 +95,7 @@ void unsubstitute_command(char *arg)
 }
 
 
-void do_one_sub(char *line)
+void do_one_sub(wchar_t *line)
 {
   struct listnode *ln;
   ln=common_subs;
@@ -103,38 +103,37 @@ void do_one_sub(char *line)
     while((ln=ln->next)) 
         if(check_one_action(line,ln->left)) {
             // check its gag 
-            if ( *ln->right == '.' && *(ln->right+1) == 0 ) {
-                line[0] = '.';
-                line[1] = 0;
+            if ( !wcscmp(ln->right, L".") ) {
+				wcscpy(line, L".");
                 return;
             }
             BOOL bAnchored = FALSE;
-            char pattern[BUFFER_SIZE],SubStr[BUFFER_SIZE],result[BUFFER_SIZE];
-            prepare_actionalias(ln->left , pattern, sizeof(pattern));
-            prepare_actionalias(ln->right , SubStr, sizeof(SubStr));
-            int pattern_len = strlen(pattern);
-			int sublen = strlen(SubStr);
+            wchar_t pattern[BUFFER_SIZE],SubStr[BUFFER_SIZE],result[BUFFER_SIZE];
+            prepare_actionalias(ln->left , pattern, sizeof(pattern)/sizeof(wchar_t));
+            prepare_actionalias(ln->right , SubStr, sizeof(SubStr)/sizeof(wchar_t));
+            int pattern_len = wcslen(pattern);
+			int sublen = wcslen(SubStr);
             if ( pattern_len == 0 ) 
                 continue;
 
             result[0] = 0;
-            char* line1 = line;
-            char* ptr, *res = result;
-			int rest = sizeof(result) - 1;
-            while ( (ptr = strstr(line1, pattern)) != NULL ) {
+            wchar_t* line1 = line;
+            wchar_t* ptr, *res = result;
+			int rest = sizeof(result)/sizeof(wchar_t) - 1;
+            while ( (ptr = wcsstr(line1, pattern)) != NULL ) {
 				int to_copy = ptr - line1;
 				if (to_copy > rest)
 					to_copy = rest;
-                strncpy(res, line1, to_copy );
-				res[to_copy] = '\0';
+                wcsncpy(res, line1, to_copy );
+				res[to_copy] = L'\0';
                 res += to_copy;
 				rest -= to_copy;
 
 				to_copy = sublen;
 				if (to_copy > rest)
 					to_copy = rest;
-                strncpy(res, SubStr, to_copy);
-				res[to_copy] = '\0';
+                wcsncpy(res, SubStr, to_copy);
+				res[to_copy] = L'\0';
                 res += to_copy;
 				rest -= to_copy;
 
@@ -142,9 +141,9 @@ void do_one_sub(char *line)
             
             }
             if ( *line1 ) {
-                strcat(result, line1);
+                wcscat(result, line1);
             }
-            strcpy(line, result);
+            wcscpy(line, result);
             if(!bMultiSub)
 			 return;
         
@@ -152,7 +151,7 @@ void do_one_sub(char *line)
 }
 
 //vls-begin// subst page
-void DLLEXPORT RemoveSubst(char* pattern)
+void DLLEXPORT RemoveSubst(const wchar_t* pattern)
 {
     struct listnode* ln;
     if((ln=searchnode_list(common_subs, pattern))!=NULL) {
@@ -161,7 +160,7 @@ void DLLEXPORT RemoveSubst(char* pattern)
     }
 }
 
-LPSTR DLLEXPORT SetSubst(char* text, char* pattern)
+LPWSTR DLLEXPORT SetSubst(const wchar_t* text, const wchar_t* pattern)
 {
     struct listnode *ln;
 
@@ -174,7 +173,7 @@ LPSTR DLLEXPORT SetSubst(char* text, char* pattern)
     }
 
     if( text  ) {
-        insertnode_list(common_subs, pattern, text, "0", ALPHA);
+        insertnode_list(common_subs, pattern, text, L"0", ALPHA);
         subnum++;
         ln = searchnode_list(common_subs, pattern);
         return ln->left;
@@ -183,17 +182,17 @@ LPSTR DLLEXPORT SetSubst(char* text, char* pattern)
     return NULL;
 }
 
-void DLLEXPORT SetSubstPattern(LPCSTR strOldPattern, LPCSTR strNewPattern)
+void DLLEXPORT SetSubstPattern(const wchar_t* strOldPattern, const wchar_t* strNewPattern)
 {
     struct listnode *ln;
-    char text[BUFFER_SIZE];
-    if (!strOldPattern || !strcmp(strOldPattern, strNewPattern)) return;
+    wchar_t text[BUFFER_SIZE];
+    if (!strOldPattern || !wcscmp(strOldPattern, strNewPattern)) return;
 
-    if((ln=searchnode_list(common_subs, (char *)strOldPattern))!=NULL) {
-        strcpy(text, ln->left);
+    if((ln=searchnode_list(common_subs, (wchar_t *)strOldPattern))!=NULL) {
+        wcscpy(text, ln->left);
         deletenode_list(common_subs, ln);
         subnum--;
-        SetSubst(text, (char*)strNewPattern);
+        SetSubst(text, (wchar_t*)strNewPattern);
     }
 }
 
@@ -203,7 +202,7 @@ void DLLEXPORT GetSubstList(int* size)
         *size = subnum-1;
 }
 
-LPSTR DLLEXPORT GetSubst(int pos)
+LPWSTR DLLEXPORT GetSubst(int pos)
 {
     listnode* ln = common_subs;
     pos++;
@@ -218,13 +217,13 @@ LPSTR DLLEXPORT GetSubst(int pos)
     return NULL;
 }
 
-LPSTR DLLEXPORT GetSubstText(char* pattern)
+LPWSTR DLLEXPORT GetSubstText(const wchar_t* pattern)
 {
     if (!pattern)
         return NULL;
 
-    char p[BUFFER_SIZE];
-    strcpy(p, pattern);
+    wchar_t p[BUFFER_SIZE];
+    wcscpy(p, pattern);
     listnode* ln = searchnode_list(common_subs, p);
     if (ln)
         return ln->right;

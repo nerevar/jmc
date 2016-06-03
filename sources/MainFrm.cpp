@@ -17,7 +17,6 @@
 #include "ScriptPage.h"
 #include "JmcObjectsDlg.h"
 
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -65,7 +64,7 @@ CJMCStatus::CJMCStatus()
 }
 
 //vls-begin// multiple output
-static void __stdcall GetOutputName(int wnd, char *name, int maxlen)
+static void __stdcall GetOutputName(int wnd, wchar_t *name, int maxlen)
 {
     if (wnd >= 0 && wnd < MAX_OUTPUT && name)
     {
@@ -73,9 +72,9 @@ static void __stdcall GetOutputName(int wnd, char *name, int maxlen)
         CString cs;
         CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
         cs = pMainFrm->m_coolBar[wnd].m_sTitle;
-        len = min(maxlen-1, cs.GetLength());
-        strncpy(name, cs, len);
-        name[len] = '\0';
+        len = min(maxlen, cs.GetLength()) - 1;
+        wcsncpy(name, cs, len);
+        name[len] = L'\0';
     }
 }
 //vls-end//
@@ -105,7 +104,7 @@ static void __stdcall SetWindowSizeFunc(int wnd, int width, int height)
 	pMainFrm->PostMessage(WM_USER+506, MAKELPARAM(width, height));
 }
 
-static void DrawColoredText(LPDRAWITEMSTRUCT lpDrawItemStruct, LPCSTR strText)
+static void DrawColoredText(LPDRAWITEMSTRUCT lpDrawItemStruct, const wchar_t* strText)
 {
     CSmcDoc* pDoc = (CSmcDoc*) (((CMainFrame*)AfxGetMainWnd())->GetActiveDocument());
     if ( !pDoc) 
@@ -116,17 +115,17 @@ static void DrawColoredText(LPDRAWITEMSTRUCT lpDrawItemStruct, LPCSTR strText)
 
     
     // parse ANSI colors here 
-    char* ptr = (char*)strText;
-    if ( *ptr == 0x1B ) {
+    wchar_t* ptr = (wchar_t*)strText;
+    if ( *ptr == L'\x1B' ) {
         ptr += 2; // skip [ symbol
-        while ( *ptr && *ptr != 'm' ) { 
-            char col[32];
-            char* dest = col;
-            while ( isdigit(*ptr) ) 
+        while ( *ptr && *ptr != L'm' ) { 
+            wchar_t col[32];
+            wchar_t* dest = col;
+            while ( iswdigit(*ptr) ) 
                 *dest++ = *ptr++;
             // now set up color 
             *dest = 0;
-            int value = atoi(col);
+            int value = _wtoi(col);
             if ( !value ) {
                 Bg = 0;
                 Fg = 7;
@@ -140,7 +139,7 @@ static void DrawColoredText(LPDRAWITEMSTRUCT lpDrawItemStruct, LPCSTR strText)
             if ( value <= 47 && value >= 40) {
                 Bg = value-40;
             }
-            if ( *ptr == ';' ) 
+            if ( *ptr == L';' ) 
                 ptr++;
         }
         if ( *ptr ) 
@@ -155,7 +154,7 @@ static void DrawColoredText(LPDRAWITEMSTRUCT lpDrawItemStruct, LPCSTR strText)
 
     ExtTextOut(lpDrawItemStruct->hDC , 
         lpDrawItemStruct->rcItem.left , lpDrawItemStruct->rcItem.top, 
-        ETO_OPAQUE, &lpDrawItemStruct->rcItem, ptr, strlen(ptr), NULL);
+        ETO_OPAQUE, &lpDrawItemStruct->rcItem, ptr, wcslen(ptr), NULL);
 }
 
 void CJMCStatus::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
@@ -334,27 +333,27 @@ CMainFrame::CMainFrame()
 {
     m_wndSplitter.m_bInited = FALSE;
 	
-    m_wndSplitter.m_nUpSize = ::GetPrivateProfileInt("Main" , "UpSize" , 300, szGLOBAL_PROFILE);
-    m_wndSplitter.m_nDownSize = ::GetPrivateProfileInt("Main" , "DownSize" , 100, szGLOBAL_PROFILE);
-	nScrollSize = ::GetPrivateProfileInt("Options" , "Scroll" , 300, szGLOBAL_PROFILE);
-    bDisplayCommands  = ::GetPrivateProfileInt("Options" , "DisplayCommands" , 0, szGLOBAL_PROFILE);
-    bDisplayInput  = ::GetPrivateProfileInt("Options" , "DisplayInput" , 1, szGLOBAL_PROFILE);
-	bInputOnNewLine  = ::GetPrivateProfileInt("Options" , "InputOnNewLine" , 0, szGLOBAL_PROFILE);
-	bDisplayPing  = ::GetPrivateProfileInt("Options" , "DisplayPing" , 1, szGLOBAL_PROFILE);
-    bMinimizeToTray  = ::GetPrivateProfileInt("Options" , "MinimizeToTray" , 0, szGLOBAL_PROFILE);
-    MoreComingDelay  = ::GetPrivateProfileInt("Options" , "MoreComingDelay" , 100, szGLOBAL_PROFILE);
+    m_wndSplitter.m_nUpSize = ::GetPrivateProfileInt(L"Main" , L"UpSize" , 300, szGLOBAL_PROFILE);
+    m_wndSplitter.m_nDownSize = ::GetPrivateProfileInt(L"Main" , L"DownSize" , 100, szGLOBAL_PROFILE);
+	nScrollSize = ::GetPrivateProfileInt(L"Options" , L"Scroll" , 300, szGLOBAL_PROFILE);
+    bDisplayCommands  = ::GetPrivateProfileInt(L"Options" , L"DisplayCommands" , 0, szGLOBAL_PROFILE);
+    bDisplayInput  = ::GetPrivateProfileInt(L"Options" , L"DisplayInput" , 1, szGLOBAL_PROFILE);
+	bInputOnNewLine  = ::GetPrivateProfileInt(L"Options" , L"InputOnNewLine" , 0, szGLOBAL_PROFILE);
+	bDisplayPing  = ::GetPrivateProfileInt(L"Options" , L"DisplayPing" , 1, szGLOBAL_PROFILE);
+    bMinimizeToTray  = ::GetPrivateProfileInt(L"Options" , L"MinimizeToTray" , 0, szGLOBAL_PROFILE);
+    MoreComingDelay  = ::GetPrivateProfileInt(L"Options" , L"MoreComingDelay" , 100, szGLOBAL_PROFILE);
 }
 
 CMainFrame::~CMainFrame()
 {
-    ::WritePrivateProfileInt("Main" , "UpSize" , m_wndSplitter.m_nUpSize, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Main" , "DownSize" , m_wndSplitter.m_nDownSize, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "DisplayCommands" , bDisplayCommands, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "DisplayInput" , bDisplayInput , szGLOBAL_PROFILE);
-	::WritePrivateProfileInt("Options" , "InputOnNewLine" , bInputOnNewLine , szGLOBAL_PROFILE);
-	::WritePrivateProfileInt("Options" , "DisplayPing" , bDisplayPing , szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "MinimizeToTray" , bMinimizeToTray, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "MoreComingDelay" , MoreComingDelay , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Main" , L"UpSize" , m_wndSplitter.m_nUpSize, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Main" , L"DownSize" , m_wndSplitter.m_nDownSize, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"DisplayCommands" , bDisplayCommands, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"DisplayInput" , bDisplayInput , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"InputOnNewLine" , bInputOnNewLine , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"DisplayPing" , bDisplayPing , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"MinimizeToTray" , bMinimizeToTray, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"MoreComingDelay" , MoreComingDelay , szGLOBAL_PROFILE);
 }
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -461,7 +460,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     for (int i = 0; i < MAX_OUTPUT; i++) {
         CString str;
         str.Format(t, i);
-        LPCSTR strTitle = str;
+        LPWSTR strTitle = (LPWSTR)(const wchar_t*)str;
 
         m_coolBar[i].m_wndCode = i;
         m_coolBar[i].m_wndAnsi.m_wndCode = i;
@@ -483,7 +482,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		}
 
     }
-    LoadBarState("JMC");
+    LoadBarState(L"JMC");
     InitOutputNameFunc(GetOutputName);
 	InitWindowSizeFunc(GetWindowSizeFunc, SetWindowSizeFunc);
 	
@@ -493,19 +492,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
     // Load history here 
     CFile histFile;
-    if ( histFile.Open("history.dat", CFile::modeRead ) ) {
+    if ( histFile.Open(L"history.dat", CFile::modeRead ) ) {
         CArchive ar(&histFile, CArchive::load );
         m_editBar.GetHistory().Serialize (ar);
         m_editBar.m_nCurrItem = m_editBar.GetHistory().GetCount();
     }
 
-	char trayTitle[BUFFER_SIZE] = "";
+	wchar_t trayTitle[BUFFER_SIZE] = L"";
 	
 	CSmcDoc* pDoc = (CSmcDoc*)GetActiveDocument();
 	if ( pDoc ) {
 		CString text;
 		text.Format(IDS_JABA_TITLE, pDoc->m_strProfileName);
-		strcpy(trayTitle, text);
+		wcscpy(trayTitle, text);
 	}
 
 	sysTray = CTray(IDR_MAINFRAME, trayTitle);
@@ -587,6 +586,8 @@ void CMainFrame::OnOptionsOptions()
 	else 
 		pg1.m_nUserInputHide = 2;
 
+	pg1.m_nMudCodePage = MudCodePage;
+
 
     // Fill subst params
     pg2.m_bAllowSubst = bSubstitution;
@@ -624,6 +625,8 @@ void CMainFrame::OnOptionsOptions()
     pg4.m_bAppendLogTitle = bAppendLogTitle;
 	pg4.m_bHTMLTimestamps = bHTML ? bHTMLTimestamps : FALSE;
 	pg4.m_nLogAs = bLogAsUserSeen ? 1 : 0;
+
+	pg4.m_nLogCodePage = LogCodePage;
 	
     memcpy(&pg5.m_guidLang ,  &theApp.m_guidScriptLang, sizeof(GUID));
     pg5.m_bAllowDebug = bAllowDebug;
@@ -672,7 +675,9 @@ void CMainFrame::OnOptionsOptions()
 		pDoc->m_bRemoveESCSelection = pg1.m_bRemoveESC;
 		pDoc->m_bShowHiddenText = pg1.m_bShowHidden;
 
-         MoreComingDelay =pg1.m_nTrigDelay;
+        MoreComingDelay = pg1.m_nTrigDelay;
+
+		MudCodePage = pg1.m_nMudCodePage;
 
         bSubstitution = pg2.m_bAllowSubst ;
         EnterCriticalSection(&secSubstSection);
@@ -686,8 +691,8 @@ void CMainFrame::OnOptionsOptions()
         pDoc->m_strSaveCommand = pg3.m_strCommand;
 		pDoc->m_strDefSaveFile = pg3.m_strSaveName;
 		pDoc->m_strDefSetFile = pg3.m_strStartFileName;
-		strcpy(langfile, pg3.m_strLangFile);
-		strcpy(langsect, pg3.m_strLangSect);
+		wcscpy(langfile, pg3.m_strLangFile);
+		wcscpy(langsect, pg3.m_strLangSect);
 
         // Log settings save
 		bANSILog = pg4.m_LogType == 2;
@@ -697,6 +702,7 @@ void CMainFrame::OnOptionsOptions()
         bDefaultLogMode = pg4.m_nAppendMode ;
 		bLogAsUserSeen = pg4.m_nLogAs;
         bAppendLogTitle = pg4.m_bAppendLogTitle;
+		LogCodePage = pg4.m_nLogCodePage;
 
         if ( memcmp(&theApp.m_guidScriptLang, &pg5.m_guidLang , sizeof(GUID) ) ) {
             memcpy(&theApp.m_guidScriptLang, &pg5.m_guidLang , sizeof(GUID) ) ;
@@ -719,7 +725,7 @@ void CMainFrame::OnUpdateFrameTitle(BOOL)
 
 void CMainFrame::OnUpdateLogged(CCmdUI* pUI)
 {
-    char buff[32];
+    wchar_t buff[32];
     int Data;
     int val  = m_wndStatusBar.GetStatusBarCtrl ().GetText(buff, NUM_INDICATOR_LOGGED, &Data);
 
@@ -727,12 +733,12 @@ void CMainFrame::OnUpdateLogged(CCmdUI* pUI)
     if (  (bLog && val ) || (!bLog && !val)  ) 
         return ;
 
-    m_wndStatusBar.GetStatusBarCtrl ().SetText((char*)bLog, NUM_INDICATOR_LOGGED, SBT_OWNERDRAW );
+    m_wndStatusBar.GetStatusBarCtrl ().SetText((wchar_t*)bLog, NUM_INDICATOR_LOGGED, SBT_OWNERDRAW );
 }
 
 void CMainFrame::OnUpdateConnected(CCmdUI* pUI)
 {
-    char buff[32];
+    wchar_t buff[32];
     int Data;
     int val  = m_wndStatusBar.GetStatusBarCtrl ().GetText(buff, NUM_INDICATOR_CONNECTED, &Data);
 
@@ -740,12 +746,12 @@ void CMainFrame::OnUpdateConnected(CCmdUI* pUI)
     if (  (bLog && val ) || (!bLog && !val)  ) 
         return ;
 
-    m_wndStatusBar.GetStatusBarCtrl ().SetText((char*)bLog, NUM_INDICATOR_CONNECTED, SBT_OWNERDRAW );
+    m_wndStatusBar.GetStatusBarCtrl ().SetText((wchar_t*)bLog, NUM_INDICATOR_CONNECTED, SBT_OWNERDRAW );
 }
 
 void CMainFrame::OnUpdatePath(CCmdUI* pUI)
 {
-    char buff[32];
+    wchar_t buff[32];
     int Data;
     int val  = m_wndStatusBar.GetStatusBarCtrl ().GetText(buff, NUM_PATH_WRITING, &Data);
 
@@ -753,7 +759,7 @@ void CMainFrame::OnUpdatePath(CCmdUI* pUI)
     if (  (bLog && val ) || (!bLog && !val)  ) 
         return ;
 
-    m_wndStatusBar.GetStatusBarCtrl ().SetText((char*)bLog, NUM_PATH_WRITING, SBT_OWNERDRAW );
+    m_wndStatusBar.GetStatusBarCtrl ().SetText((wchar_t*)bLog, NUM_PATH_WRITING, SBT_OWNERDRAW );
 }
 
 void CMainFrame::OnUpdateTicker(CCmdUI* pUI)
@@ -763,11 +769,11 @@ void CMainFrame::OnUpdateTicker(CCmdUI* pUI)
 
     if ( bStatus ) {
         CString str;
-        str.Format("%d", toTick);
+        str.Format(L"%d", toTick);
         pUI->SetText(str);
     }
     else
-        pUI->SetText("OFF");
+        pUI->SetText(L"OFF");
 }
 
 void CMainFrame::OnUpdateInfo1(CCmdUI* pUI)
@@ -871,19 +877,19 @@ void CMainFrame::OnDestroy()
 	GetWindowPlacement(&wp);
 	if ( wp.showCmd == SW_SHOWMINIMIZED ) 
 		wp.showCmd = SW_SHOW;
-    ::WritePrivateProfileBinary("View" , "WindowPlacement" ,(LPBYTE)&wp, sizeof(wp), szGLOBAL_PROFILE);
+    ::WritePrivateProfileBinary(L"View" , L"WindowPlacement" ,(LPBYTE)&wp, sizeof(wp), szGLOBAL_PROFILE);
 
 	CWinApp* pApp = AfxGetApp();
-    const char* pProfSave= pApp->m_pszProfileName;
+    const wchar_t* pProfSave= pApp->m_pszProfileName;
 	pApp->m_pszProfileName = szGLOBAL_PROFILE;
-	SaveBarState("View");
+	SaveBarState(L"View");
 	pApp->m_pszProfileName = pProfSave;
 	
     if ( m_wndSplitter.GetRowCount() > 1 ) {
         m_wndSplitter.SavePosition();
     }
 
-    SaveBarState("JMC");
+    SaveBarState(L"JMC");
 //vls-begin// multiple output
 //    m_coolBar.Save();
     for (int i = 0; i < MAX_OUTPUT; i++)
@@ -895,7 +901,7 @@ void CMainFrame::OnDestroy()
 //vls-begin// base dir
 //    if ( histFile.Open("history.dat", CFile::modeCreate | CFile::modeWrite ) ) {
     CString strFile(szBASE_DIR);
-    strFile += "\\history.dat";
+    strFile += L"\\history.dat";
     if ( histFile.Open(strFile, CFile::modeCreate | CFile::modeWrite ) ) {
 //vls-end//
         CArchive ar(&histFile, CArchive::store);
@@ -910,13 +916,13 @@ void CMainFrame::RestorePosition()
 {
 	// Loading state of control bars
 	CWinApp* pApp = AfxGetApp();
-    const char* pProfSave= pApp->m_pszProfileName;
+    const wchar_t* pProfSave= pApp->m_pszProfileName;
 	pApp->m_pszProfileName = szGLOBAL_PROFILE;
-	LoadBarState("View");
+	LoadBarState(L"View");
 	pApp->m_pszProfileName = pProfSave;
     UINT  nSize;
     LPBYTE pData;
-    if ( ::GetPrivateProfileBinary ("View", "WindowPlacement", &pData, &nSize, szGLOBAL_PROFILE) ) {
+    if ( ::GetPrivateProfileBinary (L"View", L"WindowPlacement", &pData, &nSize, szGLOBAL_PROFILE) ) {
 		WINDOWPLACEMENT wp;
 		memcpy(&wp, pData , nSize);
 		delete pData;
@@ -994,7 +1000,7 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg)
             {
                 if ( m_wndSplitter.GetRowCount() == 1 ) {
                     CEdit* pEdit = (CEdit*)m_editBar.GetDlgItem(IDC_EDIT);
-                    pEdit->SetWindowText("");
+                    pEdit->SetWindowText(L"");
                 }
                 else 
                     OnUnsplit();
@@ -1155,7 +1161,7 @@ int COutputBar::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	
 	CRect rect;
     GetClientRect(&rect);
-    VERIFY(m_wndAnsi.Create(NULL, "", WS_CHILD | WS_VISIBLE, rect, this, 97));
+    VERIFY(m_wndAnsi.Create(NULL, L"", WS_CHILD | WS_VISIBLE, rect, this, 97));
 	
 	return 0;
 }
@@ -1267,13 +1273,13 @@ void CMainFrame::OnEditJmcobjects()
 LONG CMainFrame::OnTabAdded( UINT wParam, LONG lParam)
 {
     HGLOBAL hg = (HGLOBAL)lParam;
-    char* p = (char*)GlobalLock(hg);
+    wchar_t* p = (wchar_t*)GlobalLock(hg);
     CSmcDoc* pDoc = (CSmcDoc*) (((CMainFrame*)AfxGetMainWnd())->GetActiveDocument());
 
     POSITION pos = pDoc->m_lstTabWords.GetHeadPosition ();
     while (pos ) {
         CString str = pDoc->m_lstTabWords.GetAt(pos);
-        if ( !_strcmpi(p, str) ){
+        if ( !wcsicmp(p, str) ){
             pDoc->m_lstTabWords.RemoveAt (pos);
             break;
         }
@@ -1290,13 +1296,13 @@ LONG CMainFrame::OnTabAdded( UINT wParam, LONG lParam)
 LONG CMainFrame::OnTabDeleted( UINT wParam, LONG lParam)
 {
     HGLOBAL hg = (HGLOBAL)lParam;
-    char* p = (char*)GlobalLock(hg);
+    wchar_t* p = (wchar_t*)GlobalLock(hg);
     CSmcDoc* pDoc = (CSmcDoc*) (((CMainFrame*)AfxGetMainWnd())->GetActiveDocument());
 
     POSITION pos = pDoc->m_lstTabWords.GetHeadPosition ();
     while (pos ) {
         CString str = pDoc->m_lstTabWords.GetAt(pos);
-        if ( !_strcmpi(p, str) ){
+        if ( !wcsicmp(p, str) ){
             pDoc->m_lstTabWords.RemoveAt (pos);
             break;
         }
@@ -1380,10 +1386,6 @@ LONG CMainFrame::OnCleanInput(UINT wParam, LONG lParam)
 
 LONG CMainFrame::OnUpdStat1(UINT wParam, LONG lParam)
 {
-	/*char bf[BUFFER_SIZE];strcpy(bf,strInfo1);
-	strcpy(strInfo1,"?");CMainFrame::OnUpdateInfo1(NULL);
-	strcpy(strInfo1,bf); 
-	*/
 	CMainFrame::OnUpdateInfo1(NULL);
 
 	return 1;
@@ -1391,36 +1393,24 @@ LONG CMainFrame::OnUpdStat1(UINT wParam, LONG lParam)
 
 LONG CMainFrame::OnUpdStat2(UINT wParam, LONG lParam)
 {
-	/*char bf[BUFFER_SIZE];strcpy(bf,strInfo2);
-	strcpy(strInfo2,"?");CMainFrame::OnUpdateInfo2(NULL);
-	strcpy(strInfo2,bf);*/ 
 	CMainFrame::OnUpdateInfo2(NULL);
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat3(UINT wParam, LONG lParam)
 {
-	/*char bf[BUFFER_SIZE];strcpy(bf,strInfo3);
-	strcpy(strInfo3,"?");CMainFrame::OnUpdateInfo3(NULL);
-	strcpy(strInfo3,bf); */
 	CMainFrame::OnUpdateInfo3(NULL);
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat4(UINT wParam, LONG lParam)
 {
-	/*char bf[BUFFER_SIZE];strcpy(bf,strInfo4);
-	strcpy(strInfo4,"?");CMainFrame::OnUpdateInfo4(NULL);
-	strcpy(strInfo4,bf); */
 	CMainFrame::OnUpdateInfo4(NULL);
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat5(UINT wParam, LONG lParam)
 {
-	/*char bf[BUFFER_SIZE];strcpy(bf,strInfo5);
-	strcpy(strInfo5,"?");CMainFrame::OnUpdateInfo5(NULL);
-	strcpy(strInfo5,bf); */
 	CMainFrame::OnUpdateInfo5(NULL);
 	return 1;
 }
@@ -1429,51 +1419,51 @@ LONG CMainFrame::OnUpdPing(UINT wParam, LONG lParam)
 {
 	int mud_ping = (int)wParam;
 	int proxy_ping = (int)lParam;
-	static char mud_buf[64], proxy_buf[64], msg_buf[128];
+	static wchar_t mud_buf[64], proxy_buf[64], msg_buf[128];
 
 	switch(mud_ping) {
 	case -4:
-		sprintf(mud_buf, "");
+		swprintf(mud_buf, L"");
 		break;
 	case -3:
-		sprintf(mud_buf, "ping error");
+		swprintf(mud_buf, L"ping error");
 		break;
 	case -2:
-		sprintf(mud_buf, "no connection");
+		swprintf(mud_buf, L"no connection");
 		break;
 	case -1:
-		sprintf(mud_buf, "PING TIMEOUT");
+		swprintf(mud_buf, L"PING TIMEOUT");
 		break;
 	case 0:
-		sprintf(mud_buf, "ping <1 ms");
+		swprintf(mud_buf, L"ping <1 ms");
 		break;
 	default:
-		sprintf(mud_buf, "ping %d ms", mud_ping);
+		swprintf(mud_buf, L"ping %d ms", mud_ping);
 		break;
 	}
 
 	switch(proxy_ping) {
 	case -4:
-		sprintf(proxy_buf, "");
+		swprintf(proxy_buf, L"");
 		break;
 	case -3:
-		sprintf(proxy_buf, " (proxy: error)");
+		swprintf(proxy_buf, L" (proxy: error)");
 		break;
 	case -2:
-		sprintf(proxy_buf, "");
+		swprintf(proxy_buf, L"");
 		break;
 	case -1:
-		sprintf(proxy_buf, " (proxy: TIMEOUT)");
+		swprintf(proxy_buf, L" (proxy: TIMEOUT)");
 		break;
 	case 0:
-		sprintf(proxy_buf, " (proxy: <1 ms)");
+		swprintf(proxy_buf, L" (proxy: <1 ms)");
 		break;
 	default:
-		sprintf(proxy_buf, " (proxy: %d ms)", proxy_ping);
+		swprintf(proxy_buf, L" (proxy: %d ms)", proxy_ping);
 		break;
 	}
 
-	sprintf(msg_buf, "%s%s", mud_buf, proxy_buf);
+	swprintf(msg_buf, L"%ls%ls", mud_buf, proxy_buf);
 
 	m_wndStatusBar.SetPaneText(0, msg_buf);
 	

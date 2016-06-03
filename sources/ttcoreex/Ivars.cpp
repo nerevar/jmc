@@ -9,17 +9,17 @@ extern struct listnode *searchnode_list();
 int do_one_inside(int begin, int end);
 
 
-void math_command(char *line)
+void math_command(wchar_t *line)
 {
-  char left[BUFFER_SIZE], right[BUFFER_SIZE], 
+  wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE], 
        temp[BUFFER_SIZE], result[BUFFER_SIZE];
   int i; 
-  line=get_arg_in_braces(line, left,  STOP_SPACES);
-  line=get_arg_in_braces(line, right, WITH_SPACES);
-  substitute_vars(right, result, sizeof(result));
-  substitute_myvars(result, right, sizeof(right));
+  line=get_arg_in_braces(line,left,STOP_SPACES,sizeof(left)/sizeof(wchar_t)-1);
+  line=get_arg_in_braces(line,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
+  substitute_vars(right, result, sizeof(result)/sizeof(wchar_t));
+  substitute_myvars(result, right, sizeof(right)/sizeof(wchar_t));
   i=eval_expression(right);
-  sprintf(temp,"%d",i);
+  swprintf(temp,L"%d",i);
   
 
   
@@ -35,33 +35,33 @@ void math_command(char *line)
     }
 }
 
-void if_command(char *line)
+void if_command(wchar_t *line)
 {
-  char if_expr[BUFFER_SIZE], 
+  wchar_t if_expr[BUFFER_SIZE], 
 	   if_then[BUFFER_SIZE], 
        if_else[BUFFER_SIZE], 
        temp[BUFFER_SIZE];
 
-  line=get_arg_in_braces(line, if_expr, STOP_SPACES);
-      substitute_vars(if_expr,temp, sizeof(temp));substitute_myvars(temp,if_expr, sizeof(if_expr));
-  line=get_arg_in_braces(line, if_then, WITH_SPACES);
-      substitute_vars(if_then,temp, sizeof(temp));substitute_myvars(temp,if_then, sizeof(if_then));
-  line=get_arg_in_braces(line, if_else, WITH_SPACES);
-      substitute_vars(if_else,temp, sizeof(temp));substitute_myvars(temp,if_else, sizeof(if_else));
+  line=get_arg_in_braces(line,if_expr,STOP_SPACES,sizeof(if_expr)/sizeof(wchar_t)-1);
+      substitute_vars(if_expr,temp, sizeof(temp)/sizeof(wchar_t));substitute_myvars(temp,if_expr, sizeof(if_expr)/sizeof(wchar_t));
+  line=get_arg_in_braces(line,if_then,WITH_SPACES,sizeof(if_then)/sizeof(wchar_t)-1);
+      substitute_vars(if_then,temp, sizeof(temp)/sizeof(wchar_t));substitute_myvars(temp,if_then, sizeof(if_then)/sizeof(wchar_t));
+  line=get_arg_in_braces(line,if_else,WITH_SPACES,sizeof(if_else)/sizeof(wchar_t)-1);
+      substitute_vars(if_else,temp, sizeof(temp)/sizeof(wchar_t));substitute_myvars(temp,if_else, sizeof(if_else)/sizeof(wchar_t));
 
 
-	char *to_parse = eval_expression(if_expr) ? if_then : if_else;
-	if( *to_parse && strlen(to_parse) ) {
+	wchar_t *to_parse = eval_expression(if_expr) ? if_then : if_else;
+	if( to_parse && wcslen(to_parse) ) {
 		parse_input(to_parse); 
 	}
 }
 
 
-int eval_expression(char *arg)
+int eval_expression(wchar_t *arg)
 {
   /* int i, begin, end, flag, prev, ptr; */
   int i, begin, end, flag, prev;
-  char temp[BUFFER_SIZE];
+  wchar_t temp[BUFFER_SIZE];
   i=conv_to_ints(arg);
   if (i) {
     while(1) {
@@ -93,7 +93,7 @@ int eval_expression(char *arg)
       }
       i=do_one_inside(begin,end);
       if (!i) {
-        sprintf(temp, rs::rs(1085), arg);
+        swprintf(temp, rs::rs(1085), arg);
         tintin_puts2(temp);
         return 0;
       }
@@ -101,38 +101,38 @@ int eval_expression(char *arg)
   }
   else return 0;  
 }
-int conv_to_ints(char *arg)
+int conv_to_ints(wchar_t *arg)
 {
   int i, flag;
-  char *ptr, *tptr;
+  wchar_t *ptr, *tptr;
   i=0;
   ptr=arg;
   while (*ptr) {
-    if (*ptr==' ') ;
-    else if (*ptr=='(') {
+    if (*ptr==L' ') ;
+    else if (*ptr==L'(') {
       stacks[i][1]=0;
     }
-    else if(*ptr==')') {
+    else if(*ptr==L')') {
       stacks[i][1]=1;
     }
-    else if(*ptr=='!') {
-      if (*(ptr+1)=='=') { 
+    else if(*ptr==L'!') {
+      if (*(ptr+1)==L'=') { 
         stacks[i][1]=12;
         ptr++;
       }
       else
         stacks[i][1]=2;
     }
-    else if(*ptr=='*') {
+    else if(*ptr==L'*') {
       stacks[i][1]=3;
     }
-    else if(*ptr=='/') {
+    else if(*ptr==L'/') {
       stacks[i][1]=4;
     }
-    else if(*ptr=='+') {
+    else if(*ptr==L'+') {
       stacks[i][1]=5;
     }
-    else if(*ptr=='-') {
+    else if(*ptr==L'-') {
       flag= -1;
       if (i>0)
         flag=stacks[i-1][1];
@@ -141,57 +141,57 @@ int conv_to_ints(char *arg)
       else {
         tptr=ptr;
         ptr++;
-        while(isdigit(*ptr))
+        while(iswdigit(*ptr))
           ptr++;
-        sscanf(tptr,"%d",&stacks[i][2]);
+        swscanf(tptr,L"%d",&stacks[i][2]);
         stacks[i][1]=15;
         ptr--;
       }
     }
-    else if(*ptr=='>') {
-      if (*(ptr+1)=='=') {
+    else if(*ptr==L'>') {
+      if (*(ptr+1)==L'=') {
         stacks[i][1]=8;
         ptr++;
       }
       else
         stacks[i][1]=7;
     }
-    else if(*ptr=='<') {
-      if (*(ptr+1)=='=') {
+    else if(*ptr==L'<') {
+      if (*(ptr+1)==L'=') {
         ptr++;
         stacks[i][1]=10;
       }
       else
         stacks[i][1]=9;
     }
-    else if(*ptr=='=') {
+    else if(*ptr==L'=') {
       stacks[i][1]=11;
-      if (*(ptr+1)=='=')
+      if (*(ptr+1)==L'=')
         ptr++;
     }
-    else if(*ptr=='&') {
+    else if(*ptr==L'&') {
       stacks[i][1]=13;
-      if (*(ptr+1)=='&')
+      if (*(ptr+1)==L'&')
         ptr++;
     }
-    else if(*ptr=='|') {
+    else if(*ptr==L'|') {
       stacks[i][1]=14;
-      if (*(ptr+1)=='|')
+      if (*(ptr+1)==L'|')
         ptr++;
     }
-    else if (isdigit(*ptr)) {
+    else if (iswdigit(*ptr)) {
       stacks[i][1]=15;
       tptr=ptr;
-      while (isdigit(*ptr))
+      while (iswdigit(*ptr))
         ptr++;
-      sscanf(tptr,"%d",&stacks[i][2]);
+      swscanf(tptr,L"%d",&stacks[i][2]);
       ptr--;
     }
-    else if (*ptr=='T') {
+    else if (*ptr==L'T') {
       stacks[i][1]=15;
       stacks[i][2]=1;
     }
-    else if(*ptr=='F') {
+    else if(*ptr==L'F') {
       stacks[i][1]=15;
       stacks[i][2]=0;
     }
@@ -199,7 +199,7 @@ int conv_to_ints(char *arg)
       tintin_puts2(rs::rs(1086));
       return 0;
     }
-    if (*ptr!=' ') {
+    if (*ptr!=L' ') {
       stacks[i][0]=i+1;
       i++;
     }
@@ -317,32 +317,32 @@ int do_one_inside(int begin, int end)
   }
 }
 
-void strcmp_command(char *arg) 
+void strcmp_command(wchar_t *arg) 
 {
-	char arg1[BUFFER_SIZE], 
+	wchar_t arg1[BUFFER_SIZE], 
 		 arg2[BUFFER_SIZE], 
 		 if_then[BUFFER_SIZE], 
 		 if_else[BUFFER_SIZE],
 		 temp[BUFFER_SIZE];
 
-	arg = get_arg_in_braces(arg, arg1, STOP_SPACES);
-	substitute_vars(arg1,temp, sizeof(temp));
-	substitute_myvars(temp,arg1, sizeof(arg1));
+	arg = get_arg_in_braces(arg,arg1,STOP_SPACES,sizeof(arg1)/sizeof(wchar_t)-1);
+	substitute_vars(arg1,temp, sizeof(temp)/sizeof(wchar_t));
+	substitute_myvars(temp,arg1, sizeof(arg1)/sizeof(wchar_t));
 
-	arg = get_arg_in_braces(arg, arg2, STOP_SPACES);
-	substitute_vars(arg2,temp, sizeof(temp));
-	substitute_myvars(temp,arg2, sizeof(arg2));
+	arg = get_arg_in_braces(arg,arg2,STOP_SPACES,sizeof(arg2)/sizeof(wchar_t)-1);
+	substitute_vars(arg2,temp, sizeof(temp)/sizeof(wchar_t));
+	substitute_myvars(temp,arg2, sizeof(arg2)/sizeof(wchar_t));
  
-	arg = get_arg_in_braces(arg, if_then, WITH_SPACES);
-    substitute_vars(if_then,temp, sizeof(temp));
-	substitute_myvars(temp,if_then, sizeof(if_then));
+	arg = get_arg_in_braces(arg,if_then,WITH_SPACES,sizeof(if_then)/sizeof(wchar_t)-1);
+    substitute_vars(if_then,temp, sizeof(temp)/sizeof(wchar_t));
+	substitute_myvars(temp,if_then, sizeof(if_then)/sizeof(wchar_t));
 
-	arg = get_arg_in_braces(arg, if_else, WITH_SPACES);
-    substitute_vars(if_else,temp, sizeof(temp));
-	substitute_myvars(temp,if_else, sizeof(if_else));
+	arg = get_arg_in_braces(arg,if_else,WITH_SPACES,sizeof(if_else)/sizeof(wchar_t)-1);
+    substitute_vars(if_else,temp, sizeof(temp)/sizeof(wchar_t));
+	substitute_myvars(temp,if_else, sizeof(if_else)/sizeof(wchar_t));
 
-	char *to_parse = !strcmp(arg1, arg2) ? if_then : if_else;
-	if( *to_parse && strlen(to_parse) ) {
+	wchar_t *to_parse = !wcscmp(arg1, arg2) ? if_then : if_else;
+	if( to_parse && wcslen(to_parse) ) {
 		parse_input(to_parse); 
 	}
 }

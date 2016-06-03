@@ -78,7 +78,7 @@ void CCoolDialogBar::OnUpdateCmdUI(class CFrameWnd *pTarget, int bDisableIfNoHnd
     UpdateDialogControls(pTarget, bDisableIfNoHndler);
 }
 
-BOOL CCoolDialogBar::Create(CWnd* pParentWnd, LPCSTR &pTitle, CSize& InitialSize, UINT nID, DWORD dwStyle )
+BOOL CCoolDialogBar::Create(CWnd* pParentWnd, LPWSTR &pTitle, CSize& InitialSize, UINT nID, DWORD dwStyle )
 {
     ASSERT_VALID(pParentWnd);   // must have a parent
     ASSERT (!((dwStyle & CBRS_SIZE_FIXED) && (dwStyle & CBRS_SIZE_DYNAMIC)));
@@ -175,16 +175,16 @@ CSize CCoolDialogBar::CalcFixedLayout(BOOL bStretch, BOOL bHorz)
 			GetWindowRect(myrc);
 			row[own + 1]->GetWindowRect(rc);
 			if (bHorz)
-				width = rc.left - myrc.left - 1;
+				width = rc.left - myrc.left + 2;
 			else
-				width = rc.top - myrc.top - 1;
+				width = rc.top - myrc.top + 1;
 		} else {
 			CRect myrc;
 			GetWindowRect(myrc);
 			if (bHorz)
 				width = dockrc.right - myrc.left - 1;
 			else
-				width = dockrc.bottom - myrc.top - 1;
+				width = dockrc.bottom - myrc.top + 1;
 		}
 	}
 		
@@ -517,10 +517,6 @@ LRESULT CCoolDialogBar::OnNcHitTest(CPoint point)
 
 void CCoolDialogBar::OnLButtonDown(UINT nFlags, CPoint point) 
 {
-    // only start dragging if clicked in "void" space
-//	char bf[BUFFER_SIZE];
-//	sprintf(bf,"at %d %d|%d %d|%d %d|%d",m_wndCode, m_sizeFloat.cx,m_sizeFloat.cy,m_sizeHorz.cx,m_sizeHorz.cy,m_sizeVert.cx,m_sizeVert.cy);
-    //MessageBox("ldown", "JMC", MB_OK | MB_ICONSTOP);
     if (m_pDockBar != NULL/* || false_move*/)
     {
         // start the drag
@@ -846,39 +842,39 @@ void CCoolDialogBar::Save()
 	CString strSection("Docbar");
 //vls-begin// multiple output
     if (m_wndCode > 0)
-        strSection.Format("Docbar%d", m_wndCode+1);
+        strSection.Format(L"Docbar%d", m_wndCode+1);
 //vls-end//
 //	char bf[BUFFER_SIZE];
 //	sprintf(bf,"at %d %d|%d %d|%d %d|%d",m_wndCode, m_sizeFloat.cx,m_sizeFloat.cy,m_sizeHorz.cx,m_sizeHorz.cy,m_sizeVert.cx,m_sizeVert.cy);
 //	MessageBox(bf,"jmc",MB_OK|MB_ICONSTOP);
 
 	///////////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CXFloat", m_sizeFloat.cx, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"CXFloat", m_sizeFloat.cx, szGLOBAL_PROFILE);
 	///////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CYFloat", m_sizeFloat.cy, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"CYFloat", m_sizeFloat.cy, szGLOBAL_PROFILE);
 
 	///////////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CXHorz", m_sizeHorz.cx, szGLOBAL_PROFILE);
-	///////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CYHorz", m_sizeHorz.cy,szGLOBAL_PROFILE);
-
-	///////////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CXVert", m_sizeVert.cx,szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"CXHorz", m_sizeHorz.cx, szGLOBAL_PROFILE);
 	///////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CYVert", m_sizeVert.cy, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"CYHorz", m_sizeHorz.cy,szGLOBAL_PROFILE);
+
+	///////////////////////////////////////////////////////////////////////////
+    ::WritePrivateProfileInt(strSection, L"CXVert", m_sizeVert.cx,szGLOBAL_PROFILE);
+	///////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////
+    ::WritePrivateProfileInt(strSection, L"CYVert", m_sizeVert.cy, szGLOBAL_PROFILE);
 
 //vls-begin// multiple output
-    ::WritePrivateProfileInt(strSection, "Visible", m_bFlag, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt(strSection, "Docking", m_Dock, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt(strSection, "posX", m_mX, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt(strSection, "posY", m_mY, szGLOBAL_PROFILE);
-    ::WritePrivateProfileString(strSection, "Title", m_sTitle, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"Visible", m_bFlag, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"Docking", m_Dock, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"posX", m_mX, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"posY", m_mY, szGLOBAL_PROFILE);
+    ::WritePrivateProfileString(strSection, L"Title", m_sTitle, szGLOBAL_PROFILE);
 //vls-end//
 }
 
@@ -893,48 +889,48 @@ void CCoolDialogBar::Load()
 	CString strSection("Docbar");
 //vls-begin// multiple output
     if (m_wndCode > 0)
-        strSection.Format("Docbar%d", m_wndCode+1);
+        strSection.Format(L"Docbar%d", m_wndCode+1);
 //vls-end//
 
 	//////////////////////////////////////////////////////////////////////
-    m_sizeFloat.cx = ::GetPrivateProfileInt(strSection, "CXFloat", m_sizeFloat.cx, szGLOBAL_PROFILE);
+    m_sizeFloat.cx = ::GetPrivateProfileInt(strSection, L"CXFloat", m_sizeFloat.cx, szGLOBAL_PROFILE);
 	//////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////
-    m_sizeFloat.cy = ::GetPrivateProfileInt(strSection, "CYFloat", m_sizeFloat.cy,szGLOBAL_PROFILE);
+    m_sizeFloat.cy = ::GetPrivateProfileInt(strSection, L"CYFloat", m_sizeFloat.cy,szGLOBAL_PROFILE);
 
 	//////////////////////////////////////////////////////////////////////
-    m_sizeHorz.cx = ::GetPrivateProfileInt(strSection, "CXHorz", m_sizeHorz.cx,szGLOBAL_PROFILE);
-	//////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////
-    m_sizeHorz.cy = ::GetPrivateProfileInt(strSection, "CYHorz", m_sizeHorz.cy, szGLOBAL_PROFILE);
-
-	//////////////////////////////////////////////////////////////////////
-    m_sizeVert.cx = ::GetPrivateProfileInt(strSection, "CXVert", m_sizeVert.cx, szGLOBAL_PROFILE);
+    m_sizeHorz.cx = ::GetPrivateProfileInt(strSection, L"CXHorz", m_sizeHorz.cx,szGLOBAL_PROFILE);
 	//////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////
-    m_sizeVert.cy = ::GetPrivateProfileInt(strSection, "CYVert", m_sizeVert.cy, szGLOBAL_PROFILE);
+    m_sizeHorz.cy = ::GetPrivateProfileInt(strSection, L"CYHorz", m_sizeHorz.cy, szGLOBAL_PROFILE);
+
+	//////////////////////////////////////////////////////////////////////
+    m_sizeVert.cx = ::GetPrivateProfileInt(strSection, L"CXVert", m_sizeVert.cx, szGLOBAL_PROFILE);
+	//////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////
+    m_sizeVert.cy = ::GetPrivateProfileInt(strSection, L"CYVert", m_sizeVert.cy, szGLOBAL_PROFILE);
 
 //vls-begin// multiple output
-    m_bFlag = ::GetPrivateProfileInt(strSection, "Visible", FALSE, szGLOBAL_PROFILE);
-    m_Dock = ::GetPrivateProfileInt(strSection, "Docking", 0xF000L, szGLOBAL_PROFILE);
+    m_bFlag = ::GetPrivateProfileInt(strSection, L"Visible", FALSE, szGLOBAL_PROFILE);
+    m_Dock = ::GetPrivateProfileInt(strSection, L"Docking", 0xF000L, szGLOBAL_PROFILE);
 	EnableDocking(m_Dock);
     ShowWindow(m_bFlag ? SW_SHOW : SW_HIDE);
     // ShowWindow(m_bVisible ? SW_SHOW : SW_HIDE);
 
     CString t, sDefault;
-    CHAR sTitle[4096] = "";
+    wchar_t sTitle[4096] = L"";
     t.LoadString(IDS_OUTPUT);
     sDefault.Format(t, m_wndCode);
-    ::GetPrivateProfileString(strSection, "Title", sDefault, sTitle, 4096, szGLOBAL_PROFILE);
+    ::GetPrivateProfileString(strSection, L"Title", sDefault, sTitle, 4096, szGLOBAL_PROFILE);
     m_sTitle = sTitle;
     SetWindowText(sTitle);
 //vls-end//
 //* en
-	m_mX = ::GetPrivateProfileInt(strSection, "posX", 0, szGLOBAL_PROFILE);
-	m_mY = ::GetPrivateProfileInt(strSection, "posY", 0, szGLOBAL_PROFILE);
+	m_mX = ::GetPrivateProfileInt(strSection, L"posX", 0, szGLOBAL_PROFILE);
+	m_mY = ::GetPrivateProfileInt(strSection, L"posY", 0, szGLOBAL_PROFILE);
 //*/en
 }
 

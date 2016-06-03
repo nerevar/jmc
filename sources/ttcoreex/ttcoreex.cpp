@@ -20,6 +20,10 @@
 #include "JmcObj.h"
 #include "telnet.h"
 
+UINT DLLEXPORT MudCodePage;
+std::map< UINT, std::wstring > CPNames;
+std::map< std::wstring, UINT > CPIDs;
+
 // #define _DEBUG_LOG
 DWORD dwTime0;
 int ticker_interrupted;
@@ -45,7 +49,7 @@ struct listnode *common_subs = NULL;
 struct listnode *common_antisubs = NULL, *common_pathdirs = NULL, *common_path = NULL;
 
 SOCKET MUDSocket;
-char MUDHostName[256];
+wchar_t MUDHostName[256];
 sockaddr_in MUDAddress;
 
 LONG DLLEXPORT lPingMUD;
@@ -56,13 +60,13 @@ BOOL DLLEXPORT bBCastFilterIP = TRUE;
 BOOL DLLEXPORT bBCastFilterPort = TRUE;
 WORD DLLEXPORT wBCastUdpPort = 1024;
 
-char LoopBackBuffer[BUFFER_SIZE];
+wchar_t LoopBackBuffer[BUFFER_SIZE];
 int LoopBackCount = 0;
 
-char vars[10][BUFFER_SIZE]; /* the %0, %1, %2,....%9 variables */
+wchar_t vars[10][BUFFER_SIZE]; /* the %0, %1, %2,....%9 variables */
 
-char DLLEXPORT cCommandChar='#';
-char DLLEXPORT cCommandDelimiter=';';
+wchar_t DLLEXPORT cCommandChar=L'#';
+wchar_t DLLEXPORT cCommandDelimiter=L';';
 BOOL DLLEXPORT bDefaultLogMode = FALSE; // Overwrite 
 BOOL DLLEXPORT bRMASupport;
 BOOL DLLEXPORT bAppendLogTitle;
@@ -84,12 +88,12 @@ BOOL DLLEXPORT bDisplayPing = TRUE;
 BOOL DLLEXPORT bMinimizeToTray = FALSE;
 UINT DLLEXPORT uBroadcastMessage = 0;
 
-char DLLEXPORT strInfo1[BUFFER_SIZE];
-char DLLEXPORT strInfo2[BUFFER_SIZE];
-char DLLEXPORT strInfo3[BUFFER_SIZE];
-char DLLEXPORT strInfo4[BUFFER_SIZE];
-char DLLEXPORT strInfo5[BUFFER_SIZE];
-char DLLEXPORT editStr[BUFFER_SIZE];
+wchar_t DLLEXPORT strInfo1[BUFFER_SIZE];
+wchar_t DLLEXPORT strInfo2[BUFFER_SIZE];
+wchar_t DLLEXPORT strInfo3[BUFFER_SIZE];
+wchar_t DLLEXPORT strInfo4[BUFFER_SIZE];
+wchar_t DLLEXPORT strInfo5[BUFFER_SIZE];
+wchar_t DLLEXPORT editStr[BUFFER_SIZE];
 CRITICAL_SECTION DLLEXPORT secStatusSection;
 
 HANDLE DLLEXPORT eventAllObjectEvent;
@@ -115,15 +119,16 @@ BOOL bDelayedActionDelete = FALSE;
 
 // Is we are in pathing more
 BOOL bPathing = FALSE;
-char verbatim_char=DEFAULT_VERBATIM_CHAR;    
+wchar_t verbatim_char=DEFAULT_VERBATIM_CHAR;    
 int path_length;
 int old_more_coming,more_coming;
-char last_line[BUFFER_SIZE];
+wchar_t last_line[BUFFER_SIZE];
 ofstream hLogFile;
+UINT LogFileCodePage;
 ofstream hOutputLogFile[MAX_OUTPUT];
 //* en: enhanced logs
-char sLogName[BUFFER_SIZE];
-char sOutputLogName[MAX_OUTPUT][BUFFER_SIZE];
+wchar_t sLogName[BUFFER_SIZE];
+wchar_t sOutputLogName[MAX_OUTPUT][BUFFER_SIZE];
 //*/en
 int ignore;
 BOOL bInterrupted = TRUE;
@@ -145,7 +150,7 @@ DLLEXPORT HANDLE hExLog;
 HANDLE hConnectedEvent;
 
 //* en
-extern char mQueue[BUFFER_SIZE];
+extern wchar_t mQueue[BUFFER_SIZE];
 DWORD dwSTime = 0;
 //*/en
 
@@ -178,10 +183,27 @@ typedef DWORD (WINAPI* pfnDHDPWPipPDD)(HANDLE, DWORD, LPVOID, WORD,
 									   PIP_OPTION_INFORMATION, LPVOID, DWORD, DWORD); // evil, no?
 unsigned long __stdcall PingThread(void *pParam);
 
-static char multiline_buf[MULTILINE_BUFFER_SIZE];
+HMODULE hMlang = NULL;
+HRESULT (__stdcall *fConvertINetMultiByteToUnicode)(LPDWORD, DWORD, LPCSTR, LPINT, LPWSTR, LPINT) = NULL;
+
+static wchar_t multiline_buf[MULTILINE_BUFFER_SIZE];
 static int multiline_length = 0;
 
-static void process_incoming(char* buffer, BOOL FromServer = TRUE);
+static void process_incoming(wchar_t* buffer, BOOL FromServer = TRUE);
+
+
+static LONG GetStringRegKey(HKEY hKey, const std::wstring &strValueName, std::wstring &strValue)
+{
+    strValue = L"";
+    WCHAR szBuffer[512];
+    DWORD dwBufferSize = sizeof(szBuffer);
+    ULONG nError;
+    nError = RegQueryValueEx(hKey, strValueName.c_str(), 0, NULL, (LPBYTE)szBuffer, &dwBufferSize);
+    if (ERROR_SUCCESS == nError) {
+        strValue = szBuffer;
+    }
+    return nError;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // DLL Entry Point
@@ -199,9 +221,46 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
     {
 	    if( WSAStartup(wVersion, &wData) )
 	    {
-		    
 		    return FALSE;
 	    }
+
+		hMlang = LoadLibrary(L"mlang.dll");
+		fConvertINetMultiByteToUnicode = (HRESULT (__stdcall *)(LPDWORD, DWORD, LPCSTR, LPINT, LPWSTR, LPINT))
+			GetProcAddress(hMlang, "ConvertINetMultiByteToUnicode");
+
+		HKEY hKeyDB, hKeyCP;
+		wchar_t cp_subkey[256], cp_fullpath[256];
+
+		if (RegOpenKeyEx(HKEY_CLASSES_ROOT, L"MIME\\DataBase\\Codepage", 0, KEY_READ, &hKeyDB) == ERROR_SUCCESS) {
+			DWORD n_cps;
+			RegQueryInfoKey(hKeyDB,NULL,NULL,NULL,&n_cps,NULL,NULL,NULL,NULL,NULL,NULL,NULL);      
+
+			for (int i = 0; i < n_cps; i++) {
+				DWORD dwSize = sizeof(cp_subkey);
+				RegEnumKeyEx(hKeyDB,i,cp_subkey,&dwSize,NULL,NULL,NULL,NULL);
+
+				UINT cp = _wtoi(cp_subkey);
+				
+				swprintf(cp_fullpath, L"MIME\\DataBase\\Codepage\\%ls", cp_subkey);
+				if (RegOpenKeyEx(HKEY_CLASSES_ROOT, cp_fullpath, 0, KEY_READ, &hKeyCP) != ERROR_SUCCESS)
+					continue;
+				
+				wstring cp_name;
+				GetStringRegKey(hKeyCP, L"WebCharset", cp_name);
+				if (cp_name.length() == 0)
+					GetStringRegKey(hKeyCP, L"BodyCharset", cp_name);
+				if (cp_name.length() > 0 && cp_name[0] != L'_') {
+					transform(cp_name.begin(), cp_name.end(), cp_name.begin(), ::towlower);
+					CPNames[cp] = cp_name;
+					CPIDs[cp_name] = cp;
+				}
+			}
+
+			RegCloseKey(hKeyDB);
+		}
+
+		MudCodePage = GetACP();
+
         InitializeCriticalSection(&secSubstSection);
         InitializeCriticalSection(&secHotkeys);
         InitializeCriticalSection(&secStatusSection);
@@ -223,11 +282,11 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
 
 //vls-begin// base dir
         GetModuleFileName(NULL, szBASE_DIR, MAX_PATH);
-        char *p = strrchr(szBASE_DIR, '\\');
+        wchar_t *p = wcsrchr(szBASE_DIR, L'\\');
         if (p) *p = '\0';
 
-        strcpy(szSETTINGS_DIR, szBASE_DIR);
-        strcat(szSETTINGS_DIR, "\\settings");
+        wcscpy(szSETTINGS_DIR, szBASE_DIR);
+        wcscat(szSETTINGS_DIR, L"\\settings");
 //vls-end//
 
         _Module.Init(ObjectMap, hInstance, &LIBID_TTCOREEXLib);
@@ -235,7 +294,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
 
 		hPingThread = CreateThread(NULL, 0, &PingThread, NULL, 0, &dwPingThreadID);
 
-		last_line[0] = '\0';
+		last_line[0] = L'\0';
     }
     else if (dwReason == DLL_PROCESS_DETACH){
 //vls-begin// multiple output
@@ -252,7 +311,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
         DeleteCriticalSection(&secScriptFiles);
 //vls-end//
 //vls-begin// #system
-        systemkill_command("all");
+        systemkill_command(L"all");
         DeleteCriticalSection(&secSystemList);
         DeleteCriticalSection(&secSystemExec);
 //vls-end//
@@ -307,44 +366,44 @@ STDAPI DllUnregisterServer(void)
 
 // JMC functons starts here 
 
-void tintin_puts2(char *cptr)
+void tintin_puts2(const wchar_t *cptr)
 {
-	char buff[BUFFER_SIZE + 3];
+	wchar_t buff[BUFFER_SIZE + 32];
 	buff[0] = TINTIN_OUTPUT_MARK;
 	buff[1] = 0;
-    strcat(buff, cptr);
-    strcat(buff, "\n");
+    wcscat(buff, cptr);
+    wcscat(buff, L"\n");
     DirectOutputFunction(buff, 0); // out to main wnd
 }
 
-void tintin_puts3(char *cptr, int wnd)
+void tintin_puts3(const wchar_t *cptr, int wnd)
 {
-	char buff[BUFFER_SIZE + 3];
+	wchar_t buff[BUFFER_SIZE + 32];
 	buff[0] = TINTIN_OUTPUT_MARK;
 	buff[1] = 0;
-    strcat(buff, cptr);
-    strcat(buff, "\n");
+    wcscat(buff, cptr);
+    wcscat(buff, L"\n");
 
     if ( hOutputLogFile[wnd].is_open() ) {
-		log(wnd, processTEXT(string(cptr)));
-		log(wnd, "\n");
+		log(wnd, processTEXT(wstring(cptr)));
+		log(wnd, L"\n");
 	}
 
     DirectOutputFunction(buff, 1+wnd); // out to output window
 }
 
-void output_command(char* arg)
+void output_command(wchar_t* arg)
 { 
-    char left[BUFFER_SIZE], right[BUFFER_SIZE];
-    char result[BUFFER_SIZE], strng[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE];
+    wchar_t result[BUFFER_SIZE], strng[BUFFER_SIZE];
     
-    arg=get_arg_in_braces(arg, left, WITH_SPACES);
-    arg=get_arg_in_braces(arg, right, WITH_SPACES);
+    arg=get_arg_in_braces(arg,left,WITH_SPACES,sizeof(left)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
 
     if ( !right[0] ) {  // no colors
-        prepare_actionalias(left,strng, sizeof(strng)); 
+        prepare_actionalias(left,strng, sizeof(strng)/sizeof(wchar_t)); 
     } else {
-		prepare_actionalias(right,result, sizeof(result)); 
+		prepare_actionalias(right,result, sizeof(result)/sizeof(wchar_t)); 
         add_codes(result, strng, left);
     }
 
@@ -352,65 +411,80 @@ void output_command(char* arg)
 }
 
 
-void write_line_mud(char *line)
+void write_line_mud(const wchar_t *line)
 {
     int len, OriginalLen;
-    char buff[BUFFER_SIZE*2 + 4];
+    char buff[BUFFER_SIZE*8], coded[BUFFER_SIZE*4];
     int ret = 0;
 
     if ( !MUDSocket ) {
         tintin_puts(rs::rs(1182) );
     } else {
-        OriginalLen = len = strlen(line);
+        OriginalLen = len = wcslen(line);
+
+		int count;
+		if (MudCodePage == 1200) {
+			count = len * 2;
+			memcpy(coded, line, count);
+		} else if (MudCodePage == 1201) {
+			count = len * 2;
+			utf16le_to_utf16be((wchar_t*)coded, line, len);
+		} else {
+			count = WideCharToMultiByte(MudCodePage, 0, &line[ret], len, coded, sizeof(coded) - 1, NULL, NULL);
+		}
         
-        if ( bIACSendSingle ) 
-            strcpy (buff, line);
-        else {
-		    char* ptr = buff;
-            int nIACs = 0;
-		    for ( int i = 0; i < len; i ++ ) {
-			    if ( line[i] == (char)0xff ) {
-				    *ptr++ = (char)0xff;
-                    nIACs ++;
-			    }
-			    *ptr++ = line[i];
-		    }
-            len += nIACs;
+		if ( bIACSendSingle ) 
+			memcpy (buff, coded, count);
+		else {
+			char* ptr = buff;
+			int nIACs = 0;
+			for ( int i = 0; i < count; i ++ ) {
+				if ( coded[i] == (char)0xff ) {
+					*ptr++ = (char)0xff;
+					nIACs ++;
+				}
+				*ptr++ = coded[i];
+			}
+			count += nIACs;
 
-        }
-        if ( buff[len-1] != 0xA ) {
-            buff[len] = 0xA;
-            buff[len+1] = 0;
-            len ++;
-        }
+		}
+		if ( buff[count-1] != 0xA ) {
+			buff[count] = 0xA;
+			buff[count+1] = 0;
+			count ++;
+		}
 
+		int sent = tls_send(MUDSocket, buff, count);
 
-        ret = tls_send(MUDSocket, buff, len);
+		if (sent < 0)
+			ret = sent;
+		else
+			ret = len;
     }
 
 //* en
-	char daaString[BUFFER_SIZE+2];
+	wchar_t daaString[BUFFER_SIZE+2];
 	int daalen = 0;
 	if (bDaaMessage) {
-		daaString[daalen++] = '<';
-		for(int i = 0; i < strlen(line) && i < BUFFER_SIZE; i++)
-			daaString[daalen++]='*';
-		daaString[daalen++] = '>';
+		daaString[daalen++] = L'<';
+		for(int i = 0; i < wcslen(line) && i < BUFFER_SIZE; i++)
+			daaString[daalen++]=L'*';
+		daaString[daalen++] = L'>';
 	}
 	daaString[daalen] = 0;
 
-    if (bDisplayInput && !(SocketFlags & SOCKECHO) && strlen(line) > 0) 
+    if (bDisplayInput && !(SocketFlags & SOCKECHO) && wcslen(line) > 0) 
 	{
-        std::string str;
+        std::wstring str;
 		str = USER_INPUT_MARK;
-        str += "\x1B[0;33m";
+        str += L"\x1B[0;33m";
 		str += bDaaMessage ? daaString : line;
-        str += "\x1B[0m";
-        tintin_puts2((char*)str.c_str());
+        str += L"\x1B[0m";
+        tintin_puts2(str.c_str());
 
 		if (hLogFile) {
 			log(processLine(bDaaMessage ? daaString : line));
-			log("\n");
+			log(L"\n");
 		}
 		add_line_to_scrollbuffer(bDaaMessage ? daaString : line);
     }    
@@ -425,8 +499,8 @@ void write_line_mud(char *line)
     if (hExLog ) {
         char exLogText[128];
         DWORD Written;
-        sprintf(exLogText , "\r\n#SEND got %d bytes sent %d bytes#\r\n" , len, ret );
-        WriteFile(hExLog , exLogText , strlen(exLogText) , &Written, NULL);
+        swprintf(exLogText , L"\r\n#SEND got %d bytes sent %d bytes#\r\n" , len, ret );
+        WriteFile(hExLog , exLogText , wcslen(exLogText) , &Written, NULL);
         WriteFile(hExLog , buff , len , &Written, NULL);
     }
 #endif
@@ -436,11 +510,13 @@ void write_line_mud(char *line)
 }
 
 
-static char strConnectAddress[128], strConnectPort[32];
+static wchar_t strConnectAddress[128], strConnectPort[32];
 
 
 unsigned long __stdcall ConnectThread(void * pParam)
 {
+	USES_CONVERSION;
+
     CoInitialize ((void*)COINIT_MULTITHREADED);
 
     tintin_puts2(rs::rs(1184));
@@ -449,35 +525,35 @@ unsigned long __stdcall ConnectThread(void * pParam)
     int connectresult;
     struct sockaddr_in sockaddr;
 
-    if(isdigit(*strConnectAddress)) {                            /* interprete host part */
-        sockaddr.sin_addr.s_addr=inet_addr(strConnectAddress);
+    if(iswdigit(*strConnectAddress)) {                            /* interprete host part */
+        sockaddr.sin_addr.s_addr=inet_addr(W2A(strConnectAddress));
 
 		struct hostent *hp;
 		if((hp=gethostbyaddr((const char*)&sockaddr, sizeof(sockaddr), AF_INET))==NULL) {
-            strcpy(MUDHostName, strConnectAddress);
+            wcscpy(MUDHostName, strConnectAddress);
         } else {
-			strcpy(MUDHostName, hp->h_name);
+			wcscpy(MUDHostName, A2W(hp->h_name));
         }	
     } else {
-		strcpy(MUDHostName, strConnectAddress);
+		wcscpy(MUDHostName, strConnectAddress);
 
         struct hostent *hp;
-        if((hp=gethostbyname(strConnectAddress))==NULL) {
+        if((hp=gethostbyname(W2A(strConnectAddress)))==NULL) {
             tintin_puts2(rs::rs(1185));
             return 0;
         } else {
     	    struct in_addr inad;
-            char ipaddr[256];
+            wchar_t ipaddr[256];
 
 	        inad.S_un.S_addr = *(long*)hp->h_addr_list[0];
-            sprintf(ipaddr , rs::rs(1186) , (char*)inet_ntoa(inad));
+            swprintf(ipaddr , rs::rs(1186) , A2W(inet_ntoa(inad)));
 	        tintin_puts2(ipaddr); 
         }
         memcpy((char *)&sockaddr.sin_addr, hp->h_addr, sizeof(sockaddr.sin_addr));
     }
 
-    if(isdigit(*strConnectPort))
-        sockaddr.sin_port=htons((short)atoi(strConnectPort));      /* inteprete port part */
+    if(iswdigit(*strConnectPort))
+        sockaddr.sin_port=htons((short)_wtoi(strConnectPort));      /* inteprete port part */
     else {
         tintin_puts2(rs::rs(1187));
         return 0;
@@ -492,8 +568,8 @@ START1:
 	 Something more than TCP_NODELAY should be done in case MUD server frequently sends tiny packets.
 	 For example, if server sends prompt-line and IAC-GA in separate calls of send() then the first
 	 packet (prompt) wouldn't ACKed by windows core for 200 milliseconds regardless of Nagle's algorithm,
-	 leading to IAC-GA delayed for the same time. It's not a problem for visualising since now JMC
-	 printing out all incoming data immidiately; but processing of prompt line in described situation
+	 leading to IAC-GA delayed for the same time. It's not a problem for visualizing since now JMC
+	 prints out all incoming data immidiately; but processing of prompt line in described situation
 	 by #acion and jmc.Incoming handlers will be delayed for 200 ms or value of Uncomplete line delay
 	 setting in case it is less than 200.
 	 Setting registry value on the client's machine (TcpAckFrequency := 1) is ugly, but effective solution.
@@ -501,16 +577,12 @@ START1:
 	 WinSock/WinSock2, WinXP/Vista/Win7/Win8. So it is responsibility of MUD servers to do wise and
 	 accurate TCP bufferisation, though obviously it is possible only in MUDs where the smallest time period
 	 between events (game-state updating period, "tick", time-quant) is less than 200ms.
-	 At this point I give up to solve this issue completely and mark it as part 
-	 of global MUD problem called "Telnet Curse",
+	 At this point I giving up to solve this issue completely and mark it as part 
+	 of global MUD problem called "Telnet Curse".
 	*/
 	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&enable_opt, sizeof(enable_opt))) {
-		tintin_puts2("#Can't disable Nagle's algorithm");
+		tintin_puts2(L"#Can't disable Nagle's algorithm");
 	}
-	int size = 0;
-	//if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&size, sizeof(size))) {
-	//	tintin_puts2("#Can't disable send bufferization");
-	//}
 
     sockaddr.sin_family=AF_INET;
 
@@ -578,8 +650,8 @@ static int ping_single_host(unsigned long ipaddr, int timeout_ms)
 
 	if (!hIcmp) {
 		for (int i = 0; i < sizeof(acPingBuffer); i++)
-			acPingBuffer[i] = 'a' + (i % 24);
-		hIcmp = LoadLibrary("ICMP.DLL");
+			acPingBuffer[i] = L'a' + (i % 24);
+		hIcmp = LoadLibrary(L"ICMP.DLL");
 	}
 	if (!hIcmp)
 		return -3;
@@ -648,36 +720,36 @@ unsigned long __stdcall PingThread(void * pParam)
 }
 
 
-void connect_mud(char *host, char *port)
+void connect_mud(wchar_t *host, wchar_t *port)
 {
     DWORD dwThreadID;
 
-    if ( strlen(host) > 120 || strlen(port) > 60 ) {
+    if ( wcslen(host) > 120 || wcslen(port) > 60 ) {
         tintin_puts2(rs::rs(1194));
         return;
     }
-    strcpy(strConnectAddress, host);
-    strcpy(strConnectPort, port);
+    wcscpy(strConnectAddress, host);
+    wcscpy(strConnectPort, port);
 
 	hConnThread = CreateThread(NULL, 0, &ConnectThread, NULL, 0, &dwThreadID);
 }
 
 
-void ShowError (char* strError)
+void ShowError (wchar_t* strError)
 {
     MessageBox(hwndMAIN, strError , rs::rs(1195) , MB_OK | MB_ICONSTOP );
 }
 
-void add_line_to_multiline(char *line);
-void do_one_line(char *line);
+void add_line_to_multiline(wchar_t *line);
+void do_one_line(wchar_t *line);
 void do_multiline();
 
-void tintin_puts(char *cptr)
+void tintin_puts(const wchar_t *cptr)
 {
 	// allow substitutions and script-handling
 	//check_all_actions(cptr, false);
-	do_one_line(cptr);
-	if (strcmp(cptr, "."))
+	do_one_line((wchar_t*)cptr);
+	if (wcscmp(cptr, L"."))
 		tintin_puts2(cptr);
 }
 
@@ -730,8 +802,8 @@ void  DLLEXPORT InitState(/*END_FUNC EndFunc, */DIRECT_OUT_FUNC OutFunc, CLEAR_W
 
 
 #ifdef _DEBUG_LOG
-    if ( GetPrivateProfileInt("Debug" , "ExLog" , 0 , "jmc.ini" ) ) {
-        hExLog = CreateFile("socket.log" , GENERIC_READ| GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, NULL, NULL );
+    if ( GetPrivateProfileInt(L"Debug" , L"ExLog" , 0 , L"jmc.ini" ) ) {
+        hExLog = CreateFile(L"socket.log" , GENERIC_READ| GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, NULL, NULL );
     }
 #endif
 
@@ -758,27 +830,25 @@ void  DLLEXPORT CloseState(void)
         delete ptm;
     }
 
-	KillAll(END, "0");
+	KillAll(END, L"0");
 	if (pScrollLinesBuffer)
 		free(pScrollLinesBuffer);
 	free_telnet_buffer();
 	free_parse_stack();
 }
 
-void  DLLEXPORT ReloadScriptEngine(LPCSTR strScriptText, GUID guidEngine, LPCSTR strProfile)
+void  DLLEXPORT ReloadScriptEngine(const wchar_t* strScriptText, GUID guidEngine, const wchar_t* strProfile)
 {
     pJmcObj->m_bstrProfile = strProfile;
-    pSite->InitSite (hwndMAIN, strScriptText,  guidEngine);
+    pSite->InitSite (hwndMAIN, (LPWSTR)strScriptText,  guidEngine);
 	tintin_puts(rs::rs(1196));
 }
 
-void DLLEXPORT CompileInput(char* str)
+void DLLEXPORT CompileInput(const wchar_t* str)
 {
-    USES_CONVERSION;
-
 	if (last_line[0]) {
-		//process_incoming(" [GA forced]\x01");
-		process_incoming("\x01");
+		//process_incoming(L" [GA forced]\x01");
+		process_incoming(L"\x01");
 	}
 
     if ( WaitForSingleObject (eventAllObjectEvent, 0) == WAIT_OBJECT_0  ) {
@@ -790,10 +860,12 @@ void DLLEXPORT CompileInput(char* str)
             return;
         }
 
-        char line[BUFFER_SIZE];
-        strcpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal ));
-        //parse_input(line);
-        SetEvent(eventAllObjectEvent );
+        wchar_t line[BUFFER_SIZE];
+		int len = SysStringLen(pJmcObj->m_pvarEventParams[0].bstrVal) + 1;
+		len = min(len, BUFFER_SIZE) - 1;
+        wcsncpy(line, pJmcObj->m_pvarEventParams[0].bstrVal, len);
+		line[len] = '\0';
+		SetEvent(eventAllObjectEvent );
 		parse_input(line);
     } else {
         write_line_mud(str);
@@ -822,10 +894,10 @@ static void tick_func()
   //* en:wait state
 	  if(iWaitState)
 		  iWaitState--;
-	  if(!iWaitState && strlen(mQueue))
+	  if(!iWaitState && wcslen(mQueue))
 	  {
 		  parse_input(mQueue);
-		  mQueue[0]='\0';
+		  mQueue[0]=L'\0';
 	  }
   //* en:cycles
 	  dwSTime = iDSecToTick;
@@ -857,21 +929,21 @@ static void tick_func()
 /**********************************************************/
 /* do all of the functions to one line of buffer          */
 /**********************************************************/
-void add_line_to_multiline(char *line)
+void add_line_to_multiline(wchar_t *line)
 {
-	int multiline_capacity = sizeof(multiline_buf) - 1; //hold one char for null-terminator
+	int multiline_capacity = sizeof(multiline_buf)/sizeof(wchar_t) - 1; //hold one char for null-terminator
 	int rest = multiline_capacity - multiline_length;
 
 	if (rest <= 0)
 		return;
 
-	int len = strlen(line);
+	int len = wcslen(line);
 
 	if (len <= 0)
 		return;
 
 	if (multiline_length > 0) { //add new line
-		multiline_buf[multiline_length++] = '\n';
+		multiline_buf[multiline_length++] = L'\n';
 		rest--;
 
 		if (rest <= 0)
@@ -883,22 +955,21 @@ void add_line_to_multiline(char *line)
 		len = rest;
 	}
     
-	memcpy(&multiline_buf[multiline_length], line, len);
+	memcpy(&multiline_buf[multiline_length], line, len*sizeof(wchar_t));
 	multiline_length += len;
 }
 
-void do_one_line(char *line)
+void do_one_line(wchar_t *line)
 {   
-    USES_CONVERSION;
-
     pJmcObj->m_pvarEventParams[0] = (line);
     BOOL bRet = pJmcObj->Fire_Incoming();
     if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) {
-        //strcpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal) );
-		strncpy(line, W2A(pJmcObj->m_pvarEventParams[0].bstrVal), BUFFER_SIZE - 1);
-		line[BUFFER_SIZE - 1] = '\0';
+        int len = SysStringLen(pJmcObj->m_pvarEventParams[0].bstrVal) + 1;
+		len = min(len, BUFFER_SIZE) - 1;
+		wcsncpy(line, pJmcObj->m_pvarEventParams[0].bstrVal, len);
+		line[len] = L'\0';
     } else {
-        strcpy(line, "." );
+        wcscpy(line, L"." );
 	}
 
     if ( bRet ) {
@@ -923,8 +994,6 @@ void do_one_line(char *line)
 
 void do_multiline()
 {
-	USES_CONVERSION;
-
 	if (!multiline_length)
 		return;
 	multiline_buf[multiline_length] = 0;
@@ -932,8 +1001,10 @@ void do_multiline()
     pJmcObj->m_pvarEventParams[0] = (multiline_buf);
     BOOL bRet = pJmcObj->Fire_Prompt();
 	if ( bRet && pJmcObj->m_pvarEventParams[0].vt == VT_BSTR) {
-		strncpy(multiline_buf, W2A(pJmcObj->m_pvarEventParams[0].bstrVal), sizeof(multiline_buf) - 1);
-		multiline_buf[sizeof(multiline_buf)-1] = '\0';
+		int len = SysStringLen(pJmcObj->m_pvarEventParams[0].bstrVal) + 1;
+		len = min(len, sizeof(multiline_buf)/sizeof(wchar_t)) - 1;
+		wcsncpy(multiline_buf, pJmcObj->m_pvarEventParams[0].bstrVal, len);
+		multiline_buf[len] = L'\0';
 		check_all_actions(multiline_buf, true);
     }
 
@@ -941,7 +1012,7 @@ void do_multiline()
 }
 
 
-unsigned char DLLEXPORT substChars[SUBST_ARRAY_SIZE];
+wchar_t DLLEXPORT substChars[SUBST_ARRAY_SIZE];
 BOOL DLLEXPORT bSubstitution;
 CRITICAL_SECTION DLLEXPORT secSubstSection;
 
@@ -953,17 +1024,17 @@ int DLLEXPORT MoreComingDelay = 150;
 /* read text from mud and test for actions/substitutes */
 /*************************************************************/
 
-static void process_incoming(char* buffer, BOOL FromServer)
+static void process_incoming(wchar_t* buffer, BOOL FromServer)
 {
-    char linebuffer[BUFFER_SIZE], *cpsource, *cpdest;
-	char line_to_log[BUFFER_SIZE];
+    wchar_t linebuffer[BUFFER_SIZE], *cpsource, *cpdest;
+	wchar_t line_to_log[BUFFER_SIZE];
     int LastLineLen = 0, n;
 
     cpsource = buffer; 
     cpdest = linebuffer;
 	if (last_line[0]) {
-        LastLineLen = strlen(last_line);
-        strcpy(linebuffer,last_line);
+        LastLineLen = wcslen(last_line);
+        wcscpy(linebuffer,last_line);
         cpdest += LastLineLen;
     } 
 
@@ -972,16 +1043,16 @@ static void process_incoming(char* buffer, BOOL FromServer)
         bProcess = FALSE;
 
     while(*cpsource) { 
-        if ( *cpsource == '\r' ) {
+        if ( *cpsource == L'\r' ) {
             cpsource++;
             continue;
         }
 
-        if(*cpsource == '\n' || *cpsource == END_OF_PROMPT_MARK) {
-            *cpdest = '\0';
+        if(*cpsource == L'\n' || *cpsource == END_OF_PROMPT_MARK) {
+            *cpdest = L'\0';
 			
 			if ( !bLogAsUserSeen ) {
-				strcpy(line_to_log, linebuffer);
+				wcscpy(line_to_log, linebuffer);
 			}
             if ( bProcess ) { 
                 do_one_line(linebuffer);
@@ -989,13 +1060,13 @@ static void process_incoming(char* buffer, BOOL FromServer)
 					do_multiline();
 			}
 			if ( bLogAsUserSeen ) {
-				strcpy(line_to_log, linebuffer);
+				wcscpy(line_to_log, linebuffer);
 			}
 
-            if(!bLogPassedLine && (bLogAsUserSeen || FromServer) && strcmp(line_to_log, ".")) {
+            if(!bLogPassedLine && (bLogAsUserSeen || FromServer) && wcscmp(line_to_log, L".")) {
 				if(hLogFile.is_open()) {
 					log(processLine(line_to_log));
-					log("\n");
+					log(L"\n");
 				}
 
 				add_line_to_scrollbuffer(line_to_log);
@@ -1003,13 +1074,13 @@ static void process_incoming(char* buffer, BOOL FromServer)
 
             bLogPassedLine = FALSE;
 
-            if( strcmp(linebuffer, ".") ) {
-                n = strlen(linebuffer);
+            if( wcscmp(linebuffer, L".") ) {
+                n = wcslen(linebuffer);
 				linebuffer[n++] = *cpsource;
-				linebuffer[n] = '\0';
+				linebuffer[n] = L'\0';
 				DirectOutputFunction(linebuffer, 0);// out to main window
             }
-			last_line[0] = '\0';
+			last_line[0] = L'\0';
 
             cpsource++;
 
@@ -1018,14 +1089,14 @@ static void process_incoming(char* buffer, BOOL FromServer)
             *cpdest++ = *cpsource++;
 		}
     }
-    *cpdest='\0';
+    *cpdest=L'\0';
 
-	if (linebuffer[0] && strcmp(linebuffer, ".")) {
-		strcpy(last_line , linebuffer);
+	if (wcscmp(linebuffer, L".")) {
+		wcscpy(last_line , linebuffer);
 		DirectOutputFunction(linebuffer, 0);// out to main window
 		lastRecvd = GetTickCount();
 	} else {
-		last_line[0] = '\0';
+		last_line[0] = L'\0';
 	}
 
     if ( bProcess  ) 
@@ -1034,7 +1105,8 @@ static void process_incoming(char* buffer, BOOL FromServer)
 
 void read_mud(void )
 {
-    char buffer[BUFFER_SIZE], processed[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE];
+	wchar_t processed[BUFFER_SIZE+32];
     int didget, decoded;
 	unsigned long len;
 	bool error = false;
@@ -1058,31 +1130,28 @@ void read_mud(void )
 #ifdef _DEBUG_LOG
 			// --------   Write external log
 			if (hExLog ) {
-				char exLogText[128];
+				wchar_t exLogText[128];
 				DWORD Written;
-				sprintf(exLogText , "\r\n#RECV got %d bytes#\r\n" , didget );
-				WriteFile(hExLog , exLogText , strlen(exLogText) , &Written, NULL);
+				swprintf(exLogText , L"\r\n#RECV got %d bytes#\r\n" , didget );
+				WriteFile(hExLog , exLogText , wcslen(exLogText) , &Written, NULL);
 				WriteFile(hExLog , buffer , didget , &Written, NULL);
 			}
 #endif
 
 			telnet_push_back(buffer, didget);
-			while( (didget = telnet_pop_front(processed, sizeof(processed) - 1)) > 0 ) {
+			while( (didget = telnet_pop_front(processed, sizeof(processed)/sizeof(wchar_t) - 1)) > 0 ) {
 				decoded += didget;
-				processed[didget] = '\0';
+				processed[didget] = L'\0';
 
 #ifdef _DEBUG_LOG
 				if (hExLog ) {
-					char exLogText[128];
+					wchar_t exLogText[128];
 					DWORD Written;
-					sprintf(exLogText , "\r\n#BUFFER AFTER TELNET#\r\n" );
-					WriteFile(hExLog , exLogText , strlen(exLogText) , &Written, NULL);
+					swprintf(exLogText , L"\r\n#BUFFER AFTER TELNET#\r\n" );
+					WriteFile(hExLog , exLogText , wcslen(exLogText) , &Written, NULL);
 					WriteFile(hExLog , processed , didget , &Written, NULL);
 				}
 #endif
-
-				//old_more_coming = more_coming;
-				//if ( didget > 0 && processed[didget - 1] != '\n' && processed[didget - 1] != 0x1 ) {
 				more_coming = telnet_more_coming();
 
 				if ( bSubstitution ) {
@@ -1127,7 +1196,7 @@ void read_mud(void )
 }
 
 
-BOOL DLLEXPORT ParseScript(LPCSTR strScriptlet)
+BOOL DLLEXPORT ParseScript(const wchar_t* strScriptlet)
 {
 	EXCEPINFO    ei;
     CComBSTR bstr(strScriptlet);
@@ -1139,7 +1208,7 @@ BOOL DLLEXPORT ParseScript(LPCSTR strScriptlet)
     }
 //vls-begin// base dir
 //    hr = pSite->m_ScriptParser->ParseScriptText((BSTR)bstr, NULL, NULL, NULL, 0, 0, 0, NULL, &ei);
-    char dir[MAX_PATH+2];
+    wchar_t dir[MAX_PATH+2];
     GetCurrentDirectory(MAX_PATH, dir);
     SetCurrentDirectory(szBASE_DIR);
     hr = pSite->m_ScriptParser->ParseScriptText((BSTR)bstr, NULL, NULL, NULL, 0, 0, 0, NULL, &ei);
@@ -1162,13 +1231,9 @@ void ParseScriptlet2(BSTR bstrScriptlet)
         bInterrupted = FALSE;
     }
     
-    USES_CONVERSION;
-    char* p = W2A(bstrScriptlet);
-
-
 //vls-begin// base dir
 //    hr = pSite->m_ScriptParser->ParseScriptText(bstrScriptlet, NULL, NULL, NULL, 0, 0, 0, NULL, &ei);
-    char dir[MAX_PATH+2];
+    wchar_t dir[MAX_PATH+2];
     GetCurrentDirectory(MAX_PATH, dir);
     SetCurrentDirectory(szBASE_DIR);
     hr = pSite->m_ScriptParser->ParseScriptText(bstrScriptlet, NULL, NULL, NULL, 0, 0, 0, NULL, &ei);
@@ -1201,8 +1266,8 @@ void DLLEXPORT ReadMud()
             // check we have delayed string without \n
 			more_coming = 0;
 			if (last_line[0] && ((int)(GetTickCount() - lastRecvd) >= MoreComingDelay)) {
-				//process_incoming("\n");
-				process_incoming("\x01");
+				//process_incoming(L"\n");
+				process_incoming(L"\x01");
             } else if ( bDelayedActionDelete ) {
 				if ( WaitForSingleObject (eventAllObjectEvent, 0) == WAIT_OBJECT_0 ) {
 					ACTION_INDEX aind = ActionList.begin();
@@ -1227,19 +1292,47 @@ void DLLEXPORT ReadMud()
         }
     } else {
         if ( WaitForSingleObject (eventMudEmuTextArrives, 0 ) == WAIT_OBJECT_0 ) {
-            static char buf[BUFFER_SIZE];
+            static wchar_t buf[BUFFER_SIZE+32];
 			if (nMudEmuTextSize > 0) {
-				memcpy(buf, strMudEmuText, nMudEmuTextSize);
-				buf[nMudEmuTextSize] = 0;
+				static DWORD mode;
+
+				int len, processed;
+
+				len = sizeof(buf)/sizeof(wchar_t) - 1;
+				processed = nMudEmuTextSize;
+
+				int retConv;
+				if (MudCodePage == 1200) {
+					int count = min(len, processed) / sizeof(wchar_t);
+					memcpy(buf, strMudEmuText, count * sizeof(wchar_t));
+					len = processed = count * sizeof(wchar_t);
+					retConv = S_OK;
+				} else if (MudCodePage == 1201) {
+					int count = min(len, processed) / sizeof(wchar_t);
+					utf16le_to_utf16be(buf, (const wchar_t*)strMudEmuText, count);
+					len = processed = count * sizeof(wchar_t);
+					retConv = S_OK;
+				} else {
+					retConv = fConvertINetMultiByteToUnicode(&mode, MudCodePage, strMudEmuText, &processed, buf, &len);
+				}
+
+				if (retConv != S_OK) {
+					//???
+				}
+
+				buf[len] = 0;
             
-				if ( buf[nMudEmuTextSize-1] != 0xA && buf[nMudEmuTextSize-1]!= 1 )
+				if ( len > 0 && buf[len-1] != L'\x0A' && buf[len-1]!= L'\x01' )
 					more_coming = 1;
 				else 
 					more_coming = 0;
 
-				nMudEmuTextSize = 0;
+				if (nMudEmuTextSize > processed)
+					memmove(&strMudEmuText[0], &strMudEmuText[processed], nMudEmuTextSize - processed);
+
+				nMudEmuTextSize -= processed;
 			} else {
-				buf[0] = '\0';
+				buf[0] = L'\0';
 			}
 
 			ResetEvent(eventMudEmuTextArrives);
@@ -1255,7 +1348,7 @@ void DLLEXPORT ReadMud()
 		}
 
 		if (BCASTSocket != INVALID_SOCKET) {
-			static char buf[BUFFER_SIZE];
+			wchar_t buf[BUFFER_SIZE];
 			unsigned long len;
 
 			for(;;) {	
@@ -1264,13 +1357,13 @@ void DLLEXPORT ReadMud()
 				if( !len )
 					break;
 
-				if( len >= sizeof(buf) - 1 )
-					len = sizeof(buf) - 2;
+				if( len >= sizeof(buf) - 1*sizeof(wchar_t) )
+					len = sizeof(buf) - 2*sizeof(wchar_t);
 
 				struct sockaddr_in dest;
 				int tmp = sizeof(dest);
 
-				if( (len = recvfrom(BCASTSocket, buf, len, 0, (struct sockaddr*)&dest, &tmp)) <= 0)
+				if( (len = recvfrom(BCASTSocket, (char*)buf, len, 0, (struct sockaddr*)&dest, &tmp)) <= 0)
 					break;
 				if( bBCastFilterPort && htons(dest.sin_port) != wBCastUdpPort )
 					continue;
@@ -1291,8 +1384,9 @@ void DLLEXPORT ReadMud()
 						continue;
 				}
 				if( !bBCastFilterPort || htons(dest.sin_port) == wBCastUdpPort ) {
-					buf[len++] = '\n';
-					buf[len] = '\0';
+					buf[len++] = L'\n';
+					buf[len] = L'\0';
+
 					process_incoming (buf, FALSE);
 				}
 			}
@@ -1323,17 +1417,17 @@ void DLLEXPORT ReadMud()
     tick_func();
 }
 
-void MultiactionCommand(char* arg)
+void MultiactionCommand(wchar_t* arg)
 {
-    char left[BUFFER_SIZE];
-    arg=get_arg_in_braces(arg, left, STOP_SPACES);
+    wchar_t left[BUFFER_SIZE];
+    arg=get_arg_in_braces(arg,left,STOP_SPACES,sizeof(left)/sizeof(wchar_t)-1);
 
     if ( *left ) {
-        if ( !_strcmpi("on", left) ) {
+        if ( !wcsicmp(L"on", left) ) {
             bMultiAction = TRUE;
             tintin_puts2(rs::rs(1200));
         } else 
-            if ( !_strcmpi("off", left) ) {
+            if ( !wcsicmp(L"off", left) ) {
                 bMultiAction = FALSE;
                 tintin_puts2(rs::rs(1201));
             } else 
@@ -1350,17 +1444,17 @@ void MultiactionCommand(char* arg)
     }
 }
 
-void MultiHlightCommand(char* arg)
+void MultiHlightCommand(wchar_t* arg)
 {
-    char left[BUFFER_SIZE];
-    arg=get_arg_in_braces(arg, left, STOP_SPACES);
+    wchar_t left[BUFFER_SIZE];
+    arg=get_arg_in_braces(arg,left,STOP_SPACES,sizeof(left)/sizeof(wchar_t)-1);
 
     if ( *left ) {
-        if ( !_strcmpi("on", left) ) {
+        if ( !wcsicmp(L"on", left) ) {
             bMultiHighlight  = TRUE;
             tintin_puts2(rs::rs(1205));
         } else 
-            if ( !_strcmpi("off", left) ) {
+            if ( !wcsicmp(L"off", left) ) {
                 bMultiHighlight = FALSE;
                 tintin_puts2(rs::rs(1206));
             } else 
@@ -1409,51 +1503,51 @@ void  DLLEXPORT LunchDebuger()
 }
 
 //vls-begin// multiple output
-void woutput_command(char* arg)
+void woutput_command(wchar_t* arg)
 { 
-    char number[BUFFER_SIZE];
-    char left[BUFFER_SIZE], right[BUFFER_SIZE];
-    char result[BUFFER_SIZE], strng[BUFFER_SIZE];
+    wchar_t number[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE];
+    wchar_t result[BUFFER_SIZE], strng[BUFFER_SIZE];
     int wnd = MAX_OUTPUT;
     
-    arg=get_arg_in_braces(arg, number, STOP_SPACES);
-    arg=get_arg_in_braces(arg, left,   WITH_SPACES);
-    arg=get_arg_in_braces(arg, right,  WITH_SPACES);
+    arg=get_arg_in_braces(arg,number,STOP_SPACES,sizeof(number)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,left,WITH_SPACES,sizeof(left)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
 
-    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !swscanf(number, L"%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts2(rs::rs(1239));
         return;
     }
 
     if ( !right[0] ) {  // no colors
-        prepare_actionalias(left,strng, sizeof(strng)); 
+        prepare_actionalias(left,strng, sizeof(strng)/sizeof(wchar_t)); 
     } else {
-        prepare_actionalias(right,result, sizeof(result)); 
+        prepare_actionalias(right,result, sizeof(result)/sizeof(wchar_t)); 
         add_codes(result, strng, left);
     }
     tintin_puts3(strng, wnd);
 }
 
-void wshow_command(char *arg)
+void wshow_command(wchar_t *arg)
 {
-    char number[BUFFER_SIZE];
-    char option[BUFFER_SIZE];
+    wchar_t number[BUFFER_SIZE];
+    wchar_t option[BUFFER_SIZE];
     int wnd = MAX_OUTPUT;
     int opt;
 
-    arg=get_arg_in_braces(arg, number, STOP_SPACES);
-    arg=get_arg_in_braces(arg, option, STOP_SPACES);
+    arg=get_arg_in_braces(arg,number,STOP_SPACES,sizeof(number)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,option,STOP_SPACES,sizeof(option)/sizeof(wchar_t)-1);
 
-    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !swscanf(number, L"%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts2(rs::rs(1240));
         return;
     }
 
-    if ( option[0] == 0 || (option[0] == 't' && is_abrev(option, "toggle")) )
+    if ( option[0] == 0 || (is_abrev(option, L"toggle")) )
         opt = 0;
-    else if ( option[0] == 'h' && is_abrev(option, "hide") )
+    else if ( is_abrev(option, L"hide") )
         opt = 1;
-    else if ( option[0] == 's' && is_abrev(option, "show") )
+    else if ( is_abrev(option, L"show") )
         opt = 2;
     else {
         tintin_puts2(rs::rs(1240));
@@ -1463,51 +1557,51 @@ void wshow_command(char *arg)
     PostMessage(hwndMAIN, WM_USER+500, (WPARAM)(wnd), (LPARAM)(opt));
 }
 
-void wname_command(char *arg)
+void wname_command(wchar_t *arg)
 {
-    char number[BUFFER_SIZE];
-    char option[BUFFER_SIZE];
+    wchar_t number[BUFFER_SIZE];
+    wchar_t option[BUFFER_SIZE];
     int wnd = MAX_OUTPUT;
 
-    arg=get_arg_in_braces(arg, number, STOP_SPACES);
-    arg=get_arg_in_braces(arg, option, STOP_SPACES);
+    arg=get_arg_in_braces(arg,number,STOP_SPACES,sizeof(number)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,option,STOP_SPACES,sizeof(option)/sizeof(wchar_t)-1);
 
-    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !swscanf(number, L"%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts2(rs::rs(1244));
         return;
     }
 
-    HGLOBAL hg = GlobalAlloc(GHND, strlen(option)+2);
-    char* p = (char*)GlobalLock(hg);
-    strcpy(p, option);
+    HGLOBAL hg = GlobalAlloc(GHND, (wcslen(option)+2)*sizeof(wchar_t));
+    wchar_t* p = (wchar_t*)GlobalLock(hg);
+    wcscpy(p, option);
     GlobalUnlock (hg);
 
     PostMessage(hwndMAIN, WM_USER+501, (WPARAM)wnd, (LPARAM)hg);
 }
 
-void wdock_command(char *arg)
+void wdock_command(wchar_t *arg)
 {
-    char number[BUFFER_SIZE];
-    char option[BUFFER_SIZE];
+    wchar_t number[BUFFER_SIZE];
+    wchar_t option[BUFFER_SIZE];
     LONG enable;
     int wnd = MAX_OUTPUT;
 
-    arg=get_arg_in_braces(arg, number, STOP_SPACES);
-    arg=get_arg_in_braces(arg, option, STOP_SPACES);
+    arg=get_arg_in_braces(arg,number,STOP_SPACES,sizeof(number)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,option,STOP_SPACES,sizeof(option)/sizeof(wchar_t)-1);
 
 	enable = 1;
-	if ( is_abrev(option, "disable") )
+	if ( is_abrev(option, L"disable") )
 		enable = 0;
-	else if ( is_abrev(option, "left") )
+	else if ( is_abrev(option, L"left") )
 		enable = 2;
-	else if ( is_abrev(option, "top") )
+	else if ( is_abrev(option, L"top") )
 		enable = 3;
-	else if ( is_abrev(option, "right") )
+	else if ( is_abrev(option, L"right") )
 		enable = 4;
-	else if ( is_abrev(option, "bottom") )
+	else if ( is_abrev(option, L"bottom") )
 		enable = 5;
 
-    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !swscanf(number, L"%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts2(rs::rs(1260));
         return;
     }
@@ -1516,34 +1610,34 @@ void wdock_command(char *arg)
 }
 
 DWORD DLLEXPORT wposes[MAX_OUTPUT][2];
-void wpos_command(char *arg)
+void wpos_command(wchar_t *arg)
 {
-    char number[BUFFER_SIZE];
-    char point1[BUFFER_SIZE];
-    char point2[BUFFER_SIZE];
+    wchar_t number[BUFFER_SIZE];
+    wchar_t point1[BUFFER_SIZE];
+    wchar_t point2[BUFFER_SIZE];
     LONG points;
     LONG wnd = MAX_OUTPUT;
     int p1,p2;
 
-    arg=get_arg_in_braces(arg, number, STOP_SPACES);
-    arg=get_arg_in_braces(arg, point1, STOP_SPACES);
-    arg=get_arg_in_braces(arg, point2, STOP_SPACES);
+    arg=get_arg_in_braces(arg,number,STOP_SPACES,sizeof(number)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,point1,STOP_SPACES,sizeof(point1)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,point2,STOP_SPACES,sizeof(point2)/sizeof(wchar_t)-1);
 
-	p1 = (atoi(point1) > 2048) ? 2048 : atoi(point1);
-	p2 = (atoi(point2) > 2048) ? 2048 : atoi(point2);
+	p1 = (_wtoi(point1) > 2048) ? 2048 : _wtoi(point1);
+	p2 = (_wtoi(point2) > 2048) ? 2048 : _wtoi(point2);
 
-    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
+    if (!is_all_digits(number) || !swscanf(number, L"%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts2(rs::rs(1244));
         return;
     }
 
 	if(!(*point1))
 	{
-		sprintf(number,rs::rs(1256),wnd,wposes[wnd][0],wposes[wnd][1]);
+		swprintf(number,rs::rs(1256),wnd,wposes[wnd][0],wposes[wnd][1]);
 		tintin_puts2(number);
 		return;
 	}
-	if(is_abrev(point1,"reposition"))
+	if(is_abrev(point1,L"reposition"))
 	{
 		p1 = wposes[wnd][0];
 		p2 = wposes[wnd][1];
@@ -1557,21 +1651,21 @@ void wpos_command(char *arg)
 
 extern GET_WNDSIZE_FUNC GetWindowSize;
 extern SET_WNDSIZE_FUNC SetWindowSize;
-void wsize_command(char *arg)
+void wsize_command(wchar_t *arg)
 {
-    char number[BUFFER_SIZE];
-    char width[BUFFER_SIZE];
-    char height[BUFFER_SIZE];
+    wchar_t number[BUFFER_SIZE];
+    wchar_t width[BUFFER_SIZE];
+    wchar_t height[BUFFER_SIZE];
     LONG wnd = MAX_OUTPUT;
     int w, h;
 
-    arg = get_arg_in_braces(arg, number, STOP_SPACES);
-    arg = get_arg_in_braces(arg, width, STOP_SPACES);
-    arg = get_arg_in_braces(arg, height, STOP_SPACES);
+    arg = get_arg_in_braces(arg,number,STOP_SPACES,sizeof(number)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,width,STOP_SPACES,sizeof(width)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,height,STOP_SPACES,sizeof(height)/sizeof(wchar_t)-1);
 
-    if (!is_all_digits(number) || !sscanf(number, "%d", &wnd) ||
-		!is_all_digits(width)  || !sscanf(width,  "%d", &w  ) ||
-		!is_all_digits(height) || !sscanf(height, "%d", &h  ) ) {
+    if (!is_all_digits(number) || !swscanf(number, L"%d", &wnd) ||
+		!is_all_digits(width)  || !swscanf(width,  L"%d", &w  ) ||
+		!is_all_digits(height) || !swscanf(height, L"%d", &h  ) ) {
         tintin_puts2(rs::rs(1281));
         return;
     }
@@ -1582,6 +1676,74 @@ void wsize_command(char *arg)
 }
 
 //vls-end//
+
+void codepage_command(wchar_t *arg)
+{
+	wchar_t temp[BUFFER_SIZE], codepage[BUFFER_SIZE];
+
+	arg = get_arg_in_braces(arg,temp,WITH_SPACES,sizeof(codepage)/sizeof(wchar_t)-1);
+
+	if (wcslen(temp) == 0) {
+		if (CPNames.find(MudCodePage) == CPNames.end()) // should not ever happen
+			swprintf(temp, rs::rs(1293), MudCodePage, L"unknown");
+		else
+			swprintf(temp, rs::rs(1293), MudCodePage, CPNames[MudCodePage].c_str());
+		tintin_puts2(temp);
+	} else if (is_abrev(temp, L"list")) {
+		wstring list;
+		list = rs::rs(1294);
+		for (map< wstring, UINT >::iterator it = CPIDs.begin(); it != CPIDs.end(); it++) {
+			if (it != CPIDs.begin())
+				list += L", ";
+			list += it->first;
+		}
+		tintin_puts2(list.c_str());
+	} else {
+		prepare_actionalias(temp,codepage, sizeof(codepage)/sizeof(wchar_t));
+
+		if (is_abrev(codepage, L"default"))
+			swprintf(codepage, L"%d", GetACP());
+
+		if (is_all_digits(codepage)) {
+			UINT cp = _wtoi(codepage);
+			if (CPNames.find(cp) == CPNames.end()) {
+				swprintf(temp, rs::rs(1295), cp);
+				tintin_puts2(temp);
+			} else {
+				MudCodePage = cp;
+				swprintf(temp, rs::rs(1296), cp, CPNames[cp].c_str());
+				tintin_puts2(temp);
+			}
+		} else {
+			wstring cpname = codepage;
+			if (CPIDs.find(cpname) == CPIDs.end()) {
+				swprintf(temp, rs::rs(1297), cpname.c_str());
+				tintin_puts2(temp);
+			} else {
+				MudCodePage = CPIDs[cpname];
+				swprintf(temp, rs::rs(1296), CPIDs[cpname], cpname.c_str());
+				tintin_puts2(temp);
+			}
+		}
+	}
+
+}
+
+int DLLEXPORT enumerate_codepage(int Index, wchar_t *Name, int MaxNameSize)
+{
+	if (Index < 0 || Index >= CPIDs.size())
+		return -1;
+	for (map < wstring, UINT >::iterator it = CPIDs.begin(); it != CPIDs.end(); it++)
+		if (Index-- == 0) {
+			if (Name) {
+				int len = min(MaxNameSize - 1, it->first.length());
+				wcsncpy(Name, it->first.c_str(), len);
+				Name[len] = L'\0';
+			}
+			return it->second;
+		}
+	return -1;
+}
 
 void DLLEXPORT reopen_bcast_socket()
 {

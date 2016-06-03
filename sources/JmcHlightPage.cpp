@@ -73,7 +73,7 @@ END_MESSAGE_MAP()
 BOOL CJmcHlightPage::OnInitDialog() 
 {
 	CPropertyPage::OnInitDialog();
-    AddPage("hlight", this);
+    AddPage(L"hlight", this);
 
     m_ImageList.Create(IDB_GROUP_ICONS, 16 , 2, (COLORREF)0xFFFFFF);
 
@@ -142,21 +142,21 @@ void CJmcHlightPage::SetControls()
         m_strName = pHlight->m_strPattern.data();
         m_cGroup.SelectGroup (pHlight->m_pGroup );
         // now set up colors. scan ANSI string for it
-        char* p = (char*)pHlight->m_strAnsi.data();
+        const wchar_t* p = pHlight->m_strAnsi.c_str();
         p+=2;
         BOOL bBold = FALSE;
         m_nForeColor  = 7;
         m_nBackColor= 0;
 
-        while ( *p && *p != 'm' ) {
-            char buff[16] = "";
-            char* p1 = buff;
-            while ( isdigit(*p ) ) {
+        while ( *p && *p != L'm' ) {
+            wchar_t buff[16] = L"";
+            wchar_t* p1 = buff;
+            while ( iswdigit(*p ) ) {
                 *p1++ = *p++;
             }
             *p1 = 0;
             if ( *buff ) {
-                int val = atoi(buff);
+                int val = _wtoi(buff);
                 if ( val == 0 ) 
                     bBold = FALSE;
                    else if ( val == 1 ) 
@@ -188,14 +188,14 @@ int CJmcHlightPage::AddItem(void* p)
     ZeroMemory(&lvi , sizeof(lvi));
     lvi.mask = LVIF_IMAGE | LVIF_TEXT;
     lvi.iItem = i;
-    lvi.pszText  = (LPSTR)pHlight->m_strPattern.data();
+    lvi.pszText  = (LPWSTR)pHlight->m_strPattern.c_str();
     lvi.iImage = pHlight->m_pGroup->m_bGlobal ? 1 : 0 ;
     int ind = m_cHlightList.InsertItem(&lvi);
 
     lvi.iItem = ind;
     lvi.iSubItem = 1;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)pHlight->m_pGroup->m_strName.data();
+    lvi.pszText  = (LPWSTR)pHlight->m_pGroup->m_strName.c_str();
     m_cHlightList.SetItem (&lvi);
     m_cHlightList.SetItemData(ind, (DWORD)p);
     
@@ -237,7 +237,7 @@ void CJmcHlightPage::OnSelchangeGrp()
     lvi.iItem = pos;
     lvi.iSubItem = 1;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)pG->m_strName.data();
+    lvi.pszText  = (LPWSTR)pG->m_strName.c_str();
     m_cHlightList.SetItem (&lvi);
 
     lvi.iSubItem = 0;
@@ -253,7 +253,7 @@ void CJmcHlightPage::OnAdd()
     GetDlgItem(IDC_FORE_COLOR)->EnableWindow(TRUE);
     GetDlgItem(IDC_BACK_COLOR)->EnableWindow(TRUE);
     m_strName.Empty ();
-    PCGROUP pGrp = GetGroup ("default");
+    PCGROUP pGrp = GetGroup (L"default");
     m_cGroup.SelectGroup (pGrp);
 
     m_nBackColor = 0;
@@ -270,7 +270,7 @@ void CJmcHlightPage::OnRemove()
     PHLIGHT pAl = (PHLIGHT)m_cHlightList.GetItemData(pos);
     ASSERT(pAl);
 	
-    RemoveHlight((LPSTR)pAl->m_strPattern.data());
+    RemoveHlight(pAl->m_strPattern.c_str());
     m_cHlightList.DeleteItem (pos);
     m_cHlightList.SetItemState(min(pos, m_cHlightList.GetItemCount () -1),
             LVNI_SELECTED | LVNI_FOCUSED ,  LVNI_SELECTED | LVNI_FOCUSED);
@@ -286,14 +286,14 @@ void CJmcHlightPage::OnKillfocusName()
             SetControls();
             return;
         }
-        if ( GetHlight((LPSTR)(LPCSTR)m_strName) ) {
+        if ( GetHlight(m_strName) ) {
             CString t;
             t.LoadString(IDS_HP_ERR_EXIST);
             MessageBox(t, ::AfxGetAppName() , MB_OK | MB_ICONSTOP);
             SetControls();
             return;
         }
-        PHLIGHT pAl = SetHlight("",(LPSTR)(LPCSTR)m_strName,  NULL );
+        PHLIGHT pAl = SetHlight(L"",m_strName,  NULL );
         int i = AddItem(pAl);
         int sel = m_cHlightList.GetNextItem(-1, LVNI_SELECTED);
         m_cHlightList.SetItemState(i,LVNI_SELECTED | LVNI_FOCUSED ,  LVNI_SELECTED | LVNI_FOCUSED  );
@@ -393,7 +393,7 @@ void CJmcHlightPage::OnSelchangeColor()
     CString str = colorNames[m_nForeColor];
     str += ",b ";
     str += colorNames[m_nBackColor];
-    SetHlight((LPSTR)(LPCSTR)str, (LPSTR)pAl->m_strPattern.data (), NULL);
+    SetHlight(str, pAl->m_strPattern.c_str(), NULL);
 
     m_cHlightList.RedrawItems (pos, pos);
 }

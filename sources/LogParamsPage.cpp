@@ -45,6 +45,7 @@ void CLogParamsPage::DoDataExchange(CDataExchange* pDX)
 	DDX_Radio(pDX, IDC_OVERWRITE_LOG_MODE, m_nAppendMode);
 	DDX_Radio(pDX, IDC_WRITE_LOG_AS_SHOWN_BY_SERVER, m_nLogAs);
 	DDX_Radio(pDX, IDC_LOGTYPE_TEXT, m_LogType);
+	DDX_Control(pDX, IDC_LOG_CODEPAGE, m_cCodePage);
 	//}}AFX_DATA_MAP
 }
 
@@ -55,6 +56,7 @@ BEGIN_MESSAGE_MAP(CLogParamsPage, CPropertyPage)
 	ON_BN_CLICKED(IDC_LOGTYPE_HTML, OnChangeLogType)
 	ON_BN_CLICKED(IDC_LOGTYPE_ANSI, OnChangeLogType)
 	ON_WM_SHOWWINDOW()
+	ON_CBN_SELCHANGE(IDC_LOG_CODEPAGE, OnSelchangeCodePage)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -76,3 +78,40 @@ void CLogParamsPage::OnShowWindow(BOOL bShow, UINT nStatus)
 	m_RmaSupportControl.EnableWindow(m_LogType == 2);
 	m_HtmlTimestampsControl.EnableWindow(m_LogType == 1);
 }
+
+BOOL CLogParamsPage::OnInitDialog() 
+{
+	CPropertyPage::OnInitDialog();
+
+	wchar_t cpname[BUFFER_SIZE];
+	int cpid;
+	int ind, i = 0;
+	m_vIndexToCPID.clear();
+
+	cpid = 0;
+	wcscpy(cpname, L"Same as main CodePage");
+	ind = m_cCodePage.AddString (cpname);
+	if ( cpid == m_nLogCodePage )
+		m_cCodePage.SetCurSel(ind);
+	m_vIndexToCPID.push_back(cpid);
+
+	while ( (cpid = enumerate_codepage(i++, cpname, sizeof(cpname))) >= 0) {
+		ind = m_cCodePage.AddString (cpname);
+		if ( cpid == m_nLogCodePage )
+			m_cCodePage.SetCurSel(ind);
+		m_vIndexToCPID.push_back(cpid);
+	}
+    
+	return TRUE;  // return TRUE unless you set the focus to a control
+	              // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+
+void CLogParamsPage::OnSelchangeCodePage() 
+{
+	int ind = m_cCodePage.GetCurSel();
+    if ( ind < 0 || ind >= m_vIndexToCPID.size() ) 
+        return;
+	m_nLogCodePage = m_vIndexToCPID[ind];
+}
+

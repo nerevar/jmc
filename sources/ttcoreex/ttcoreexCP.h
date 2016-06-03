@@ -391,15 +391,15 @@ public:
 		return bRet;
 	}
 
-	BOOL Fire_TelnetSE()
+	BOOL Fire_Telnet()
 	{
 		T* pT = static_cast<T*>(this);
 
         pT->m_bDropped = FALSE;
         BOOL bRet = TRUE;
 
-        if ( pT->m_bstrEventsHandlers[ID_TelnetSE].Length()  ) {
-            ParseScriptlet2((BSTR)(pT->m_bstrEventsHandlers[ID_TelnetSE]));
+        if ( pT->m_bstrEventsHandlers[ID_Telnet].Length()  ) {
+            ParseScriptlet2((BSTR)(pT->m_bstrEventsHandlers[ID_Telnet]));
             if ( pT->m_bDropped || pT->m_pvarEventParams[0].vt != VT_BSTR) {
                 bRet = FALSE;
             }

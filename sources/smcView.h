@@ -46,7 +46,7 @@ protected:
 
 
 
-    void SetCurrentANSI(LPCSTR strcCode);
+    void SetCurrentANSI(const wchar_t * strcCode);
 
 
 

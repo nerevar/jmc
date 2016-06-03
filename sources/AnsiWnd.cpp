@@ -58,12 +58,12 @@ BOOL CAnsiWnd::PreCreateWindow(CREATESTRUCT& cs)
 	return CWnd::PreCreateWindow(cs);
 }
 
-static int LengthWithoutANSI(const char* str) 
+static int LengthWithoutANSI(const wchar_t* str) 
 {
 	int ret = 0;
 	for(; *str; str++) {
-		if(*str == 0x1B) {
-			for(; *str && *str != 'm'; str++);
+		if(*str == L'\x1B') {
+			for(; *str && *str != L'm'; str++);
 		} else {
 			ret++;
 		}
@@ -105,7 +105,7 @@ void CAnsiWnd::OnPaint()
 	for(int n_line = 0, total_lines = 0; pos && total_lines <= m_nPageSize; n_line++) {
         CString str = m_strList.GetPrev(pos);
 
-		int length = LengthWithoutANSI((const char*)str);
+		int length = LengthWithoutANSI((const wchar_t*)str);
 		int lines = pDoc->m_bLineWrap ? NumOfLines(length, m_nLineWidth) : 1;
 
 		if (lines <= 0) //nothing can be drawn
@@ -213,7 +213,6 @@ void CAnsiWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
     int Pos = GetScrollPos(SB_VERT);
     CRect rect;
-    CFont* pOldFont;
     switch ( nSBCode ) {
     case SB_LINEUP:
         if ( Pos ) {
@@ -317,13 +316,13 @@ BOOL CAnsiWnd::OnEraseBkgnd(CDC* pDC)
 	// return CWnd::OnEraseBkgnd(pDC);
 }
 
-void CAnsiWnd::SetCurrentANSI(LPCSTR strCode)
+void CAnsiWnd::SetCurrentANSI(const wchar_t *strCode)
 {
     ASSERT(strCode);
     if ( strCode[0] == 0 ) 
         return;
 
-    int value = atoi(strCode);
+    int value = _wtoi(strCode);
     if ( !value ) {
         m_nCurrentBg = 0;
         m_nCurrentFg = 7;
@@ -354,7 +353,7 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
     CRect OutRect;
     int indexF, indexB;
 
-    char* src = (LPSTR)(LPCSTR)*str;
+    const wchar_t* src = *str;
 
     int LeftSide =0, TopSide =0;
     // Lets do different drawing code for selected/unselected mode. Doing to to
@@ -367,10 +366,10 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
         int CharCount = 0;
         do  {
             // Get text to draw
-            char Text[BUFFER_SIZE];
-            char* dest = Text;
+            wchar_t Text[BUFFER_SIZE];
+            wchar_t* dest = Text;
             int TextLen = 0;
-            while (*src && *src != 0x1B ) {
+            while (*src && *src != L'\x1B' ) {
                 // check for current bold
                 if ( (pDoc->m_bRectangleSelection || nStrPos == m_nStartSelectY) && CharCount == m_nStartSelectX) {
                     bNewInvert = TRUE;
@@ -390,7 +389,7 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
             // Draw text
 
             // Skip \n from the end
-            while ( TextLen && (Text[TextLen-1] == '\n' ) )
+            while ( TextLen && (Text[TextLen-1] == L'\n' ) )
                 TextLen--;
 
             indexF = m_nCurrentFg + (m_bAnsiBold && !pDoc->m_bDarkOnly ? 8 : 0 );
@@ -458,9 +457,9 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 break;
 
             // check for [ command and digit after it. IF not - skip to end of ESC command
-            if ( *src != '[' /*|| !isdigit(*src)*/ ) {
-                while ( *src && *src != 'm' ) src++;
-                if ( *src == 'm' )
+            if ( *src != L'[' /*|| !isdigit(*src)*/ ) {
+                while ( *src && *src != L'm' ) src++;
+                if ( *src == L'm' )
                     src++;
                 continue;
             }
@@ -469,12 +468,12 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 // may be need skip to ; . But .... Speed
                 Text[0] = 0;
                 dest = Text;
-                while ( isdigit(*src) ) 
+                while ( iswdigit(*src) ) 
                     *dest++ = *src++;
                 *dest = 0;
                 if ( Text[0] ) 
                     SetCurrentANSI(Text);
-            } while ( *src && *src++ != 'm' );
+            } while ( *src && *src++ != L'm' );
         }while ( *src );
         // draw to end of the window
         OutRect = rect;
@@ -489,14 +488,14 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
             pDC->SetTextColor(pDoc->m_ForeColors[indexF]);
             pDC->SetBkColor(pDoc->m_BackColors[indexB]);
         }
-        pDC->ExtTextOut(OutRect.left, OutRect.top, ETO_OPAQUE, &OutRect, "", 0, NULL);
+        pDC->ExtTextOut(OutRect.left, OutRect.top, ETO_OPAQUE, &OutRect, L"", 0, NULL);
     } else {
         do  {
             // Get text to draw
-            char Text[BUFFER_SIZE];
-            char* dest = Text;
+            wchar_t Text[BUFFER_SIZE];
+            wchar_t* dest = Text;
             int TextLen = 0;
-            while (*src && *src != 0x1B ) {
+            while (*src && *src != L'\x1B' ) {
                 *dest++ = *src++;
                 TextLen++;
             }
@@ -504,7 +503,7 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
             // Draw text
 
             // Skip \n  from the end
-            while ( TextLen && (Text[TextLen-1] == '\n' ) )
+            while ( TextLen && (Text[TextLen-1] == L'\n' ) )
                 TextLen--;
 
             indexF = m_nCurrentFg + (m_bAnsiBold && !pDoc->m_bDarkOnly ? 8 : 0 );
@@ -557,9 +556,9 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 break;
 
             // check for [ command and digit after it. IF not - skip to end of ESC command
-            if ( *src != '[' /*|| !isdigit(*src)*/ ) {
-                while ( *src && *src != 'm' ) src++;
-                if ( *src == 'm' )
+            if ( *src != L'[' /*|| !isdigit(*src)*/ ) {
+                while ( *src && *src != L'm' ) src++;
+                if ( *src == L'm' )
                     src++;
                 continue;
             }
@@ -568,7 +567,7 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 // may be need skip to ; . But .... Speed
                 Text[0] = 0;
                 dest = Text;
-                while ( isdigit(*src) ) 
+                while ( iswdigit(*src) ) 
                     *dest++ = *src++;
                 *dest = 0;
                 if ( Text[0] ) 
@@ -585,7 +584,7 @@ void CAnsiWnd::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
 			pDC->SetBkColor(0xFFFFFF-pDoc->m_BackColors[indexB]);
 		else
 			pDC->SetBkColor(pDoc->m_BackColors[indexB]);
-        pDC->ExtTextOut(OutRect.left, OutRect.top, ETO_OPAQUE, &OutRect, "", 0, NULL);
+        pDC->ExtTextOut(OutRect.left, OutRect.top, ETO_OPAQUE, &OutRect, L"", 0, NULL);
     }
 }
 
@@ -607,11 +606,11 @@ void CAnsiWnd::OnLButtonDown(UINT nFlags, CPoint point)
     m_nStartTrackX = m_nEndTrackX = m_nStartSelectX = m_nEndSelectX = x;
 }
 
-static char* SkipAnsi(char* ptr)
+static const wchar_t* SkipAnsi(const wchar_t* ptr)
 {
 
     for ( ; *ptr ; ptr++ ) {
-        if ( *ptr == 'm' ){
+        if ( *ptr == L'm' ){
             ptr++;
             break;
         }
@@ -640,12 +639,12 @@ void CAnsiWnd::OnLButtonUp(UINT nFlags, CPoint point)
         int i = m_nStartSelectY;
         do { 
             CString tmpStr = m_strList.GetAt(pos);
-            char* ptr = (LPSTR)(LPCSTR)tmpStr;
+            const wchar_t* ptr = tmpStr;
             int count = 0;
             if (pDoc->m_bRectangleSelection || i == m_nStartSelectY) {
                 // Skip to StartX character
                 while ( count < m_nStartSelectX && *ptr){
-                    if ( *ptr == 0x1B ){
+                    if ( *ptr == L'\x1B' ){
                         ptr = SkipAnsi(ptr);
                     }
                     else {
@@ -657,11 +656,11 @@ void CAnsiWnd::OnLButtonUp(UINT nFlags, CPoint point)
             }
             // characters skipped now copy nessesary info to string
             do {
-                if ( *ptr == '\n' ) {
+                if ( *ptr == L'\n' ) {
                     ptr++;
                     continue;
                 }
-                if ( *ptr == 0x1B ) {
+                if ( *ptr == L'\x1B' ) {
                     ptr = SkipAnsi(ptr);
                     continue;
                 } //* en: do not even try
@@ -673,28 +672,24 @@ void CAnsiWnd::OnLButtonUp(UINT nFlags, CPoint point)
                 count++;
             } while ( *ptr );
             if ( i != m_nEndSelectY ) 
-                ResultStr +="\r\n";
+                ResultStr +=L"\r\n";
             i++;
             pos = m_strList.FindIndex(ScrollIndex+i);
         } while ( i<=m_nEndSelectY && pos );
         // Put to clipboard
-		if (strlen(ResultStr) != 0)
+		if (wcslen(ResultStr) != 0)
 		{
 			VERIFY(OpenClipboard());
 
 			VERIFY(EmptyClipboard());
 
-			LCID lc = GetUserDefaultLCID();
-			HANDLE hData = GlobalAlloc(GMEM_ZEROINIT, sizeof(lc) );
-			LCID* pLc = (LCID*)GlobalLock(hData);
-			*pLc = lc;
+			HANDLE hData;
+
+			hData = GlobalAlloc(GMEM_ZEROINIT, (ResultStr.GetLength()+1)*sizeof(wchar_t) );
+			wchar_t* buff = (wchar_t*)GlobalLock(hData);
+			wcscpy (buff, ResultStr);
 			GlobalUnlock(hData);
-			SetClipboardData(CF_LOCALE, hData);
-			hData = GlobalAlloc(GMEM_ZEROINIT, ResultStr.GetLength()+1 );
-			char* buff = (char*)GlobalLock(hData);
-			strcpy (buff, (LPSTR)(LPCSTR)ResultStr);
-			GlobalUnlock(hData);
-			SetClipboardData(CF_TEXT, hData);
+			SetClipboardData(CF_UNICODETEXT, hData);
 			CloseClipboard();
 		}
     }
@@ -775,7 +770,7 @@ void CAnsiWnd::OnUpdate(LPARAM lHint)
 				int cnt_last_line = 1;
 				if (pDoc->m_bLineWrap && m_LineCountsList.size() > 0) {
 					int old_len = m_LineCountsList[0];
-					cnt_last_line = NumOfLines(LengthWithoutANSI((const char*)last_line), m_nLineWidth);
+					cnt_last_line = NumOfLines(LengthWithoutANSI((const wchar_t*)last_line), m_nLineWidth);
 					dcnt_last_line = cnt_last_line - old_len;
 				}
                 
@@ -788,7 +783,7 @@ void CAnsiWnd::OnUpdate(LPARAM lHint)
 					m_TotalLinesReceived++;
 
 					new_lines += pDoc->m_bLineWrap ? 
-						NumOfLines(LengthWithoutANSI((const char*)str), m_nLineWidth) : 1;
+						NumOfLines(LengthWithoutANSI((const wchar_t*)str), m_nLineWidth) : 1;
                 }
                 rectSmall.left = 0;
                 rectSmall.right = rect.right;

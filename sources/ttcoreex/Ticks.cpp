@@ -12,11 +12,11 @@
 /*********************/
 /* the #tick command */
 /*********************/
-void tick_command(char*arg)
+void tick_command(wchar_t*arg)
 {
     if(bTickStatus) {
-      char buf[100];
-      sprintf(buf, rs::rs(1176), iSecToTick);
+      wchar_t buf[100];
+      swprintf(buf, rs::rs(1176), iSecToTick);
       tintin_puts(buf);
     }
     else
@@ -26,7 +26,7 @@ void tick_command(char*arg)
 /************************/
 /* the #tickoff command */
 /************************/
-void tickoff_command(char*arg)
+void tickoff_command(wchar_t*arg)
 {
     bTickStatus=FALSE;
     tintin_puts2(rs::rs(1178));
@@ -35,7 +35,7 @@ void tickoff_command(char*arg)
 /***********************/
 /* the #tickon command */
 /***********************/
-void tickon_command(char*arg)
+void tickon_command(wchar_t*arg)
 {
     bTickStatus=TRUE;
     tintin_puts2(rs::rs(1179));
@@ -44,7 +44,7 @@ void tickon_command(char*arg)
 /************************/
 /* the #tickset command */
 /************************/
-void tickset_command(char*arg)
+void tickset_command(wchar_t*arg)
 {
     dwTime0=GetTickCount()/1000; /* we don't prompt! too many ticksets... */
 }
@@ -52,11 +52,11 @@ void tickset_command(char*arg)
 /*************************/
 /* the #ticksize command */
 /*************************/
-void ticksize_command(char *arg)
+void ticksize_command(wchar_t *arg)
 {
   if(*arg!='\0') {
-    if(isdigit(*arg)) {
-      tick_size=atoi(arg);
+    if(iswdigit(*arg)) {
+      tick_size=_wtoi(arg);
       dwTime0=GetTickCount()/1000;
       tintin_puts2(rs::rs(1180));        
     }

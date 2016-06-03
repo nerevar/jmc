@@ -13,6 +13,9 @@ copy language.ini %release%
 copy changelog.txt %release%
 copy ttcoreex.bat %release%
 
+mkdir %release%\help
+xcopy help %release%\help /s
+
 "c:\Program Files\7-Zip\7z.exe" a %release%.zip %release%
 
 rmdir /s/q %release%

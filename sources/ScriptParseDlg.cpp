@@ -98,8 +98,8 @@ int CScriptParseDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CDialog::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	
-    int x = ::GetPrivateProfileInt("View" , "ScriptDlgX" ,0 , szGLOBAL_PROFILE) ;
-    int y = ::GetPrivateProfileInt("View" , "ScriptDlgY" ,0 , szGLOBAL_PROFILE) ;
+    int x = ::GetPrivateProfileInt(L"View" , L"ScriptDlgX" ,0 , szGLOBAL_PROFILE) ;
+    int y = ::GetPrivateProfileInt(L"View" , L"ScriptDlgY" ,0 , szGLOBAL_PROFILE) ;
     SetWindowPos(NULL, x, y , 0 , 0 , SWP_NOZORDER | SWP_NOSIZE);
     // --CHANGED by Anton Likhtarov
 	SetIcon(LoadIcon(::AfxGetInstanceHandle(), MAKEINTRESOURCE(IDD_SCRIPT_PARSE)), TRUE);
@@ -113,10 +113,10 @@ void CScriptParseDlg::OnDestroy()
 	
 	WINDOWPLACEMENT wp;
     GetWindowPlacement (&wp);
-    ::WritePrivateProfileInt("View" , "ScriptDlgX" ,wp.rcNormalPosition.left , szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("View" , "ScriptDlgY" ,wp.rcNormalPosition.top , szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("View" , "ScriptDlgCX" ,wp.rcNormalPosition.right - wp.rcNormalPosition.left , szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("View" , "ScriptDlgCY" ,wp.rcNormalPosition.bottom - wp.rcNormalPosition.top , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"View" , L"ScriptDlgX" ,wp.rcNormalPosition.left , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"View" , L"ScriptDlgY" ,wp.rcNormalPosition.top , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"View" , L"ScriptDlgCX" ,wp.rcNormalPosition.right - wp.rcNormalPosition.left , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"View" , L"ScriptDlgCY" ,wp.rcNormalPosition.bottom - wp.rcNormalPosition.top , szGLOBAL_PROFILE);
 	
 }
 
@@ -186,8 +186,8 @@ BOOL CScriptParseDlg::OnInitDialog()
 
     m_cText.SetFont (&pDoc->m_fntText );
 
-    int x = ::GetPrivateProfileInt("View" , "ScriptDlgCX" ,0 , szGLOBAL_PROFILE) ;
-    int y = ::GetPrivateProfileInt("View" , "ScriptDlgCY" ,0 , szGLOBAL_PROFILE) ;
+    int x = ::GetPrivateProfileInt(L"View" , L"ScriptDlgCX" ,0 , szGLOBAL_PROFILE) ;
+    int y = ::GetPrivateProfileInt(L"View" , L"ScriptDlgCY" ,0 , szGLOBAL_PROFILE) ;
     
     if ( x!= 0  && y != 0 ) {
         SetWindowPos(NULL, 0,0 ,x, y, SWP_NOZORDER | SWP_NOMOVE);

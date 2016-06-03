@@ -11,8 +11,8 @@
 
 void show_session();
 
-extern char *get_arg_in_braces();
-extern char *space_out();
+extern wchar_t *get_arg_in_braces();
+extern wchar_t *space_out();
 extern struct listnode *copy_list();
 extern struct listnode *init_list();
 
@@ -62,9 +62,9 @@ void cleanup_session(void)
     // bTickStatus=FALSE;
 }
 
-void connect_command(char* arg)
+void connect_command(wchar_t* arg)
 {
-  char host[BUFFER_SIZE], port[BUFFER_SIZE];
+  wchar_t host[BUFFER_SIZE], port[BUFFER_SIZE];
 
   State = 0;
 
@@ -78,8 +78,8 @@ void connect_command(char* arg)
         return;
   }
 
-  arg = get_arg_in_braces(arg, host, STOP_SPACES);
-  arg = get_arg_in_braces(arg, port, STOP_SPACES);
+  arg = get_arg_in_braces(arg,host,STOP_SPACES,sizeof(host)/sizeof(wchar_t)-1);
+  arg = get_arg_in_braces(arg,port,STOP_SPACES,sizeof(port)/sizeof(wchar_t)-1);
   
   if(!*host) {
     tintin_puts2(rs::rs(1164));

@@ -17,11 +17,11 @@ void check_insert_path();
 void insert_path();
 int return_flag=TRUE;
 //* en:race
-char race_format[BUFFER_SIZE];
-char race_last[BUFFER_SIZE];
+wchar_t race_format[BUFFER_SIZE];
+wchar_t race_last[BUFFER_SIZE];
 //*/en
 
-extern char *get_arg_in_braces();
+extern wchar_t *get_arg_in_braces(wchar_t *s, wchar_t *arg, int flag, int maxlength);
 extern struct listnode *search_node_with_wild();
 extern struct listnode *searchnode_list();
 extern struct listnode *init_list();
@@ -36,20 +36,20 @@ struct listnode *init_pathdir_list(void)
   }
   listhead->next=NULL;
 
-    insertnode_list(listhead, "n", "s", "0", ALPHA);
-    insertnode_list(listhead, "s", "n", "0", ALPHA);
-    insertnode_list(listhead, "w", "e", "0", ALPHA);
-    insertnode_list(listhead, "e", "w", "0", ALPHA);
-    insertnode_list(listhead, "d", "u", "0", ALPHA);
-    insertnode_list(listhead, "u", "d", "0", ALPHA);
+    insertnode_list(listhead, L"n", L"s", L"0", ALPHA);
+    insertnode_list(listhead, L"s", L"n", L"0", ALPHA);
+    insertnode_list(listhead, L"w", L"e", L"0", ALPHA);
+    insertnode_list(listhead, L"e", L"w", L"0", ALPHA);
+    insertnode_list(listhead, L"d", L"u", L"0", ALPHA);
+    insertnode_list(listhead, L"u", L"d", L"0", ALPHA);
 
   return(listhead);
 }
 
 
-void mark_command(char* arg)
+void mark_command(wchar_t* arg)
 {
-    if ( !arg || !*arg  || !strcmp("start", arg) ) {
+    if ( !arg || !*arg  || !wcscmp(L"start", arg) ) {
         kill_list(common_path);
         common_path=init_list();
         path_length=0;
@@ -62,45 +62,45 @@ void mark_command(char* arg)
 
 }
 
-void map_command(char *arg)
+void map_command(wchar_t *arg)
 {
     if ( bPathing ) {
-        get_arg_in_braces(arg, arg, WITH_SPACES);
+        get_arg_in_braces(arg, arg, WITH_SPACES, BUFFER_SIZE - 1);
         check_insert_path(arg);
     } else {
         tintin_puts2(rs::rs(1149));
     }
 }
 
-void savepath_command(char* arg)
+void savepath_command(wchar_t* arg)
 {
-    char result[BUFFER_SIZE];
+    wchar_t result[BUFFER_SIZE];
     struct listnode *ln=common_path;
     int dirlen, len=0;
-    char left[BUFFER_SIZE], right[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE];
 
     if ( !path_length ) {
         tintin_puts2(rs::rs(1150));
         return;
     }
 
-    arg = get_arg_in_braces(arg, left, STOP_SPACES);
-    arg = get_arg_in_braces(arg, right, WITH_SPACES);
+    arg = get_arg_in_braces(arg, left, STOP_SPACES, sizeof(left)/sizeof(wchar_t) - 1);
+    arg = get_arg_in_braces(arg, right, WITH_SPACES, sizeof(right)/sizeof(wchar_t) - 1);
 
-    if ( !left[0] /*|| (right[0] && strcmp(right , "revers"))*/ ) {
+    if ( !left[0] /*|| (right[0] && wcscmp(right , L"revers"))*/ ) {
         tintin_puts2(rs::rs(1151));
         return;
     }
 
 
-    sprintf(result, "%calias {%s} {", cCommandChar, left);
-    len = strlen(result);
+    swprintf(result, L"%lcalias {%ls} {", cCommandChar, left);
+    len = wcslen(result);
 
     if ( !right[0] ) {
         while (ln=ln->next) {
-            dirlen = strlen(ln->left);
+            dirlen = wcslen(ln->left);
             if (dirlen+len+2<BUFFER_SIZE-1) {
-                strcat(result, ln->left);
+                wcscat(result, ln->left);
 	            len+=dirlen+1;
                 if (ln->next) {
                     result[len-1] = cCommandDelimiter;
@@ -114,15 +114,15 @@ void savepath_command(char* arg)
     }
     else {
         // Do backscroll. I have to make stack for nodes
-        struct listnode** nodes = (struct listnode**)malloc(sizeof(struct listnode*)*(path_length+1));
+        struct listnode** nodes = (struct listnode**)malloc(sizeof(struct listnode*)*(path_length+1)*sizeof(wchar_t));
         int i = 0;
         while ( ln=ln->next) 
             nodes[i++] = ln;
         // i = path_length-1;
         while (i > 0 ) {
-            dirlen = strlen(nodes[i-1]->right);
+            dirlen = wcslen(nodes[i-1]->right);
             if (dirlen+len+2<BUFFER_SIZE-1) {
-                strcat(result, nodes[i-1]->right);
+                wcscat(result, nodes[i-1]->right);
 	            len+=dirlen+1;
                 if (i) {
                     result[len-1] = cCommandDelimiter;
@@ -138,38 +138,38 @@ void savepath_command(char* arg)
 		free(nodes);
     }
     
-    strcat(result, "}");
+    wcscat(result, L"}");
     parse_input(result);
 }
 
-void path_command(char*arg)
+void path_command(wchar_t*arg)
 {
     int len=0, dirlen;
     struct listnode *ln=common_path;
-    char mypath[81];
-    strcpy(mypath, rs::rs(1154));
+    wchar_t mypath[81];
+    wcscpy(mypath, rs::rs(1154));
     while (ln=ln->next) {
-      dirlen = strlen(ln->left);
+      dirlen = wcslen(ln->left);
       if (dirlen+len>70) {
 	    tintin_puts2(mypath);
-        strcpy(mypath, rs::rs(1154));
+        wcscpy(mypath, rs::rs(1154));
         len=0;
       } 
-      strcat(mypath, ln->left);
-      strcat(mypath, " ");
+      wcscat(mypath, ln->left);
+      wcscat(mypath, L" ");
       len += dirlen+1;
     }
     tintin_puts2(mypath);
 }
 
-void return_command(char*arg)
+void return_command(wchar_t*arg)
 {
     if (path_length) {
       struct listnode *ln=common_path;
-      char command[BUFFER_SIZE];
+      wchar_t command[BUFFER_SIZE];
       path_length--;
       while (ln->next) (ln=ln->next);
-      strcpy(command, ln->right);
+      wcscpy(command, ln->right);
       return_flag=FALSE;	/* temporarily turn off path tracking */
       parse_input(command, TRUE);
       return_flag=TRUE;		/* restore path tracking */
@@ -177,7 +177,7 @@ void return_command(char*arg)
     } else tintin_puts2(rs::rs(1156));
 }
 
-void unpath_command(char*arg)
+void unpath_command(wchar_t*arg)
 {
     if (path_length) {
       struct listnode *ln=common_path;
@@ -188,7 +188,7 @@ void unpath_command(char*arg)
     } else tintin_puts2(rs::rs(1158));
 }
 
-void check_insert_path(char *command)
+void check_insert_path(wchar_t *command)
 {
   struct listnode *ln;
 
@@ -199,18 +199,18 @@ void check_insert_path(char *command)
     if (path_length!=MAX_PATH_LENGTH) path_length++;
       else if (path_length)
 	deletenode_list(common_path, common_path->next);
-    addnode_list(common_path, ln->left, ln->right, "0");
+    addnode_list(common_path, ln->left, ln->right, L"0");
   }
 }
 
-void pathdir_command(char *arg)
+void pathdir_command(wchar_t *arg)
 {
-  char left[BUFFER_SIZE], right[BUFFER_SIZE], arg2[BUFFER_SIZE];
+  wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE], arg2[BUFFER_SIZE];
   struct listnode *mypathdirs, *ln;
 
   mypathdirs=common_pathdirs;
-  arg = get_arg_in_braces(arg, left, STOP_SPACES);
-  arg = get_arg_in_braces(arg, right, WITH_SPACES);
+  arg = get_arg_in_braces(arg, left, STOP_SPACES, sizeof(left)/sizeof(wchar_t) - 1);
+  arg = get_arg_in_braces(arg, right, WITH_SPACES, sizeof(right)/sizeof(wchar_t) - 1);
 
   if (!*left) {
     tintin_puts2(rs::rs(1159));
@@ -224,68 +224,68 @@ void pathdir_command(char *arg)
   } else {
     if ((ln=searchnode_list(mypathdirs, left))!=NULL) {
         free(ln->right);
-        ln->right = (char *)malloc(strlen(right)+1);
-        strcpy(ln->right, right);
+        ln->right = (wchar_t *)malloc((wcslen(right)+1)*sizeof(wchar_t));
+        wcscpy(ln->right, right);
     }
     else {
-        insertnode_list(mypathdirs, left, right, "9", PRIORITY);
+        insertnode_list(mypathdirs, left, right, L"9", PRIORITY);
     }
-    sprintf(arg2, rs::rs(1161),left, right);
+    swprintf(arg2, rs::rs(1161),left, right);
     tintin_puts2(arg2);
     }
 }
 
 //* en:race
-void race_command(char *arg)
+void race_command(wchar_t *arg)
 {
-	char mode[BUFFER_SIZE],
+	wchar_t mode[BUFFER_SIZE],
   	  command[BUFFER_SIZE],
 	  *cptr1,*cptr2,*cptr3;
 	if(!race_format[0])
-	  strcpy(race_format,"@");
+	  wcscpy(race_format,L"@");
 	if(!race_last[0])
-	  strcpy(race_last,"");
+	  wcscpy(race_last,L"");
 
-	arg = get_arg_in_braces(arg,mode, STOP_SPACES);
-	arg = get_arg_in_braces(arg,command, WITH_SPACES);
+	arg = get_arg_in_braces(arg,mode, STOP_SPACES, sizeof(mode)/sizeof(wchar_t) - 1);
+	arg = get_arg_in_braces(arg,command, WITH_SPACES, sizeof(command)/sizeof(wchar_t) - 1);
 
-	if(mode[0]=='f' && is_abrev(mode, "format"))
+	if(is_abrev(mode, L"format"))
 	{
 		  if ( !command || !*command ) {
-	  	  	  strcpy(command,"%0\0");
+	  	  	  wcscpy(command,L"%0\0");
   	  	  }
   	  	  BOOL hasD = FALSE;
-  	  	  for(cptr1=command;*cptr1&&*cptr1!='\0';cptr1++)
-    	  	  if(*cptr1=='%'&&*(cptr1+1)=='0')
+  	  	  for(cptr1=command;*cptr1&&*cptr1!=L'\0';cptr1++)
+    	  	  if(*cptr1==L'%'&&*(cptr1+1)==L'0')
 	  	  	  	  hasD = TRUE;
   	  	  if(!hasD) 
-	  	  	  strcpy(cptr1," %0\0");
-		  strcpy(race_format,command);
+	  	  	  wcscpy(cptr1,L" %0\0");
+		  wcscpy(race_format,command);
 
 	}
 	else
-	if(mode[0]=='m' && is_abrev(mode, "move"))
+	if(is_abrev(mode, L"move"))
 	{
 		  if ( command && *command ) {
 			cptr1=command;
 			cptr3=race_last;
-			for(;*cptr1&&*cptr1!='\0';)
+			for(;*cptr1&&*cptr1!=L'\0';)
 				*cptr3++=*cptr1++;
-			*cptr3='\0';
+			*cptr3=L'\0';
   	  	  }
-   	  	  char cbuffer[BUFFER_SIZE];
+   	  	  wchar_t cbuffer[BUFFER_SIZE];
 
-            sprintf(vars[0], "%s", race_last);
-            substitute_myvars(race_format,cbuffer, sizeof(cbuffer));
+            swprintf(vars[0], L"%ls", race_last);
+            substitute_myvars(race_format,cbuffer, sizeof(cbuffer)/sizeof(wchar_t));
 		 parse_input(cbuffer);
 	}
 	else
-	if(mode[0]=='r' && is_abrev(mode, "reverse"))
+	if(is_abrev(mode, L"reverse"))
 	{
-	  	char cbuffer[BUFFER_SIZE],
+	  	wchar_t cbuffer[BUFFER_SIZE],
 			 dbuffer[BUFFER_SIZE],
 	  	      result[BUFFER_SIZE];
-		char *strt=cbuffer;
+		wchar_t *strt=cbuffer;
 		result[0]='\0';
 		for(int i = 0;race_last[i];i++)
 		{
@@ -301,20 +301,20 @@ void race_command(char *arg)
             case 'w':*strt='e';break;
             case 'e':*strt='w';break;
 		   }
-		   *(strt+1)='\0';
+		   *(strt+1)=L'\0';
 		   cptr1=result;
 		   cptr3=dbuffer;
-		   for(;*cptr1&&*cptr1!='\0';)
+		   for(;*cptr1&&*cptr1!=L'\0';)
 			   *cptr3++=*cptr1++;
-		   *cptr3='\0';
+		   *cptr3=L'\0';
            cptr1=result;
 		   cptr2=cbuffer;
 		   cptr3=dbuffer;
-		   for(;*cptr2&&*cptr2!='\0';)
+		   for(;*cptr2&&*cptr2!=L'\0';)
 			   *cptr1++=*cptr2++;
-		   for(;*cptr3&&*cptr3!='\0';)
+		   for(;*cptr3&&*cptr3!=L'\0';)
 			   *cptr1++=*cptr3++;
-		   *cptr1='\0';
+		   *cptr1=L'\0';
 		   strt=cbuffer;
 		  }
 		  else
@@ -322,11 +322,11 @@ void race_command(char *arg)
 		}
 	   cptr1=result;
 	   cptr3=race_last;
-	   for(;*cptr1&&*cptr1!='\0';)
+	   for(;*cptr1&&*cptr1!=L'\0';)
 		   *cptr3++=*cptr1++;
-	   *cptr3='\0';
+	   *cptr3=L'\0';
 
-	   race_command("move");
+	   race_command(L"move");
 	}
 }
 //*/en

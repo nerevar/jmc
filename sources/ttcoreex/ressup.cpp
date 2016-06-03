@@ -3,31 +3,31 @@
 #include "tintin.h"
 // --CHANGED by Anton Likhtarov for resource support
 HINSTANCE rs::hInst;
-char DLLEXPORT langfile[BUFFER_SIZE];
-char DLLEXPORT langsect[BUFFER_SIZE];
+wchar_t DLLEXPORT langfile[BUFFER_SIZE];
+wchar_t DLLEXPORT langsect[BUFFER_SIZE];
 
-char* rs::rs(int StrId) {
-    static char buf[256];
+wchar_t* rs::rs(int StrId) {
+    static wchar_t buf[256];
 //* en:loading interface from .ini
-	char bf[32]; 
-	char fn[MAX_PATH+2];
-	sprintf(bf,"str%d",StrId);
-	if(langfile[1] != ':')
+	wchar_t bf[32]; 
+	wchar_t fn[MAX_PATH+2];
+	swprintf(bf,L"str%d",StrId);
+	if(langfile[1] != L':')
 	{
 	    MakeAbsolutePath(fn, langfile, szBASE_DIR);
-      ::GetPrivateProfileString(langsect,bf,"",buf, 256, fn);
+      ::GetPrivateProfileString(langsect,bf,L"",buf, 256, fn);
 	}else{
-	  ::GetPrivateProfileString(langsect,bf,"",buf, 256, langfile);
+	  ::GetPrivateProfileString(langsect,bf,L"",buf, 256, langfile);
 	}
 	if(buf[0]) 
 	{
 		//now replacing all '\\n' with real CR
-		char *ptr;
-		for(ptr=buf;*ptr!='\0';ptr++)
-			if(*ptr=='\\'&&*(ptr+1)=='n')
+		wchar_t *ptr;
+		for(ptr=buf;*ptr!=L'\0';ptr++)
+			if(*ptr==L'\\'&&*(ptr+1)==L'n')
 			{
-				*ptr++=' ';
-				*ptr='\n';
+				*ptr++=L' ';
+				*ptr=L'\n';
 			}
 		return buf;
 	}

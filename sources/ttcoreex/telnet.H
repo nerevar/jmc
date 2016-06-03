@@ -81,8 +81,8 @@
 typedef struct
 {
 	unsigned char Code;
-	const char *Name;
-	const char *Descr;
+	const wchar_t *Name;
+	const wchar_t *Descr;
 } TelnetOption;
 
 #define ZLIB_DLL

@@ -1,0 +1,11 @@
+#codepage
+  shows current codepage in use
+  this codepage is applied to all data incoming from server after telnet-decodeing, and to all data
+  outgoing to server before telnet-encodeing, including all subnegotiations except NAWS (if enabled)
+  also this codepage applied to data read from mudemulator
+#codepage list
+  lists all available (found in windows registry) codepages
+#codepage <number>|<name>
+  sets codepage to one with specified number or name (should be exactly the same as shown by #codepage list)
+#codepage default
+  sets codepage to the default windows codepage

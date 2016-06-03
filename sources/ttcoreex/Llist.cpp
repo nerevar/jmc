@@ -8,7 +8,7 @@
 #include "stdafx.h"
 #include "tintin.h"
 
-void insertnode_list(struct listnode *listhead,char *ltext, char *rtext,char *prtext,int mode);
+void insertnode_list(struct listnode *listhead,const wchar_t *ltext, const wchar_t *rtext,const wchar_t *prtext,int mode);
 
 /***************************************/
 /* init list - return: ptr to listhead */
@@ -45,13 +45,13 @@ void kill_list(struct listnode *nptr)
 /********************************************************************
 **   This function will clear all lists associated with a session  **
 ********************************************************************/
-void killall_command(char*arg){KillAll(CLEAN,"1");};
-void kickall_command(char*arg){KillAll(CLEAN,"0");};
+void killall_command(wchar_t*arg){KillAll(CLEAN,L"1");};
+void kickall_command(wchar_t*arg){KillAll(CLEAN,L"0");};
 
-void KillAll(int mode, char *arg)
+void KillAll(int mode, wchar_t *arg)
 {
 	int Show = 0;
-	if ( arg && *arg != '0') {
+	if ( arg && *arg != L'0') {
 		Show = 1;
 	}
 
@@ -135,7 +135,7 @@ struct listnode *copy_list(struct listnode *sourcelist, int mode)
 /* into the list - in lexicographical order, or by numerical     */
 /* priority (dependent on mode) - Mods by Joann Ellsworth 2/2/94 */
 /*****************************************************************/
-void insertnode_list(struct listnode *listhead,char *ltext, char *rtext,char *prtext,int mode)
+void insertnode_list(struct listnode *listhead,const wchar_t *ltext, const wchar_t *rtext,const wchar_t *prtext,int mode)
 {
   struct listnode *nptr, *nptrlast, *newnode;
 
@@ -146,26 +146,26 @@ void insertnode_list(struct listnode *listhead,char *ltext, char *rtext,char *pr
     exit(1);
 */
   }
-  newnode->left=(char *)malloc(strlen(ltext)+1);
-  newnode->right=(char *)malloc(strlen(rtext)+1);
-  newnode->pr=(char *)malloc(strlen(prtext)+1);
-  strcpy(newnode->left, ltext);
-  strcpy(newnode->right, rtext);
-  strcpy(newnode->pr, prtext);
+  newnode->left=(wchar_t *)malloc((wcslen(ltext)+1)*sizeof(wchar_t));
+  newnode->right=(wchar_t *)malloc((wcslen(rtext)+1)*sizeof(wchar_t));
+  newnode->pr=(wchar_t *)malloc((wcslen(prtext)+1)*sizeof(wchar_t));
+  wcscpy(newnode->left, ltext);
+  wcscpy(newnode->right, rtext);
+  wcscpy(newnode->pr, prtext);
 
   nptr=listhead;
   switch (mode) {
      case PRIORITY:
         while((nptrlast=nptr) && (nptr=nptr->next)) {
-            if(strcmp(prtext, nptr->pr)<0) {
+            if(wcscmp(prtext, nptr->pr)<0) {
                 newnode->next=nptr;
                 nptrlast->next=newnode;
                 return;
             } else 
-            if (strcmp(prtext, nptr->pr)==0) {
+            if (wcscmp(prtext, nptr->pr)==0) {
 	            while ((nptrlast) && (nptr) && 
-	              (strcmp(prtext, nptr->pr)==0)) {
-                    if(strcmp(ltext, nptr->left)<=0) {
+	              (wcscmp(prtext, nptr->pr)==0)) {
+                    if(wcscmp(ltext, nptr->left)<=0) {
                           newnode->next=nptr;
                           nptrlast->next=newnode;
                           return;
@@ -186,7 +186,7 @@ void insertnode_list(struct listnode *listhead,char *ltext, char *rtext,char *pr
 
      case ALPHA:
         while((nptrlast=nptr) &&   (nptr=nptr->next)) {
-          if(strcmp(ltext, nptr->left)<=0) {
+          if(wcscmp(ltext, nptr->left)<=0) {
             newnode->next=nptr;
             nptrlast->next=newnode;
             return;
@@ -224,11 +224,11 @@ void deletenode_list(struct listnode *listhead, struct listnode *nptr)
 /* search for a node containing the ltext in left-field */
 /* return: ptr to node on succes / NULL on failure      */
 /********************************************************/
-struct listnode *searchnode_list(struct listnode *listhead, char* cptr)
+struct listnode *searchnode_list(struct listnode *listhead, const wchar_t* cptr)
 {
   int i;
   while((listhead=listhead->next)) {
-    if((i=strcmp(listhead->left, cptr))==0)
+    if((i=wcscmp(listhead->left, cptr))==0)
       return listhead;
     /* CHANGED to fix bug when list isn't alphabetically sorted
     else if(i>0)
@@ -242,15 +242,15 @@ struct listnode *searchnode_list(struct listnode *listhead, char* cptr)
 /* return: ptr to node on succes / NULL on failure      */
 /* Mods made by Joann Ellsworth - 2/2/94                */
 /********************************************************/
-struct listnode *searchnode_list_begin(struct listnode *listhead, char* cptr, int mode)
+struct listnode *searchnode_list_begin(struct listnode *listhead, const wchar_t* cptr, int mode)
 {
   int i;
   switch (mode) {
     case PRIORITY:
        while((listhead=listhead->next)) {
-         if((i=strncmp(listhead->left, cptr, strlen(cptr)))==0 &&
-           (*(listhead->left+strlen(cptr))==' ' ||
-           *(listhead->left+strlen(cptr))=='\0'))
+         if((i=wcsncmp(listhead->left, cptr, wcslen(cptr)))==0 &&
+           (*(listhead->left+wcslen(cptr))==L' ' ||
+           *(listhead->left+wcslen(cptr))==L'\0'))
            return listhead;
        }
        return NULL;
@@ -258,9 +258,9 @@ struct listnode *searchnode_list_begin(struct listnode *listhead, char* cptr, in
 
     case ALPHA:
        while((listhead=listhead->next)) {
-         if((i=strncmp(listhead->left, cptr, strlen(cptr)))==0 &&
-           (*(listhead->left+strlen(cptr))==' ' ||
-           *(listhead->left+strlen(cptr))=='\0'))
+         if((i=wcsncmp(listhead->left, cptr, wcslen(cptr)))==0 &&
+           (*(listhead->left+wcslen(cptr))==L' ' ||
+           *(listhead->left+wcslen(cptr))==L'\0'))
            return listhead;
          else if (i>0)
            return NULL;
@@ -276,8 +276,8 @@ struct listnode *searchnode_list_begin(struct listnode *listhead, char* cptr, in
 /************************************/
 void shownode_list(struct listnode *nptr)
 {
-  char temp[BUFFER_SIZE];
-  sprintf(temp, "{%s}={%s}", nptr->left, nptr->right);
+  wchar_t temp[BUFFER_SIZE];
+  swprintf(temp, L"{%s}={%s}", nptr->left, nptr->right);
   tintin_puts2(temp);
 }
 
@@ -290,7 +290,7 @@ void show_list(struct listnode *listhead)
     shownode_list(listhead);
 }
 
-struct listnode *search_node_with_wild(struct listnode *listhead, char* cptr)
+struct listnode *search_node_with_wild(struct listnode *listhead, const wchar_t* cptr)
 {
   /* int i; */
   while((listhead=listhead->next)) {
@@ -303,39 +303,39 @@ struct listnode *search_node_with_wild(struct listnode *listhead, char* cptr)
   return NULL;
 }
 
-int check_one_node(char *text, char *action)
+int check_one_node(wchar_t *text, wchar_t *action)
 {
-  char *temp, temp2[BUFFER_SIZE], *tptr;
+  wchar_t *temp, temp2[BUFFER_SIZE], *tptr;
   while (*text && *action) {
-    if (*action=='*') {
+    if (*action==L'*') {
       action++;
       temp=action;
       tptr=temp2;
-      while(*temp && *temp !='*')
+      while(*temp && *temp !=L'*')
         *tptr++= *temp++;
-      *tptr='\0';
-      if (strlen(temp2)==0) 
+      *tptr=L'\0';
+      if (wcslen(temp2)==0) 
         return TRUE;
-      while(strncmp(temp2,text,strlen(temp2))!=0 && *text)
+      while(wcsncmp(temp2,text,wcslen(temp2))!=0 && *text)
         text++;
     }
     else {
       temp=action;
       tptr=temp2;
-      while (*temp && *temp !='*')
+      while (*temp && *temp !=L'*')
         *tptr++= *temp++;
-      *tptr='\0';
-      if(strncmp(temp2,text,strlen(temp2))!=0)
+      *tptr=L'\0';
+      if(wcsncmp(temp2,text,wcslen(temp2))!=0)
         return FALSE;
       else {
-        text+=strlen(temp2);
-        action+=strlen(temp2);
+        text+=wcslen(temp2);
+        action+=wcslen(temp2);
       }
     }
   }
   if (*text)
     return FALSE;
-  else if ((*action=='*' && !*(action+1)) || !*action)
+  else if ((*action==L'*' && !*(action+1)) || !*action)
     return TRUE;
   return FALSE;
 }
@@ -344,7 +344,7 @@ int check_one_node(char *text, char *action)
 /* create a node containint the ltext, rtext fields and place at the */
 /* end of a list - as insertnode_list(), but not alphabetical        */
 /*********************************************************************/
-void addnode_list(struct listnode *listhead, char* ltext, char* rtext, char* prtext)
+void addnode_list(struct listnode *listhead, const wchar_t* ltext, const wchar_t* rtext, const wchar_t* prtext)
 {
   struct listnode *newnode;
 
@@ -355,13 +355,13 @@ void addnode_list(struct listnode *listhead, char* ltext, char* rtext, char* prt
     exit(1);
 */
   }
-  newnode->left=(char *)malloc(strlen(ltext)+1);
-  newnode->right=(char *)malloc(strlen(rtext)+1);
-  newnode->pr=(char *)malloc(strlen(prtext)+1);
+  newnode->left=(wchar_t *)malloc((wcslen(ltext)+1)*sizeof(wchar_t));
+  newnode->right=(wchar_t *)malloc((wcslen(rtext)+1)*sizeof(wchar_t));
+  newnode->pr=(wchar_t *)malloc((wcslen(prtext)+1)*sizeof(wchar_t));
   newnode->next=NULL;
-  strcpy(newnode->left, ltext);
-  strcpy(newnode->right, rtext);
-  strcpy(newnode->pr, prtext);
+  wcscpy(newnode->left, ltext);
+  wcscpy(newnode->right, rtext);
+  wcscpy(newnode->pr, prtext);
   while (listhead->next!=NULL) (listhead=listhead->next);
   listhead->next=newnode;
 }

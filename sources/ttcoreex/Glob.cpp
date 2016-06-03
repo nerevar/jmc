@@ -7,20 +7,21 @@
 #include "tintin.h"
 
 
-int match(char *regex, char *string)
+int match(const wchar_t *regex, const wchar_t *string)
 {
-  char *rp = regex, *sp = string, ch, *save;
+  const wchar_t *rp = regex, *sp = string, *save;
+  wchar_t ch;
 
-  while (*rp != '\0')
+  while (*rp != L'\0')
   {
     switch(ch = *rp++)
     {
-      case '*':
-        if ('\0' == *sp)  /* match empty string at end of `string' */
-	  return ('\0' == *rp);  /* but only if we're done with the pattern */
+      case L'*':
+        if (L'\0' == *sp)  /* match empty string at end of `string' */
+	  return (L'\0' == *rp);  /* but only if we're done with the pattern */
 	/* greedy algorithm: save starting location, then find end of string */
 	save = sp;
-	sp += strlen(sp);
+	sp += wcslen(sp);
 	do
 	{
 	  if (match(rp, sp))  /* return success if we can match here */
@@ -32,8 +33,8 @@ int match(char *regex, char *string)
 	 */
 	return 0;
 	/* break; not reached */
-      case '\\':
-	if ((ch = *rp++) != '\0')
+      case L'\\':
+	if ((ch = *rp++) != L'\0')
 	{
 	  /* if not end of pattern, match next char explicitly */
 	  if (ch != *sp++)
@@ -51,5 +52,5 @@ int match(char *regex, char *string)
    * OK, we successfully matched the pattern if we got here.  Now return
    * a match if we also reached end of string, otherwise failure
    */
-  return ('\0' == *sp);
+  return (L'\0' == *sp);
 }

@@ -5,36 +5,36 @@
 //decrease fps to 25Hz max.
 const int MIN_HTML_FRAMES_DELAY_MS = 40;
 
-const char
-	HTML_TAG[] = "i",
-	TAG_OPEN[] = "<i>",
-	TAG_CLOSE[] = "</i>",
-	BR[] = "\n",
-	CSS_LIGHT_COLOR[] = "l";
+const wchar_t
+	HTML_TAG[] = L"i",
+	TAG_OPEN[] = L"<i>",
+	TAG_CLOSE[] = L"</i>",
+	BR[] = L"\n",
+	CSS_LIGHT_COLOR[] = L"l";
 
-const char html_footer[] =
-	"\n</pre></div></body></html>";
+const wchar_t html_footer[] =
+	L"\n</pre></div></body></html>";
 
-const char css_colors[][3] = 
+const wchar_t css_colors[][3] = 
 {
-	"bl",	
-	"r",	
-	"g",
-	"y",	
-	"b",	
-	"m",	
-	"c",	
-	"w",
+	L"bl",	
+	L"r",	
+	L"g",
+	L"y",	
+	L"b",	
+	L"m",	
+	L"c",	
+	L"w",
 };
 
-const char css_bg_colors[][5] = 
+const wchar_t css_bg_colors[][5] = 
 {
-	"b_bl",	
-	"b_r",	
-	"b_g",
-	"b_y",	
-	"b_b",	
-	"b_m",	
-	"b_c",	
-	"b_w",
+	L"b_bl",	
+	L"b_r",	
+	L"b_g",
+	L"b_y",	
+	L"b_b",	
+	L"b_m",	
+	L"b_c",	
+	L"b_w",
 };

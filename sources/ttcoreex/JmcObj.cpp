@@ -4,6 +4,7 @@
 #include "tintin.h"
 #include "JmcSite.h"
 #include "JmcObj.h"
+#include "telnet.h"
 
 extern jmc_special_variable jmc_vars[JMC_SPECIAL_VARIABLES_NUM];
 extern GET_WNDSIZE_FUNC GetWindowSize;
@@ -28,19 +29,17 @@ STDMETHODIMP CJmcObj::InterfaceSupportsErrorInfo(REFIID riid)
 
 STDMETHODIMP CJmcObj::ShowMe(BSTR varText, BSTR varColor)
 {
-    USES_CONVERSION;
-
-    char result[BUFFER_SIZE];
+    wchar_t result[BUFFER_SIZE];
 
     if ( varColor ) {
-        add_codes(W2A(varText), result, W2A(varColor));
+        add_codes(varText, result, varColor);
     } else {
-        strcpy(result, W2A(varText));
+        wcscpy(result, varText);
 	}
 
 	if ( bLogAsUserSeen ) {
 		log(processLine(result));
-		log("\n");
+		log(L"\n");
 		add_line_to_scrollbuffer(result);
 	}
 	tintin_puts2(result);
@@ -50,10 +49,8 @@ STDMETHODIMP CJmcObj::ShowMe(BSTR varText, BSTR varColor)
 
 STDMETHODIMP CJmcObj::Send(BSTR bstrLine)
 {
-	USES_CONVERSION;
-
     if ( bstrLine ) {
-        write_line_mud(W2A(bstrLine));
+        write_line_mud(bstrLine);
     }
 
 	return S_OK;
@@ -68,21 +65,18 @@ STDMETHODIMP CJmcObj::Beep()
 
 STDMETHODIMP CJmcObj::Parse(BSTR bstrCommand)
 {
-	USES_CONVERSION;
-	parse_input(W2A(bstrCommand));
+	parse_input(bstrCommand);
 
 	return S_OK;
 }
 
 STDMETHODIMP CJmcObj::Output(BSTR bstrText, BSTR bstrColor)
 {
-    USES_CONVERSION;
+    wchar_t text[BUFFER_SIZE], result[BUFFER_SIZE];
 
-    char text[BUFFER_SIZE], result[BUFFER_SIZE];
-
-    prepare_actionalias(W2A(bstrText) ,text, sizeof(text)); 
+    prepare_actionalias(bstrText, text, sizeof(text)/sizeof(wchar_t)); 
     if ( bstrColor ) {
-        add_codes(text, result, W2A(bstrColor));
+        add_codes(text, result, bstrColor);
         tintin_puts3(result, 0);
     } else {
         tintin_puts3(text, 0);
@@ -156,46 +150,42 @@ STDMETHODIMP CJmcObj::RegisterHandler(BSTR bstrEvent, BSTR bstrCode)
 
 	return hr;                                                              
 */
-    USES_CONVERSION;
-    char event[256];
-    strcpy(event, W2A(bstrEvent ));
-    _tcsupr(event);
+    wchar_t event[256];
+    wcscpy(event, bstrEvent);
+    _wcsupr(event);
 
-    char* p = W2A(bstrCode);
-
-
-    if ( *event == 'C' && !strcmp(event, "CONNECTED" ) ){
+    if ( *event == L'C' && !wcsicmp(event, L"CONNECTED" ) ){
         m_bstrEventsHandlers[ID_Connected] = bstrCode;
     } else 
-    if ( *event == 'C' && !strcmp(event, "CONNECTLOST" ) ){
+    if ( *event == L'C' && !wcsicmp(event, L"CONNECTLOST" ) ){
         m_bstrEventsHandlers[ID_ConnectLost] = bstrCode;
     } else 
-    if ( *event == 'I' && !strcmp(event, "INCOMING" ) ){
+    if ( *event == L'I' && !wcsicmp(event, L"INCOMING" ) ){
         m_bstrEventsHandlers[ID_Incoming] = bstrCode;
     } else 
-    if ( *event == 'I' && !strcmp(event, "INPUT" ) ) {
+    if ( *event == L'I' && !wcsicmp(event, L"INPUT" ) ) {
         m_bstrEventsHandlers[ID_Input] = bstrCode;
     } else 
-    if ( *event == 'T' && !strcmp(event, "TIMER" ) ){
+    if ( *event == L'T' && !wcsicmp(event, L"TIMER" ) ){
         m_bstrEventsHandlers[ID_Timer] = bstrCode;
     } else 
-    if ( *event == 'P' && !strcmp(event, "PRETIMER" ) ){
+    if ( *event == L'P' && !wcsicmp(event, L"PRETIMER" ) ){
         m_bstrEventsHandlers[ID_PreTimer] = bstrCode;
     } else 
-    if ( *event == 'D' && !strcmp(event, "DISCONNECTED" ) ){
+    if ( *event == L'D' && !wcsicmp(event, L"DISCONNECTED" ) ){
         m_bstrEventsHandlers[ID_Disconnected] = bstrCode;
     } else 
-    if ( *event == 'L' && !strcmp(event, "LOAD" ) ) {
+    if ( *event == L'L' && !wcsicmp(event, L"LOAD" ) ) {
         m_bstrEventsHandlers[ID_Load] = bstrCode;
     } else 
-    if ( *event == 'U' && !strcmp(event, "UNLOAD" ) ){
+    if ( *event == L'U' && !wcsicmp(event, L"UNLOAD" ) ){
         m_bstrEventsHandlers[ID_Unload] = bstrCode;
     } else
-	if ( *event == 'P' && !strcmp(event, "PROMPT" ) ){
+	if ( *event == L'P' && !wcsicmp(event, L"PROMPT" ) ){
         m_bstrEventsHandlers[ID_Prompt] = bstrCode;
     } else 
-	if ( *event == 'T' && !strcmp(event, "TELNETSE" ) ){
-        m_bstrEventsHandlers[ID_TelnetSE] = bstrCode;
+	if ( *event == L'T' && !wcsicmp(event, L"TELNET" ) ){
+        m_bstrEventsHandlers[ID_Telnet] = bstrCode;
     } else 
         return E_INVALIDARG;
     return S_OK;
@@ -231,11 +221,10 @@ STDMETHODIMP CJmcObj::DropEvent()
 
 STDMETHODIMP CJmcObj::Connect(BSTR bstrAddress, BSTR bstrPort)
 {
-	USES_CONVERSION;
 	if ( MUDSocket ) 
         return S_OK;
 
-    connect_mud(W2A(bstrAddress), W2A(bstrPort));
+    connect_mud(bstrAddress, bstrPort);
 
 	return S_OK;
 }
@@ -243,7 +232,7 @@ STDMETHODIMP CJmcObj::Connect(BSTR bstrAddress, BSTR bstrPort)
 STDMETHODIMP CJmcObj::Disconnect()
 {
     if ( MUDSocket ) {
-        zap_command("\0");
+        zap_command(L"\0");
     }
 
 	return S_OK;
@@ -257,18 +246,17 @@ STDMETHODIMP CJmcObj::get_Profile(BSTR *pVal)
 
 STDMETHODIMP CJmcObj::SetHotkey(BSTR bstrKey, BSTR bstrCommand)
 {
-    USES_CONVERSION;
     CComBSTR arg = bstrKey;
-    arg += " ";
+    arg += L" ";
     arg += bstrCommand;
-    SetHotKey(W2A(arg));
+    SetHotKey(arg);
 
 	return S_OK;
 }
 
 STDMETHODIMP CJmcObj::get_CommandChar(BSTR *pVal)
 {
-    char buf[2] = {cCommandChar, 0};
+    wchar_t buf[2] = {cCommandChar, 0};
     CComBSTR bstr(buf);
 
     *pVal = bstr.Copy ();
@@ -279,15 +267,13 @@ STDMETHODIMP CJmcObj::get_CommandChar(BSTR *pVal)
 
 STDMETHODIMP CJmcObj::SetStatus(LONG StatusNum, BSTR bstrText, BSTR bstrColor)
 {
-    USES_CONVERSION;
-
-    char text[BUFFER_SIZE];
+    wchar_t text[BUFFER_SIZE];
 
     if ( bstrColor ) {
-        sprintf(text, "%d {%s} {%s}", StatusNum , W2A(bstrText), W2A(bstrColor));
+        swprintf(text, L"%d {%s} {%s}", StatusNum , bstrText, bstrColor);
         status_command(text);
     } else {
-        sprintf(text, "%d {%s}", StatusNum , W2A(bstrText));
+        swprintf(text, L"%d {%s}", StatusNum , bstrText);
         status_command(text);
     }
 	return S_OK;
@@ -296,22 +282,18 @@ STDMETHODIMP CJmcObj::SetStatus(LONG StatusNum, BSTR bstrText, BSTR bstrColor)
 
 STDMETHODIMP CJmcObj::SetVar(BSTR bstrVarName, BSTR bstrValue, BOOL bGlobal)
 {
-    USES_CONVERSION;
 	if ( !bstrVarName ) 
         return E_INVALIDARG;
 
-    char varname[BUFFER_SIZE];
-	WideCharToMultiByte(CP_ACP, 0, bstrVarName, -1, varname, BUFFER_SIZE, NULL, NULL);
-
-    VAR_INDEX ind = VarList.find (varname);
+    VAR_INDEX ind = VarList.find (bstrVarName);
     VAR* pvar;
     if ( ind != VarList.end() ) {
         pvar = ind->second;
-        pvar->m_strVal = W2A(bstrValue);
+        pvar->m_strVal = bstrValue;
     }
     else {
-        pvar = new VAR(W2A(bstrValue));
-        VarList[varname] = pvar;
+        pvar = new VAR(bstrValue);
+        VarList[bstrVarName] = pvar;
     }
     pvar->m_bGlobal = bGlobal;
 
@@ -323,18 +305,15 @@ STDMETHODIMP CJmcObj::GetVar(BSTR bstrVarName, BSTR *bstrRet)
 	if ( !bstrVarName ) 
         return E_INVALIDARG;
 
-    char varname[BUFFER_SIZE];
-	WideCharToMultiByte(CP_ACP, 0, bstrVarName, -1, varname, BUFFER_SIZE, NULL, NULL);
-
-    VAR_INDEX ind = VarList.find (varname);
+    VAR_INDEX ind = VarList.find (bstrVarName);
     CComBSTR ret("");
     if ( ind != VarList.end() ) {
         VAR* pvar = ind->second;
         ret = pvar->m_strVal.data();
     } else {
 		for(int i = 0; i < JMC_SPECIAL_VARIABLES_NUM; i++)
-			if (!strcmp(varname, jmc_vars[i].name)) {
-				char specialVariableValue[BUFFER_SIZE];
+			if (!wcscmp(bstrVarName, jmc_vars[i].name)) {
+				wchar_t specialVariableValue[BUFFER_SIZE];
 				(*(jmc_vars[i].jmcfn))(specialVariableValue);
 				ret = specialVariableValue;
 				break;
@@ -349,7 +328,7 @@ STDMETHODIMP CJmcObj::GetVar(BSTR bstrVarName, BSTR *bstrRet)
 //vls-begin// #quit
 STDMETHODIMP CJmcObj::Quit()
 {
-    quit_command("");
+    quit_command(L"");
 
     return S_OK;
 }
@@ -358,26 +337,24 @@ STDMETHODIMP CJmcObj::Quit()
 //vls-begin// #run
 STDMETHODIMP CJmcObj::Run(BSTR bstrCmdLine, BSTR bstrParams)
 {
-    USES_CONVERSION;
+    wchar_t cmd[BUFFER_SIZE];
+    wchar_t params[BUFFER_SIZE];
 
-    char cmd[BUFFER_SIZE];
-    char params[BUFFER_SIZE];
-
-    if (bstrParams && *W2A(bstrParams)) {
-        strcpy(cmd, W2A(bstrCmdLine));
-        strcpy(params, W2A(bstrParams));
+    if (bstrParams && bstrParams[0]) {
+        wcscpy(cmd, bstrCmdLine);
+        wcscpy(params, bstrParams);
     } else {
         int i, j;
-        char arg[BUFFER_SIZE];
-        char *p = W2A(bstrCmdLine);
+        wchar_t arg[BUFFER_SIZE];
+        wchar_t *p = bstrCmdLine;
         for (i = j = 0; p[i] && j<BUFFER_SIZE-3; i++) {
-            if (p[i] == '\\')
-                arg[j++] = '\\';
+            if (p[i] == L'\\')
+                arg[j++] = L'\\';
             arg[j++] = p[i];
         }
-        arg[j] = '\0';
-        p = get_arg_in_braces(arg, cmd, STOP_SPACES);
-        get_arg_in_braces(p, params, WITH_SPACES);
+        arg[j] = L'\0';
+        p = get_arg_in_braces(arg,cmd,STOP_SPACES,sizeof(cmd)/sizeof(wchar_t)-1);
+        get_arg_in_braces(p,params,WITH_SPACES,sizeof(params)/sizeof(wchar_t)-1);
     }
 
     if ( *cmd ) {
@@ -391,11 +368,8 @@ STDMETHODIMP CJmcObj::Run(BSTR bstrCmdLine, BSTR bstrParams)
 //vls-begin// #play
 STDMETHODIMP CJmcObj::Play(BSTR bstrFileName)
 {
-    char wave[MAX_PATH+2];
-	WideCharToMultiByte(CP_ACP, 0, bstrFileName, -1, wave, MAX_PATH, NULL, NULL);
-
-    char fn[MAX_PATH+2];
-    MakeAbsolutePath(fn, wave, szBASE_DIR);
+    wchar_t fn[MAX_PATH+2];
+    MakeAbsolutePath(fn, bstrFileName, szBASE_DIR);
     PlaySound(fn, NULL, SND_ASYNC | SND_FILENAME);
 
     return S_OK;
@@ -405,16 +379,14 @@ STDMETHODIMP CJmcObj::Play(BSTR bstrFileName)
 //* en
 STDMETHODIMP CJmcObj::wOutput(LONG wndNum, BSTR bstrText, BSTR bstrColor)
 {
-    USES_CONVERSION;
-
-    char text[BUFFER_SIZE], result[BUFFER_SIZE];
+    wchar_t text[BUFFER_SIZE], result[BUFFER_SIZE];
 	
 	if(wndNum>MAX_OUTPUT || wndNum<0)
    	  return S_OK;
 
-    prepare_actionalias(W2A(bstrText) ,text, sizeof(text)); 
+    prepare_actionalias(bstrText ,text, sizeof(text)/sizeof(wchar_t)); 
     if ( bstrColor ) {
-        add_codes(text, result, W2A(bstrColor));
+        add_codes(text, result, bstrColor);
         tintin_puts3(result, wndNum);
     } else 
         tintin_puts3(text, wndNum);
@@ -448,29 +420,27 @@ STDMETHODIMP CJmcObj::wGetHeight(LONG wndNum, LONG *nHeight)
 	return S_OK;
 }
 
-STDMETHODIMP CJmcObj::TelnetSB(LONG Option, BSTR bstrData)
+STDMETHODIMP CJmcObj::DoTelnet(LONG Command, LONG Option, BSTR bstrData)
 {
-    USES_CONVERSION;
+	if (!bstrData)
+		send_telnet_command(Command, Option);
+	else if (Command != TN_SB)
+		return E_INVALIDARG;
 
-	if ( !bstrData ) 
-        return E_INVALIDARG;
-
-	send_telnet_subnegotiation((unsigned char)Option, W2A(bstrData), SysStringLen(bstrData));
+	send_telnet_subnegotiation((unsigned char)Option, bstrData, SysStringLen(bstrData));
 
 	return S_OK;
 }
 
 STDMETHODIMP CJmcObj::ToText(BSTR bstrANSI, BSTR *bstrText)
 {
-	USES_CONVERSION;
-
 	if ( !bstrANSI ) 
         return E_INVALIDARG;
 
 	CComBSTR ret("");
-	char *ansi = W2A(bstrANSI);
-	int len = strlen(ansi);
-	char *text = new char[len + 1];
+	wchar_t *ansi = bstrANSI;
+	int len = SysStringLen(bstrANSI);
+	wchar_t *text = new wchar_t[len + 1];
 	remove_ansi_codes(ansi, text);
 	ret = (text);
 
@@ -483,15 +453,13 @@ STDMETHODIMP CJmcObj::ToText(BSTR bstrANSI, BSTR *bstrText)
 
 STDMETHODIMP  CJmcObj::ToColored(BSTR bstrANSI, BSTR *bstrColored)
 {
-	USES_CONVERSION;
-
 	if ( !bstrANSI ) 
         return E_INVALIDARG;
 
 	CComBSTR ret("");
-	char *ansi = W2A(bstrANSI);
-	int len = strlen(ansi);
-	char *colored = new char[len + 1];
+	wchar_t *ansi = bstrANSI;
+	int len = SysStringLen(bstrANSI);
+	wchar_t *colored = new wchar_t[len + 1];
 	int state = 37;
 	convert_ansi_to_colored(ansi, colored, len, state);
 	ret = (colored);
@@ -505,22 +473,20 @@ STDMETHODIMP  CJmcObj::ToColored(BSTR bstrANSI, BSTR *bstrColored)
 
 STDMETHODIMP CJmcObj::FromColored(BSTR bstrColored, BSTR *bstrANSI)
 {
-	USES_CONVERSION;
-
 	if ( !bstrColored ) 
         return E_INVALIDARG;
 
-	CComBSTR ret("");
-	char *colored = W2A(bstrColored);
+	CComBSTR ret(L"");
+	wchar_t *colored = bstrColored;
 	
-	int len = strlen(colored);
+	int len = SysStringLen(bstrColored);
 	int count = 0, i;
 	for (i = 0; i < len; i++)
-		if (colored[i] == '&')
+		if (colored[i] == L'&')
 			count++;
 	//&? => ESC[?;??m
 	len += count * 5;
-	char *ansi = new char[len + 1];
+	wchar_t *ansi = new wchar_t[len + 1];
 	convert_colored_to_ansi(colored, ansi, len);
 	ret = (ansi);
 

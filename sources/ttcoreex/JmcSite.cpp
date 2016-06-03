@@ -103,14 +103,12 @@ HRESULT STDMETHODCALLTYPE CJmcSite::OnStateChange(/* [in] */ SCRIPTSTATE ssScrip
         
 HRESULT STDMETHODCALLTYPE CJmcSite::OnScriptError(/* [in] */ IActiveScriptError __RPC_FAR *pscripterror)
 {
-    USES_CONVERSION;
-
 	EXCEPINFO ei;
 	DWORD     dwSrcContext;
 	ULONG     ulLine;
 	LONG      ichError;
 	BSTR      bstrLine = NULL;
-	char* strError;
+	wchar_t* strError;
 
 	pscripterror->GetExceptionInfo(&ei);
 	pscripterror->GetSourcePosition(&dwSrcContext, &ulLine, &ichError);
@@ -119,31 +117,31 @@ HRESULT STDMETHODCALLTYPE CJmcSite::OnScriptError(/* [in] */ IActiveScriptError 
 
 
     if ( bstrLine ) {
-        strError = new char[wcslen(ei.bstrDescription) + wcslen(bstrLine)+100];
-        sprintf(strError, rs::rs(1088),  W2A (ei.bstrSource), W2A(ei.bstrDescription), ulLine, (int)ei.wCode, ei.scode, W2A(bstrLine));
+        strError = new wchar_t[SysStringLen(ei.bstrDescription) + SysStringLen(bstrLine)+100];
+        swprintf(strError, rs::rs(1088),  ei.bstrSource, ei.bstrDescription, ulLine, (int)ei.wCode, ei.scode, bstrLine);
     }
     else {
-        strError = new char[wcslen(ei.bstrDescription) +100];
-        sprintf(strError, rs::rs(1089),  W2A (ei.bstrSource), W2A(ei.bstrDescription), ulLine, (int)ei.wCode, ei.scode);
+        strError = new wchar_t[SysStringLen(ei.bstrDescription) +100];
+        swprintf(strError, rs::rs(1089),  ei.bstrSource, ei.bstrDescription, ulLine, (int)ei.wCode, ei.scode);
     }
     switch (nScripterrorOutput ) {
     case 1: 
         {
-            char err [BUFFER_SIZE];
-            strcpy ( err, DEFAULT_BEGIN_COLOR);
-            strcat ( err, ";31m");
-            strcat ( err, strError);
-            strcat ( err, DEFAULT_END_COLOR);
+            wchar_t err [BUFFER_SIZE];
+            wcscpy ( err, DEFAULT_BEGIN_COLOR);
+            wcscat ( err, L";31m");
+            wcscat ( err, strError);
+            wcscat ( err, DEFAULT_END_COLOR);
             tintin_puts2(err);
         }
         break;
     case 2:
         {
-            char err [BUFFER_SIZE];
-            strcpy ( err, DEFAULT_BEGIN_COLOR);
-            strcat ( err, ";31m");
-            strcat ( err, strError);
-            strcat ( err, DEFAULT_END_COLOR);
+            wchar_t err [BUFFER_SIZE];
+            wcscpy ( err, DEFAULT_BEGIN_COLOR);
+            wcscat ( err, L";31m");
+            wcscat ( err, strError);
+            wcscat ( err, DEFAULT_END_COLOR);
 //vls-begin// multiple output
 //            tintin_puts3(err);
             tintin_puts3(err, 0);
@@ -187,9 +185,8 @@ HRESULT STDMETHODCALLTYPE CJmcSite::EnableModeless(/*[in]*/BOOL fEnable)
 // const GUID CLSID_VBScript = { 0xb54f3741, 0x5b07, 0x11cf, { 0xa4, 0xb0,  0x0,  0xaa,  0x0,  0x4a,  0x55,  0xe8 } };
 
 
-BOOL CJmcSite::InitSite(HWND hwndParentWindow, LPCSTR strScript, GUID guidEngine)
+BOOL CJmcSite::InitSite(HWND hwndParentWindow, LPWSTR strScript, GUID guidEngine)
 {
-    USES_CONVERSION;
     m_hwndSiteWindow  = hwndParentWindow;
 
 
@@ -251,15 +248,11 @@ BOOL CJmcSite::InitSite(HWND hwndParentWindow, LPCSTR strScript, GUID guidEngine
     
 	EXCEPINFO    ei;
 
-    CComBSTR bstr(strScript);
-//vls-begin// base dir
-//    hr = m_ScriptParser->ParseScriptText((BSTR)bstr, NULL, NULL, NULL, 0, 0, 0, NULL, &ei);
-    char dir[MAX_PATH+2];
+    wchar_t dir[MAX_PATH+2];
     GetCurrentDirectory(MAX_PATH, dir);
     SetCurrentDirectory(szBASE_DIR);
-    hr = m_ScriptParser->ParseScriptText((BSTR)bstr, NULL, NULL, NULL, 0, 0, 0, NULL, &ei);
+	hr = m_ScriptParser->ParseScriptText(strScript, NULL, NULL, NULL, 0, 0, 0, NULL, &ei);
     SetCurrentDirectory(dir);
-//vls-end//
 
     hr = m_ScriptEngine->SetScriptState(SCRIPTSTATE_STARTED);
 
@@ -274,7 +267,7 @@ BOOL CJmcSite::InitSite(HWND hwndParentWindow, LPCSTR strScript, GUID guidEngine
 }
 
 
-void script_command(char *arg)
+void script_command(wchar_t *arg)
 {
     ParseScript(arg);
 }

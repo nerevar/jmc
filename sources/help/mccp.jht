@@ -1,3 +1,0 @@
-#mccp [on|off]
-  toggles or sets/resets compression support via MCCP protocol
-  for certain MUDs reconnection could be neccessary

@@ -1,7 +1,7 @@
 #action [<pattern>]
   show all action containing pattern 
 #action [text|raw|color] <pattern> <reaction> [priority] [group]
-#action [text|raw|color] /<regexp>/[i|m] <reaction> [priority] [group]
+#action [text|raw|color] /<regexp>/[i|m|g] <reaction> [priority] [group]
   set reaction on pattern with priority in group
   available types of testing line:
     text  - all color esc-sequences are removed
@@ -28,6 +28,7 @@
   possible flags:
     i - case insensitive
     m - multiline (pattern will be tested against eash batch of lines devided by GA, EOP, long delay or user input)
+    g - global (allows triggering multiple times per entry when multiaction is ON)
 #unaction <pattern>
   delete action
   

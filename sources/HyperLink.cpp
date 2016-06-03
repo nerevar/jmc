@@ -19,6 +19,8 @@
 #include "stdafx.h"
 #include "HyperLink.h"
 
+#include <atlconv.h>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -359,9 +361,9 @@ LONG CHyperLink::GetRegKey(HKEY key, LPCTSTR subkey, LPTSTR retdata)
 
     if (retval == ERROR_SUCCESS) {
         long datasize = MAX_PATH;
-        TCHAR data[MAX_PATH];
+        wchar_t data[MAX_PATH];
         RegQueryValue(hkey, NULL, data, &datasize);
-        strcpy(retdata,data);
+        wcscpy(retdata,data);
         RegCloseKey(hkey);
     }
 
@@ -385,41 +387,43 @@ void CHyperLink::ReportError(int nError)
         case SE_ERR_NOASSOC:          str = "There is no application associated\nwith the given filename extension."; break;
         case SE_ERR_OOM:              str = "There was not enough memory to complete the operation."; break;
         case SE_ERR_SHARE:            str = "A sharing violation occurred. ";
-        default:                      str.Format("Unknown Error (%d) occurred.", nError); break;
+        default:                      str.Format(L"Unknown Error (%d) occurred.", nError); break;
     }
-    str = "Unable to open hyperlink:\n\n" + str;
+    str = L"Unable to open hyperlink:\n\n" + str;
     AfxMessageBox(str, MB_ICONEXCLAMATION | MB_OK);
 }
 
 HINSTANCE CHyperLink::GotoURL(LPCTSTR url, int showcmd)
 {
-    TCHAR key[MAX_PATH + MAX_PATH];
+	USES_CONVERSION;
+
+    wchar_t key[MAX_PATH + MAX_PATH];
 
     // First try ShellExecute()
-    HINSTANCE result = ShellExecute(NULL, _T("open"), url, NULL,NULL, showcmd);
+    HINSTANCE result = ShellExecute(NULL, L"open", url, NULL,NULL, showcmd);
 
     // If it failed, get the .htm regkey and lookup the program
     if ((UINT)result <= HINSTANCE_ERROR) {
 
-        if (GetRegKey(HKEY_CLASSES_ROOT, _T(".htm"), key) == ERROR_SUCCESS) {
-            strcat(key, _T("\\shell\\open\\command"));
+        if (GetRegKey(HKEY_CLASSES_ROOT, L".htm", key) == ERROR_SUCCESS) {
+            wcscat(key, L"\\shell\\open\\command");
 
             if (GetRegKey(HKEY_CLASSES_ROOT,key,key) == ERROR_SUCCESS) {
-                TCHAR *pos;
-                pos = _tcsstr(key, _T("\"%1\""));
+				wchar_t *pos;
+                pos = wcsstr(key, L"\"%1\"");
                 if (pos == NULL) {                     // No quotes found
-                    pos = strstr(key, _T("%1"));       // Check for %1, without quotes 
+                    pos = wcsstr(key, L"%1");       // Check for %1, without quotes 
                     if (pos == NULL)                   // No parameter at all...
-                        pos = key+lstrlen(key)-1;
+                        pos = key+wcslen(key)-1;
                     else
                         *pos = '\0';                   // Remove the parameter
                 }
                 else
                     *pos = '\0';                       // Remove the parameter
 
-                strcat(pos, _T(" "));
-                strcat(pos, url);
-                result = (HINSTANCE) WinExec(key,showcmd);
+                wcscat(pos, L" ");
+                wcscat(pos, url);
+                result = (HINSTANCE) WinExec(W2A(key),showcmd);
             }
         }
     }

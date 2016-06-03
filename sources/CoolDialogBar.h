@@ -54,7 +54,7 @@ public:
     // ClassWizard generated virtual function overrides
     //{{AFX_VIRTUAL(CCoolDialogBar)
     public:
-    virtual BOOL Create(CWnd* pParentWnd, LPCSTR &pTitle, CSize& InitialSize, UINT nID, DWORD dwStyle = WS_CHILD | WS_VISIBLE | CBRS_LEFT);
+    virtual BOOL Create(CWnd* pParentWnd, LPWSTR &pTitle, CSize& InitialSize, UINT nID, DWORD dwStyle = WS_CHILD | WS_VISIBLE | CBRS_LEFT);
     virtual CSize CalcFixedLayout( BOOL bStretch, BOOL bHorz );
     virtual CSize CalcDynamicLayout( int nLength, DWORD dwMode );
     //}}AFX_VIRTUAL

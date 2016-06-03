@@ -10,6 +10,8 @@
 /////////////////////////////////////////////////////////////////////////////
 // CLogParamsPage dialog
 
+#include <vector>
+
 class CLogParamsPage : public CPropertyPage
 {
 	DECLARE_DYNCREATE(CLogParamsPage)
@@ -38,8 +40,11 @@ public:
 	int		m_logTypeText;
 	int		m_logTypeAnsi;
 	int		m_LogType;
+	CComboBox m_cCodePage;
 	//}}AFX_DATA
 
+	std::vector<int> m_vIndexToCPID;
+	int m_nLogCodePage;
 
 // Overrides
 	// ClassWizard generate virtual function overrides
@@ -54,6 +59,8 @@ protected:
 	//{{AFX_MSG(CLogParamsPage)
 	afx_msg void OnChangeLogType();
 	afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
+	virtual BOOL OnInitDialog();
+	afx_msg void OnSelchangeCodePage();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

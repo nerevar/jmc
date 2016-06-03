@@ -104,7 +104,6 @@ public:
 	DWORD m_Docks[MAX_OUTPUT];
 //vls-end//
 
-
     virtual void OnUpdateFrameTitle(BOOL);
     
     CInvertSplit m_wndSplitter;

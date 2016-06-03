@@ -3,7 +3,7 @@
 #include "tintin.h"
 
 TLSType DLLEXPORT lTLSType;
-string DLLEXPORT strCAFile;
+wstring DLLEXPORT strCAFile;
 
 static TLSType last_tls = TLS_DISABLED;
 static bool ssl_loaded = false;
@@ -23,55 +23,55 @@ static WOLFSSL_X509_STORE *store = NULL;
  * #secure
  * #secure [disable|enable|ssl3|tls1|tls1.1|tls1.2] {ca clear|<filename.pem>}
  */
-void secure_command(char *arg) 
+void secure_command(wchar_t *arg) 
 {
-    char param[BUFFER_SIZE], param2[BUFFER_SIZE];
+    wchar_t param[BUFFER_SIZE], param2[BUFFER_SIZE];
 
 	while (arg && arg[0]) {
-		arg = get_arg_in_braces(arg, param, STOP_SPACES);
-		if (is_abrev(param, "disable"))
+		arg = get_arg_in_braces(arg,param,STOP_SPACES,sizeof(param)/sizeof(wchar_t)-1);
+		if (is_abrev(param, L"disable"))
 			lTLSType = TLS_DISABLED;
-		else if (is_abrev(param, "enable"))
+		else if (is_abrev(param, L"enable"))
 			lTLSType = TLS_TLS1;
-		else if (is_abrev(param, "ssl3"))
+		else if (is_abrev(param, L"ssl3"))
 			lTLSType = TLS_SSL3;
-		else if (is_abrev(param, "tls1"))
+		else if (is_abrev(param, L"tls1"))
 			lTLSType = TLS_TLS1;
-		else if (is_abrev(param, "tls1.1"))
+		else if (is_abrev(param, L"tls1.1"))
 			lTLSType = TLS_TLS1_1;
-		else if (is_abrev(param, "tls1.2"))
+		else if (is_abrev(param, L"tls1.2"))
 			lTLSType = TLS_TLS1_2;
-		else if (is_abrev(param, "ca")) {
-			arg = get_arg_in_braces(arg, param2, STOP_SPACES);
-			if (is_abrev(param2, "clear"))
-				strCAFile = "";
+		else if (is_abrev(param, L"ca")) {
+			arg = get_arg_in_braces(arg,param2,STOP_SPACES,sizeof(param2)/sizeof(wchar_t)-1);
+			if (is_abrev(param2, L"clear"))
+				strCAFile = L"";
 			else
 				strCAFile = param2;
 		}
 	}
 
 	//#secure settings: protocol %s; CA %s
-	sprintf(param, rs::rs(1282),
-		(lTLSType == TLS_SSL3     ? "ssl3"   :
-	     lTLSType == TLS_TLS1     ? "tls1"   :
-	     lTLSType == TLS_TLS1_1   ? "tls1.1" :
-	     lTLSType == TLS_TLS1_2   ? "tls1.2" : "-"),
-	    (strCAFile.size() > 0 ? strCAFile.c_str() : "-"));
+	swprintf(param, rs::rs(1282),
+		(lTLSType == TLS_SSL3     ? L"ssl3"   :
+	     lTLSType == TLS_TLS1     ? L"tls1"   :
+	     lTLSType == TLS_TLS1_1   ? L"tls1.1" :
+	     lTLSType == TLS_TLS1_2   ? L"tls1.2" : L"-"),
+	    (strCAFile.size() > 0 ? strCAFile.c_str() : L"-"));
 	tintin_puts2(param);
 }
 
 static int verify_cert(int preverify, WOLFSSL_X509_STORE_CTX* store)
 {
-    (void)preverify;
+	USES_CONVERSION;
 	
-	char buf[BUFFER_SIZE];
-	char fname[128], fpath[BUFFER_SIZE];
+	wchar_t buf[BUFFER_SIZE];
+	wchar_t fname[128], fpath[BUFFER_SIZE];
 
 	if (!preverify) {
 		switch (store->error) {
 		case ASN_BEFORE_DATE_E:
 		case ASN_AFTER_DATE_E:
-			tintin_puts2("#ssl error: expired certificate received");
+			tintin_puts2(rs::rs(1285));
 			return 0;
 		case ASN_NO_SIGNER_E:
 			break;
@@ -83,22 +83,22 @@ static int verify_cert(int preverify, WOLFSSL_X509_STORE_CTX* store)
 	WOLFSSL_X509 *cert_remote = wolfSSL_get_peer_certificate(ssl);
 
 	if (!cert_remote) {
-		tintin_puts2("#ssl error: peer doesn't use x509 certificate");
+		tintin_puts2(rs::rs(1286));
 		return 0;
 	}
 
-	tintin_puts2("#ssl valid certificate received");
+	tintin_puts2(rs::rs(1287));
 
 	if (strCAFile.size() > 0) {
-		strcpy(fname, strCAFile.c_str());
+		wcscpy(fname, strCAFile.c_str());
 	} else {
-		sprintf(fname, "%s.pem", store->domain);
+		swprintf(fname, L"%ls.pem", A2W(store->domain));
 		MakeAbsolutePath(fpath, fname, szSETTINGS_DIR);
 	}
 
-	WOLFSSL_X509 *cert_local = wolfSSL_X509_load_certificate_file(fpath, SSL_FILETYPE_PEM);
+	WOLFSSL_X509 *cert_local = wolfSSL_X509_load_certificate_file(W2A(fpath), SSL_FILETYPE_PEM);
 
-	sprintf(fname, "%s.pem", store->domain);
+	swprintf(fname, L"%ls.pem", A2W(store->domain));
 	MakeAbsolutePath(fpath, fname, szSETTINGS_DIR);
 
 	if (cert_local) {
@@ -108,30 +108,29 @@ static int verify_cert(int preverify, WOLFSSL_X509_STORE_CTX* store)
 		const unsigned char *der_remote = wolfSSL_X509_get_der(cert_remote, &len_remote);
 
 		if (len_local != len_remote || memcmp(der_local, der_remote, len_local)) {
-			sprintf(buf, "#ssl error: wrong certificate, be sure you are not connected through Man-In-The-Middle and erase cached file %s manually", fpath);
+			swprintf(buf, rs::rs(1288), fpath);
 			tintin_puts2(buf);
 			wolfSSL_X509_free(cert_remote);
 			wolfSSL_X509_free(cert_local);
 			return 0;
 		}
-		sprintf(buf, "#ssl: good certificate (%s)", fpath);
-		tintin_puts2(buf);
 	} else {
-		char pem_buf[BUFFER_SIZE*10];
+		char pem_buf[10 * 1024]; // should be ebough
 		int len_remote;
 		const unsigned char *der_remote = wolfSSL_X509_get_der(cert_remote, &len_remote);
 
-		FILE *fpem = fopen(fpath, "w");
+		FILE *fpem = _wfopen(fpath, L"w");
 		int len_pem = wc_DerToPem(der_remote, len_remote, (unsigned char*)pem_buf, sizeof(pem_buf), CERT_TYPE);
 		if (len_pem > 0 && len_pem < sizeof(pem_buf)) {
 			pem_buf[len_pem] = '\0';
 			fwrite(pem_buf, 1, len_pem, fpem);
 		}
 		fclose(fpem);
-		sprintf(buf, "#ssl: save certificate (%s)", fpath);
+		swprintf(buf, rs::rs(1289), fpath);
 		tintin_puts2(buf);
 	}
 
+	wolfSSL_X509_free(cert_local);
 	wolfSSL_X509_free(cert_remote);
 
     return 1;
@@ -139,6 +138,8 @@ static int verify_cert(int preverify, WOLFSSL_X509_STORE_CTX* store)
 
 int tls_open(SOCKET sock) 
 {
+	USES_CONVERSION;
+
 	last_tls = TLS_DISABLED;
 
 	if (!ssl_loaded) {
@@ -171,14 +172,14 @@ int tls_open(SOCKET sock)
 		break;
 	}
 	if (method == NULL) {
-		tintin_puts2("ssl: can't create method");
+		tintin_puts2(L"#ssl: can't create method");
 		return -1;
 	}
 	
 	ctx = wolfSSL_CTX_new(method);
 
 	if (ctx == NULL) {
-		tintin_puts2("#OpenSSL error: can't create context");
+		tintin_puts2(L"#ssl error: can't create context");
 		return -1;
 	}
 
@@ -187,8 +188,8 @@ int tls_open(SOCKET sock)
 
 	if (strCAFile.size() > 0) {
 		wolfSSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, 0);
-		if (!wolfSSL_CTX_load_verify_locations(ctx, strCAFile.c_str(), NULL)) {
-			tintin_puts2("#OpenSSL error: bad CA file");
+		if (!wolfSSL_CTX_load_verify_locations(ctx, W2A(strCAFile.c_str()), NULL)) {
+			tintin_puts2(rs::rs(1290));
 			wolfSSL_CTX_free(ctx);
 			ctx = NULL;
 			return -1;
@@ -204,14 +205,14 @@ int tls_open(SOCKET sock)
 	ssl = wolfSSL_new(ctx);
 
 	if (!ssl) {
-		tintin_puts2("#OpenSSL error: can't create SSL object");
+		tintin_puts2(L"#ssl error: can't create SSL object");
 		wolfSSL_CTX_free(ctx);
 		ctx = NULL;
 		return -1;
 	}
 
 	if (!wolfSSL_set_fd(ssl, sock)) {
-		tintin_puts2("#OpenSSL error: initializing SSL failure");
+		tintin_puts2(L"#ssl error: initializing SSL failure");
 		wolfSSL_free(ssl);
 		ssl = NULL;
 		wolfSSL_CTX_free(ctx);
@@ -223,7 +224,7 @@ int tls_open(SOCKET sock)
 
 	unsigned long cmd = 1;
 	if (ioctlsocket(sock, FIONBIO, &cmd) != 0) {
-		tintin_puts2("#Can't set non-blocking mode");
+		tintin_puts2(L"#ssl: can't set socket non-blocking mode");
 		return -1;
 	}
 
@@ -237,9 +238,9 @@ int tls_open(SOCKET sock)
 		err = wolfSSL_get_error(ssl, 0);
 
 		if (err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_READ) {
-			char buf[2048];
-			sprintf(buf, "#ssl error while connecting: [%d] %s", 
-				err, wolfSSL_ERR_reason_error_string(err));
+			wchar_t buf[2048];
+			swprintf(buf, rs::rs(1291), 
+				err, A2W(wolfSSL_ERR_reason_error_string(err)));
 			tintin_puts2(buf);
 			break;
 		}

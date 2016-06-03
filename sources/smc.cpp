@@ -21,7 +21,7 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // CSmcApp
 
-char szGLOBAL_PROFILE[MAX_PATH] = "jmc.ini";
+wchar_t szGLOBAL_PROFILE[MAX_PATH] = L"jmc.ini";
 
 
 BEGIN_MESSAGE_MAP(CSmcApp, CWinApp)
@@ -64,12 +64,12 @@ BOOL CSmcApp::InitInstance()
 
 //vls-begin// base dir
 //    GetCurrentDirectory(MAX_PATH, szGLOBAL_PROFILE );
-    strcpy(szGLOBAL_PROFILE, szBASE_DIR);
+    wcscpy(szGLOBAL_PROFILE, szBASE_DIR);
 //vls-end//
-    if ( szGLOBAL_PROFILE[strlen(szGLOBAL_PROFILE) -1] != '\\'  ) 
-        strcat(szGLOBAL_PROFILE, "\\jmc.ini");
+    if ( szGLOBAL_PROFILE[wcslen(szGLOBAL_PROFILE) -1] != L'\\'  ) 
+        wcscat(szGLOBAL_PROFILE, L"\\jmc.ini");
     else
-        strcat(szGLOBAL_PROFILE, "jmc.ini");
+        wcscat(szGLOBAL_PROFILE, L"jmc.ini");
 
     //  check JMC.ini exist in the windows directory 
 /*    char fname[MAX_PATH];
@@ -91,7 +91,7 @@ BOOL CSmcApp::InitInstance()
     UINT  nSize;
     LPBYTE pData;
 	// Font initialization
-    if ( !::GetPrivateProfileBinary ("Script" , "LANGGUID" ,&pData, &nSize, szGLOBAL_PROFILE) ) {
+    if ( !::GetPrivateProfileBinary (L"Script" , L"LANGGUID" ,&pData, &nSize, szGLOBAL_PROFILE) ) {
         m_guidScriptLang = CLSID_JScript;
     }
     else {
@@ -139,21 +139,21 @@ BOOL CSmcApp::InitInstance()
 	CCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);
 
-    char buff[4096] = "";
-    DWORD ret =  ::GetPrivateProfileString("Main", "LangFile", "language.ini", buff, 4096 , szGLOBAL_PROFILE);
-	strcpy(langfile,buff);
-    ret =  ::GetPrivateProfileString("Main", "LangSect", "English", buff, 4096 , szGLOBAL_PROFILE);
-	strcpy(langsect,buff);
-	if ( strlen(m_lpCmdLine) ) 
+    wchar_t buff[4096] = L"";
+    DWORD ret =  ::GetPrivateProfileString(L"Main", L"LangFile", L"language.ini", buff, 4096 , szGLOBAL_PROFILE);
+	wcscpy(langfile,buff);
+    ret =  ::GetPrivateProfileString(L"Main", L"LangSect", L"English", buff, 4096 , szGLOBAL_PROFILE);
+	wcscpy(langsect,buff);
+	if ( wcslen(m_lpCmdLine) ) 
         m_strCurrentProfile = m_lpCmdLine;
     else {
-		ret =  ::GetPrivateProfileString("Main", "LastProfile", "Default", buff, 4096 , szGLOBAL_PROFILE);
+		ret =  ::GetPrivateProfileString(L"Main", L"LastProfile", L"Default", buff, 4096 , szGLOBAL_PROFILE);
         m_strCurrentProfile = buff;
     }
 
 //vls-begin// script files
     MakeLocalPath(szPROFILESCRIPT, m_strCurrentProfile, szSETTINGS_DIR);
-    strcat(szPROFILESCRIPT, ".scr");
+    wcscat(szPROFILESCRIPT, L".scr");
 //vls-end//
 
     cmdInfo.m_nShellCommand = CCommandLineInfo::FileNew;
@@ -257,19 +257,19 @@ BOOL GetPrivateProfileBinary(LPCTSTR lpszSection, LPCTSTR lpszEntry,
 
     ASSERT(lpszFile != NULL);
 
-    char buff[4096] = "";
-    DWORD ret =  ::GetPrivateProfileString(lpszSection, lpszEntry, "", buff, 4096 , lpszFile);
+    wchar_t buff[4096] = L"";
+    DWORD ret =  ::GetPrivateProfileString(lpszSection, lpszEntry, L"", buff, 4096 , lpszFile);
 
     if ( ret <= 0 ) 
         return FALSE;
 
-	int nLen = strlen(buff);
+	int nLen = wcslen(buff);
 	*pBytes = nLen/2;
 	*ppData = new BYTE[*pBytes];
 	for (int i=0;i<nLen;i+=2)
 	{
 		(*ppData)[i/2] = (BYTE)
-			(((buff[i+1] - 'A') << 4) + (buff[i] - 'A'));
+			(((buff[i+1] - L'A') << 4) + (buff[i] - L'A'));
 	}
 	return TRUE;
 }
@@ -279,12 +279,12 @@ BOOL WritePrivateProfileBinary(LPCTSTR lpszSection, LPCTSTR lpszEntry,
 {
 	ASSERT(lpszSection != NULL);
 	// convert to string and write out
-	LPTSTR lpsz = new TCHAR[nBytes*2+1];
+	LPTSTR lpsz = new wchar_t[(nBytes+1)*sizeof(wchar_t)];
 	UINT i;
 	for (i = 0; i < nBytes; i++)
 	{
-		lpsz[i*2] = (TCHAR)((pData[i] & 0x0F) + 'A'); //low nibble
-		lpsz[i*2+1] = (TCHAR)(((pData[i] >> 4) & 0x0F) + 'A'); //high nibble
+		lpsz[i*2] = (wchar_t)((pData[i] & 0x0F) + L'A'); //low nibble
+		lpsz[i*2+1] = (wchar_t)(((pData[i] >> 4) & 0x0F) + L'A'); //high nibble
 	}
 	lpsz[i*2] = 0;
 
@@ -300,8 +300,8 @@ BOOL WritePrivateProfileInt(LPCTSTR lpszSection, LPCTSTR lpszEntry, int nValue,L
     ASSERT(lpszEntry);
     ASSERT(lpszFile);
 
-    char buff[32] = "";
-    itoa(nValue, buff , 10 );
+    wchar_t buff[32] = L"";
+    _itow(nValue, buff , 10 );
     
     WritePrivateProfileString(lpszSection, lpszEntry , buff, lpszFile);
     return TRUE;
@@ -321,7 +321,7 @@ void CSmcApp::OnFileNewProfile()
 //vls-begin// base dir
 //    CString strProfileIni = dlg.m_strName + ".opt";
     CString strProfileIni(szSETTINGS_DIR);
-	strProfileIni += "\\" + dlg.m_strName + ".opt";
+	strProfileIni += L"\\" + dlg.m_strName + L".opt";
 //vls-end//
 	CString t1,t2;
     t1.LoadString(IDS_QUES_NEW_PROFILE);
@@ -350,7 +350,7 @@ void CSmcApp::OnFileNewProfile()
         CopyFile(strCurrHotkeysFile, strNewProfileHotkeys, FALSE);
         
         // Try to copy macro file
-        CString strCurrStartFile = GetProfileString("Options" , "AutoLoadFile" , "" );
+        CString strCurrStartFile = GetProfileString(L"Options" , L"AutoLoadFile" , L"" );
         if ( strCurrStartFile.GetLength() && dlg.m_strStartFile.GetLength() ) 
             CopyFile(strCurrStartFile, dlg.m_strStartFile, FALSE);
     }
@@ -358,18 +358,18 @@ void CSmcApp::OnFileNewProfile()
 //vls-begin// base dir
 //	::WritePrivateProfileString("Options" , "AutoLoadFile" , dlg.m_strStartFile, strProfileIni);
 //	::WritePrivateProfileString("Options" , "AutoSaveFile" , dlg.m_strSaveFile, strProfileIni);
-    char p[MAX_PATH+2];
+    wchar_t p[MAX_PATH+2];
     MakeLocalPath(p, dlg.m_strStartFile, szBASE_DIR);
-	::WritePrivateProfileString("Options" , "AutoLoadFile" , p, strProfileIni);
+	::WritePrivateProfileString(L"Options" , L"AutoLoadFile" , p, strProfileIni);
     MakeLocalPath(p, dlg.m_strSaveFile, szBASE_DIR);
-	::WritePrivateProfileString("Options" , "AutoSaveFile" , p, strProfileIni);
+	::WritePrivateProfileString(L"Options" , L"AutoSaveFile" , p, strProfileIni);
 //vls-end//
-	::WritePrivateProfileString("Options" , "AutoSaveCommand" , dlg.m_strCommand, strProfileIni);
+	::WritePrivateProfileString(L"Options" , L"AutoSaveCommand" , dlg.m_strCommand, strProfileIni);
 
     m_strCurrentProfile = dlg.m_strName;
 //vls-begin// script files
     MakeLocalPath(szPROFILESCRIPT, m_strCurrentProfile, szSETTINGS_DIR);
-    strcat(szPROFILESCRIPT, ".scr");
+    wcscat(szPROFILESCRIPT, L".scr");
 //vls-end//
 
 	OnFileNew();
@@ -403,17 +403,17 @@ void CSmcApp::OnFileLoadprofile()
 	m_strCurrentProfile = dlg.m_strProfile;
 //vls-begin// script files
     MakeLocalPath(szPROFILESCRIPT, m_strCurrentProfile, szSETTINGS_DIR);
-    strcat(szPROFILESCRIPT, ".scr");
+    wcscat(szPROFILESCRIPT, L".scr");
 //vls-end//
 	OnFileNew();
 }
 
 int CSmcApp::ExitInstance() 
 {
-	::WritePrivateProfileString("Main", "LastProfile", (LPCSTR)m_strCurrentProfile , szGLOBAL_PROFILE);
-	::WritePrivateProfileString("Main", "LangFile", langfile, szGLOBAL_PROFILE);
-	::WritePrivateProfileString("Main", "LangSect", langsect, szGLOBAL_PROFILE);
-    ::WritePrivateProfileBinary("Script" , "LANGGUID", (LPBYTE)&m_guidScriptLang, sizeof(m_guidScriptLang), szGLOBAL_PROFILE);
+	::WritePrivateProfileString(L"Main", L"LastProfile", (const wchar_t*)m_strCurrentProfile , szGLOBAL_PROFILE);
+	::WritePrivateProfileString(L"Main", L"LangFile", langfile, szGLOBAL_PROFILE);
+	::WritePrivateProfileString(L"Main", L"LangSect", langsect, szGLOBAL_PROFILE);
+    ::WritePrivateProfileBinary(L"Script" , L"LANGGUID", (LPBYTE)&m_guidScriptLang, sizeof(m_guidScriptLang), szGLOBAL_PROFILE);
 	return CWinApp::ExitInstance();
 }
 
@@ -428,7 +428,7 @@ BOOL CAboutDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 	
 	// load version info 
-    char ModuleName[MAX_PATH];
+    wchar_t ModuleName[MAX_PATH];
     GetModuleFileName(AfxGetInstanceHandle(), ModuleName, MAX_PATH);
 
 

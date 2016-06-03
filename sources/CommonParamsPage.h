@@ -12,6 +12,8 @@
 
 #include "onechar.h"
 
+#include <vector>
+
 class CCommonParamsPage : public CPropertyPage
 {
 	DECLARE_DYNCREATE(CCommonParamsPage)
@@ -41,6 +43,7 @@ public:
 	BOOL	m_bSplitOnBackscroll;
 	BOOL	m_bMinimizeToTray;
 	int		m_nTrigDelay;
+	CComboBox m_cCodePage;
 	UINT	m_wBCastUdpPort;
 	BOOL	m_bBCastLocalIP;
 	BOOL	m_bBCastSamePort;
@@ -53,6 +56,8 @@ public:
 	int		m_nUserInputHide;
 	//}}AFX_DATA
 
+	std::vector<int> m_vIndexToCPID;
+	int m_nMudCodePage;
 
 // Overrides
 	// ClassWizard generate virtual function overrides
@@ -65,6 +70,8 @@ public:
 protected:
 	// Generated message map functions
 	//{{AFX_MSG(CCommonParamsPage)
+	virtual BOOL OnInitDialog();
+	afx_msg void OnSelchangeCodePage();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

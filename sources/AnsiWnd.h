@@ -49,7 +49,7 @@ protected:
 
 
     void DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int StringPos = 0);
-    void SetCurrentANSI(LPCSTR strcCode);
+    void SetCurrentANSI(const wchar_t *strcCode);
     
 // Operations
 public:

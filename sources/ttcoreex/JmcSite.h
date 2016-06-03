@@ -174,7 +174,7 @@ public:
 
         HWND m_hwndSiteWindow;
 
-        BOOL InitSite(HWND hwndParentWindow, LPCSTR strScript, GUID guidEngine);
+        BOOL InitSite(HWND hwndParentWindow, LPWSTR strScript, GUID guidEngine);
     
 };
 extern CComObject<CJmcSite>* pSite;

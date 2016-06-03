@@ -2,9 +2,8 @@
 
 
 /* File created by MIDL compiler version 5.01.0164 */
-/* at Thu Apr 28 17:49:24 2016
  */
-/* Compiler settings for G:\Openov\jmc3610\jmc-clone\jmc\sources\ttcoreex\ttcoreex.idl:
+/* Compiler settings for D:\github\jmc\jmc-clone\jmc\sources\ttcoreex\ttcoreex.idl:
     Oicf (OptLev=i2), W1, Zp8, env=Win32, ms_ext, c_ext
     error checks: allocation ref bounds_check enum stub_data 
 */
@@ -299,6 +298,31 @@ EXTERN_C const IID IID_IJmcObj;
             /* [in] */ BSTR bstrText,
             /* [optional][in] */ BSTR bstrColor) = 0;
         
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE wGetWidth( 
+            /* [in] */ LONG wndNum,
+            /* [retval][out] */ LONG __RPC_FAR *nWidth) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE wGetHeight( 
+            /* [in] */ LONG wndNum,
+            /* [retval][out] */ LONG __RPC_FAR *nHeight) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE DoTelnet( 
+            /* [in] */ LONG Command,
+            /* [optional][in] */ LONG Option,
+            /* [optional][in] */ BSTR bstrData) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE ToText( 
+            /* [in] */ BSTR bstrANSI,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrText) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE ToColored( 
+            /* [in] */ BSTR bstrANSI,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrColored) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE FromColored( 
+            /* [in] */ BSTR bstrColored,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrANSI) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -460,6 +484,37 @@ EXTERN_C const IID IID_IJmcObj;
             /* [in] */ BSTR bstrText,
             /* [optional][in] */ BSTR bstrColor);
         
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE __RPC_FAR *wGetWidth )( 
+            IJmcObj __RPC_FAR * This,
+            /* [in] */ LONG wndNum,
+            /* [retval][out] */ LONG __RPC_FAR *nWidth);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE __RPC_FAR *wGetHeight )( 
+            IJmcObj __RPC_FAR * This,
+            /* [in] */ LONG wndNum,
+            /* [retval][out] */ LONG __RPC_FAR *nHeight);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE __RPC_FAR *DoTelnet )( 
+            IJmcObj __RPC_FAR * This,
+            /* [in] */ LONG Command,
+            /* [optional][in] */ LONG Option,
+            /* [optional][in] */ BSTR bstrData);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE __RPC_FAR *ToText )( 
+            IJmcObj __RPC_FAR * This,
+            /* [in] */ BSTR bstrANSI,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrText);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE __RPC_FAR *ToColored )( 
+            IJmcObj __RPC_FAR * This,
+            /* [in] */ BSTR bstrANSI,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrColored);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE __RPC_FAR *FromColored )( 
+            IJmcObj __RPC_FAR * This,
+            /* [in] */ BSTR bstrColored,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrANSI);
+        
         END_INTERFACE
     } IJmcObjVtbl;
 
@@ -570,6 +625,24 @@ EXTERN_C const IID IID_IJmcObj;
 
 #define IJmcObj_wOutput(This,wndNum,bstrText,bstrColor)	\
     (This)->lpVtbl -> wOutput(This,wndNum,bstrText,bstrColor)
+
+#define IJmcObj_wGetWidth(This,wndNum,nWidth)	\
+    (This)->lpVtbl -> wGetWidth(This,wndNum,nWidth)
+
+#define IJmcObj_wGetHeight(This,wndNum,nHeight)	\
+    (This)->lpVtbl -> wGetHeight(This,wndNum,nHeight)
+
+#define IJmcObj_DoTelnet(This,Command,Option,bstrData)	\
+    (This)->lpVtbl -> DoTelnet(This,Command,Option,bstrData)
+
+#define IJmcObj_ToText(This,bstrANSI,bstrText)	\
+    (This)->lpVtbl -> ToText(This,bstrANSI,bstrText)
+
+#define IJmcObj_ToColored(This,bstrANSI,bstrColored)	\
+    (This)->lpVtbl -> ToColored(This,bstrANSI,bstrColored)
+
+#define IJmcObj_FromColored(This,bstrColored,bstrANSI)	\
+    (This)->lpVtbl -> FromColored(This,bstrColored,bstrANSI)
 
 #endif /* COBJMACROS */
 
@@ -885,6 +958,85 @@ void __RPC_STUB IJmcObj_Play_Stub(
 
 
 void __RPC_STUB IJmcObj_wOutput_Stub(
+    IRpcStubBuffer *This,
+    IRpcChannelBuffer *_pRpcChannelBuffer,
+    PRPC_MESSAGE _pRpcMessage,
+    DWORD *_pdwStubPhase);
+
+
+/* [helpstring][id] */ HRESULT STDMETHODCALLTYPE IJmcObj_wGetWidth_Proxy( 
+    IJmcObj __RPC_FAR * This,
+    /* [in] */ LONG wndNum,
+    /* [retval][out] */ LONG __RPC_FAR *nWidth);
+
+
+void __RPC_STUB IJmcObj_wGetWidth_Stub(
+    IRpcStubBuffer *This,
+    IRpcChannelBuffer *_pRpcChannelBuffer,
+    PRPC_MESSAGE _pRpcMessage,
+    DWORD *_pdwStubPhase);
+
+
+/* [helpstring][id] */ HRESULT STDMETHODCALLTYPE IJmcObj_wGetHeight_Proxy( 
+    IJmcObj __RPC_FAR * This,
+    /* [in] */ LONG wndNum,
+    /* [retval][out] */ LONG __RPC_FAR *nHeight);
+
+
+void __RPC_STUB IJmcObj_wGetHeight_Stub(
+    IRpcStubBuffer *This,
+    IRpcChannelBuffer *_pRpcChannelBuffer,
+    PRPC_MESSAGE _pRpcMessage,
+    DWORD *_pdwStubPhase);
+
+
+/* [helpstring][id] */ HRESULT STDMETHODCALLTYPE IJmcObj_DoTelnet_Proxy( 
+    IJmcObj __RPC_FAR * This,
+    /* [in] */ LONG Command,
+    /* [optional][in] */ LONG Option,
+    /* [optional][in] */ BSTR bstrData);
+
+
+void __RPC_STUB IJmcObj_DoTelnet_Stub(
+    IRpcStubBuffer *This,
+    IRpcChannelBuffer *_pRpcChannelBuffer,
+    PRPC_MESSAGE _pRpcMessage,
+    DWORD *_pdwStubPhase);
+
+
+/* [helpstring][id] */ HRESULT STDMETHODCALLTYPE IJmcObj_ToText_Proxy( 
+    IJmcObj __RPC_FAR * This,
+    /* [in] */ BSTR bstrANSI,
+    /* [retval][out] */ BSTR __RPC_FAR *bstrText);
+
+
+void __RPC_STUB IJmcObj_ToText_Stub(
+    IRpcStubBuffer *This,
+    IRpcChannelBuffer *_pRpcChannelBuffer,
+    PRPC_MESSAGE _pRpcMessage,
+    DWORD *_pdwStubPhase);
+
+
+/* [helpstring][id] */ HRESULT STDMETHODCALLTYPE IJmcObj_ToColored_Proxy( 
+    IJmcObj __RPC_FAR * This,
+    /* [in] */ BSTR bstrANSI,
+    /* [retval][out] */ BSTR __RPC_FAR *bstrColored);
+
+
+void __RPC_STUB IJmcObj_ToColored_Stub(
+    IRpcStubBuffer *This,
+    IRpcChannelBuffer *_pRpcChannelBuffer,
+    PRPC_MESSAGE _pRpcMessage,
+    DWORD *_pdwStubPhase);
+
+
+/* [helpstring][id] */ HRESULT STDMETHODCALLTYPE IJmcObj_FromColored_Proxy( 
+    IJmcObj __RPC_FAR * This,
+    /* [in] */ BSTR bstrColored,
+    /* [retval][out] */ BSTR __RPC_FAR *bstrANSI);
+
+
+void __RPC_STUB IJmcObj_FromColored_Stub(
     IRpcStubBuffer *This,
     IRpcChannelBuffer *_pRpcChannelBuffer,
     PRPC_MESSAGE _pRpcMessage,

@@ -32,7 +32,7 @@ WORD DLLEXPORT dwProxyType = PROXY_SOCKS4;
 char DLLEXPORT sProxyUserName[256];
 char DLLEXPORT sProxyUserPassword[256];
 
-static char prev_proxylist_fname[MAX_PATH+2];
+static wchar_t prev_proxylist_fname[MAX_PATH+2];
 static int prev_proxylist_line = 0;
 
 /*
@@ -42,30 +42,32 @@ static int prev_proxylist_line = 0;
  * #proxy list <filename> [<linenum>]
  * #proxy socks4|socks5 <ip>[:<port>] [<username>] [<password>]
  */
-void proxy_command(char *arg)
+void proxy_command(wchar_t *arg)
 {
-    char cmd[BUFFER_SIZE];
-    char param[BUFFER_SIZE], param2[BUFFER_SIZE], temp[BUFFER_SIZE];
+	USES_CONVERSION;
 
-    arg = get_arg_in_braces(arg, cmd,    STOP_SPACES);
+    wchar_t cmd[BUFFER_SIZE];
+    wchar_t param[BUFFER_SIZE], param2[BUFFER_SIZE], temp[BUFFER_SIZE];
+
+    arg = get_arg_in_braces(arg,cmd,STOP_SPACES,sizeof(cmd)/sizeof(wchar_t)-1);
 
     if ( !cmd[0] ) {
-		char buf[BUFFER_SIZE];
+		wchar_t buf[BUFFER_SIZE];
 		if (!ulProxyAddress)
-			sprintf(buf, rs::rs(1268));
+			swprintf(buf, rs::rs(1268));
 		else
-			sprintf(buf, rs::rs(1269),
-			(dwProxyType == PROXY_SOCKS4 ? "socks4" : "socks5"),
+			swprintf(buf, rs::rs(1269),
+			(dwProxyType == PROXY_SOCKS4 ? L"socks4" : L"socks5"),
 			(ulProxyAddress >> 24) & 0xff, (ulProxyAddress >> 16) & 0xff, (ulProxyAddress >> 8) & 0xff, (ulProxyAddress >> 0) & 0xff,
 			(dwProxyPort ? dwProxyPort : PROXY_DEFAULT_PORT),
-			(sProxyUserName[0] ? sProxyUserName : "-"),
-			(sProxyUserPassword[0] ? sProxyUserPassword : "-"));
+			(sProxyUserName[0] ? A2W(sProxyUserName) : L"-"),
+			(sProxyUserPassword[0] ? A2W(sProxyUserPassword) : L"-"));
 		
 		tintin_puts2(buf);
         return;
     }
 
-	if (is_abrev(cmd, "disable")) {
+	if (is_abrev(cmd, L"disable")) {
 		ulProxyAddress = dwProxyPort = 0;
 		sProxyUserName[0] = '\0';
 		sProxyUserPassword[0] = '\0';
@@ -74,31 +76,38 @@ void proxy_command(char *arg)
 		return;
 	}
 
-	if (is_abrev(cmd, "list")) {
-		arg = get_arg_in_braces(arg, param, STOP_SPACES);
-		arg = get_arg_in_braces(arg, param2, STOP_SPACES);
+	if (is_abrev(cmd, L"list")) {
+		arg = get_arg_in_braces(arg,param,STOP_SPACES,sizeof(param)/sizeof(wchar_t)-1);
+		arg = get_arg_in_braces(arg,param2,STOP_SPACES,sizeof(param2)/sizeof(wchar_t)-1);
 
-		substitute_vars(param, temp, sizeof(temp));
-		substitute_myvars(temp, param, sizeof(param));
+		substitute_vars(param, temp, sizeof(temp)/sizeof(wchar_t));
+		substitute_myvars(temp, param, sizeof(param)/sizeof(wchar_t));
 
 		int line;
 		if (*param2)
-			line = atoi(param2);
-		else if (!strcmp(param, prev_proxylist_fname))
+			line = _wtoi(param2);
+		else if (!wcscmp(param, prev_proxylist_fname))
 			line = prev_proxylist_line + 1;
 		else
 			line = 1;
 
-		FILE *flist = fopen(param, "r");
-		if (!flist) {
+		
+		int len = read_file_contents(param, NULL, 0);
+		if (!len) {
 			tintin_puts2(rs::rs(1271));
 			return;
 		}
 
+		wchar_t *proxyfile = new wchar_t[len];
+		read_file_contents(param, proxyfile, len);
+		
+		wchar_t *ptr = proxyfile;
 		for(;;) {
 			int count = 0;
-			while(fgets(temp, sizeof(temp), flist))  {
-				if (!*temp)
+			//while(fgetws(temp, sizeof(temp)/sizeof(wchar_t), flist))  {
+			while(ptr = wcschr(ptr, '\n')) {
+				ptr++;
+				if (!*ptr)
 					continue;
 				if (++count == line) {
 					break;
@@ -107,42 +116,42 @@ void proxy_command(char *arg)
 			if (count < line) {
 				if (count == 0) {
 					tintin_puts2(rs::rs(1272));
-					fclose(flist);
+					delete[] proxyfile;
 					return;
 				}
 				line = ((line - 1) % count) + 1;
-				fseek(flist, 0, SEEK_SET);
+				ptr = proxyfile;
 			} else {
 				break;
 			}
 		}
-		fclose(flist);
+		delete[] proxyfile;
 
-		strcpy(prev_proxylist_fname, param);
+		wcscpy(prev_proxylist_fname, param);
 		prev_proxylist_line = line;
 
-		int n = strlen(temp) - 1;
-		while (n > 0 && (temp[n] == '\r' || temp[n] == '\n'))
-			temp[n--] = '\0';
+		int n = wcslen(temp) - 1;
+		while (n > 0 && (temp[n] == L'\r' || temp[n] == L'\n'))
+			temp[n--] = L'\0';
 		arg = temp;
 
-		arg = get_arg_in_braces(arg, cmd, STOP_SPACES);
+		arg = get_arg_in_braces(arg,cmd,STOP_SPACES,sizeof(cmd)/sizeof(wchar_t)-1);
 	}
 
 	int type;
-	if (is_abrev(cmd, "socks4"))
+	if (is_abrev(cmd, L"socks4"))
 		type = PROXY_SOCKS4;
-	else if (is_abrev(cmd, "socks5"))
+	else if (is_abrev(cmd, L"socks5"))
 		type = PROXY_SOCKS5;
 	else {
 		tintin_puts2(rs::rs(1273));
 		return;
 	}
 
-	arg = get_arg_in_braces(arg, param, STOP_SPACES);
+	arg = get_arg_in_braces(arg,param,STOP_SPACES,sizeof(param)/sizeof(wchar_t)-1);
 	unsigned int ip1 = 0, ip2 = 0, ip3 = 0, ip4 = 0, port = 0;
-	if (!sscanf(param, "%d.%d.%d.%d:%d", &ip1, &ip2, &ip3, &ip4, &port) &&
-		!sscanf(param, "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4) ) {
+	if (!swscanf(param, L"%d.%d.%d.%d:%d", &ip1, &ip2, &ip3, &ip4, &port) &&
+		!swscanf(param, L"%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4) ) {
 		tintin_puts2(rs::rs(1274));
 		return;
 	}
@@ -151,21 +160,21 @@ void proxy_command(char *arg)
 	ulProxyAddress = (ip1 << 24) | (ip2 << 16) | (ip3 << 8) | (ip4 << 0);
 	dwProxyPort = port;
 
-	arg = get_arg_in_braces(arg, param, STOP_SPACES);
-	strcpy(sProxyUserName, param);
-	arg = get_arg_in_braces(arg, param, STOP_SPACES);
-	strcpy(sProxyUserPassword, param);
+	arg = get_arg_in_braces(arg,param,STOP_SPACES,sizeof(param)/sizeof(wchar_t)-1);
+	strcpy(sProxyUserName, W2A(param));
+	arg = get_arg_in_braces(arg,param,STOP_SPACES,sizeof(param)/sizeof(wchar_t)-1);
+	strcpy(sProxyUserPassword, W2A(param));
 
-	char buf[BUFFER_SIZE];
+	wchar_t buf[BUFFER_SIZE];
 	if (!ulProxyAddress)
-		sprintf(buf, rs::rs(1270));
+		swprintf(buf, rs::rs(1270));
 	else
-		sprintf(buf, rs::rs(1275),
-		(dwProxyType == PROXY_SOCKS4 ? "socks4" : "socks5"),
+		swprintf(buf, rs::rs(1275),
+		(dwProxyType == PROXY_SOCKS4 ? L"socks4" : L"socks5"),
 		(ulProxyAddress >> 24) & 0xff, (ulProxyAddress >> 16) & 0xff, (ulProxyAddress >> 8) & 0xff, (ulProxyAddress >> 0) & 0xff,
 		(dwProxyPort ? dwProxyPort : PROXY_DEFAULT_PORT),
-		(sProxyUserName[0] ? sProxyUserName : "-"),
-		(sProxyUserPassword[0] ? sProxyUserPassword : "-"));
+		(sProxyUserName[0] ? A2W(sProxyUserName) : L"-"),
+		(sProxyUserPassword[0] ? A2W(sProxyUserPassword) : L"-"));
 	tintin_puts2(buf);
 }
 

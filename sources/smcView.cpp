@@ -82,12 +82,12 @@ BOOL CSmcView::PreCreateWindow(CREATESTRUCT& cs)
 /////////////////////////////////////////////////////////////////////////////
 // CSmcView drawing
 
-static int LengthWithoutANSI(const char* str) 
+static int LengthWithoutANSI(const wchar_t* str) 
 {
 	int ret = 0;
 	for(; *str; str++) {
-		if(*str == 0x1B) {
-			for(; *str && *str != 'm'; str++);
+		if(*str == L'\x1B') {
+			for(; *str && *str != L'm'; str++);
 		} else {
 			ret++;
 		}
@@ -129,7 +129,7 @@ void CSmcView::OnDraw(CDC* pDC)
 	for(int n_line = 0, total_lines = 0; pos && total_lines <= m_nPageSize; n_line++) {
         CString str = m_strList.GetPrev(pos);
 
-		int length = LengthWithoutANSI((const char*)str);
+		int length = LengthWithoutANSI(str);
 		int lines = pDoc->m_bLineWrap ? NumOfLines(length, m_nLineWidth) : 1;
 
 		if (lines <= 0) //nothing can be drawn
@@ -204,7 +204,7 @@ LONG CSmcView::OnLineEntered( UINT wParam, LONG lParam)
     CSmcDoc* pDoc = (CSmcDoc*)GetDocument();
 	CMainFrame* pFrame = (CMainFrame*)AfxGetMainWnd();
     InputSection.Lock();
-    CString strCommand = (LPCSTR)pFrame->m_editBar.GetLine();
+    CString strCommand = pFrame->m_editBar.GetLine();
     if ( strInput.GetLength() ) {
         strInput += cCommandDelimiter;
         strInput += strCommand;
@@ -239,8 +239,8 @@ void CSmcView::OnInitialUpdate()
 	CMainFrame* pFrm = (CMainFrame*)AfxGetMainWnd();
     ASSERT_KINDOF(CMainFrame , pFrm);
 
-    pFrm->m_editBar.m_nCursorPosWhileListing = AfxGetApp()->GetProfileInt("Main" , "CursorWileList" , 1);
-    pFrm->m_editBar.m_nMinStrLen = AfxGetApp()->GetProfileInt("Main", "MinStrLen" , 2);
+    pFrm->m_editBar.m_nCursorPosWhileListing = AfxGetApp()->GetProfileInt(L"Main" , L"CursorWileList" , 1);
+    pFrm->m_editBar.m_nMinStrLen = AfxGetApp()->GetProfileInt(L"Main", L"MinStrLen" , 2);
 	pFrm->m_editBar.GetDlgItem(IDC_EDIT)->SetFont(&pDoc->m_fntText);
 
     CRect rect;
@@ -254,6 +254,7 @@ void CSmcView::OnInitialUpdate()
 
     if ( dwThreadID == 0 ) 
 	    CreateThread(NULL, 0, &ClientThread, NULL, 0, &dwThreadID);
+		//CreateThread(NULL, 1024*1024*2, &ClientThread, NULL, 0, &dwThreadID);
 
 }
 
@@ -305,7 +306,6 @@ void CSmcView::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
     CSmcDoc* pDoc = GetDocument();
     int Pos = GetScrollPos(SB_VERT);
     CRect rect;
-    CFont* pOldFont;
     switch ( nSBCode ) {
     case SB_LINEUP:
         if ( Pos ) {
@@ -428,7 +428,7 @@ BOOL CSmcView::PreTranslateMessage(MSG* pMsg)
         if ( bt )
             AltState += HOTKEYF_EXT;
     
-        LPCSTR action = GetHotkeyValue(MAKEWORD(LOBYTE(HIWORD(pMsg->lParam)), AltState));
+        LPWSTR action = GetHotkeyValue(MAKEWORD(LOBYTE(HIWORD(pMsg->lParam)), AltState));
 
         if ( action ) {
             InputSection.Lock();
@@ -439,7 +439,7 @@ BOOL CSmcView::PreTranslateMessage(MSG* pMsg)
                 strInput = action;
             }
             InputSection.Unlock();
-            strcat((char*)action, "\n");
+            wcscat(action, L"\n");
             SetEvent(hInputDoneEvent);
             pDoc->m_KeyListSection.Unlock();
             return TRUE;
@@ -449,13 +449,13 @@ BOOL CSmcView::PreTranslateMessage(MSG* pMsg)
 	return FALSE;
 }
 
-void CSmcView::SetCurrentANSI(LPCSTR strCode)
+void CSmcView::SetCurrentANSI(const wchar_t* strCode)
 {
     ASSERT(strCode);
     if ( strCode[0] == 0 ) 
         return;
 
-    int value = atoi(strCode);
+    int value = _wtoi(strCode);
     if ( !value ) {
         m_nCurrentBg = 0;
         m_nCurrentFg = 7;
@@ -487,7 +487,7 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
     CRect OutRect;
     int indexF, indexB;
 
-    char* src = (LPSTR)(LPCSTR)*str;
+    const wchar_t* src = *str;
 
     int LeftSide =0, TopSide = 0;
     // Lets do different drawing code for selected/unselected mode. Doing to to
@@ -499,10 +499,10 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
         int CharCount = 0;
         do  {
             // Get text to draw
-            char Text[BUFFER_SIZE];
-            char* dest = Text;
+            wchar_t Text[BUFFER_SIZE];
+            wchar_t* dest = Text;
             int TextLen = 0;
-            while (*src && *src != 0x1B ) {
+            while (*src && *src != L'\x1B' ) {
                 // check for current bold
                 if ( (pDoc->m_bRectangleSelection || nStrPos == m_nStartSelectY) && CharCount == m_nStartSelectX) {
                     bNewInvert = TRUE;
@@ -522,7 +522,7 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
             // Draw text
 
             // Skip \n from the end
-            while ( TextLen && (Text[TextLen-1] == '\n' ) )
+            while ( TextLen && (Text[TextLen-1] == L'\n' ) )
                 TextLen--;
 
             indexF = m_nCurrentFg + (m_bAnsiBold && !pDoc->m_bDarkOnly ? 8 : 0 );
@@ -590,9 +590,9 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 break;
 
             // check for [ command and digit after it. IF not - skip to end of ESC command
-            if ( *src != '[' /*|| !isdigit(*src)*/ ) {
-                while ( *src && *src != 'm' ) src++;
-                if ( *src == 'm' )
+            if ( *src != L'[' /*|| !isdigit(*src)*/ ) {
+                while ( *src && *src != L'm' ) src++;
+                if ( *src == L'm' )
                     src++;
                 continue;
             }
@@ -601,12 +601,12 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 // may be need skip to ; . But .... Speed
                 Text[0] = 0;
                 dest = Text;
-                while ( isdigit(*src) ) 
+                while ( iswdigit(*src) ) 
                     *dest++ = *src++;
                 *dest = 0;
                 if ( Text[0] ) 
                     SetCurrentANSI(Text);
-            } while ( *src && *src++ != 'm' );
+            } while ( *src && *src++ != L'm' );
         }while ( *src );
         // draw to end of the window
         OutRect = rect;
@@ -621,14 +621,14 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
             pDC->SetTextColor(pDoc->m_ForeColors[indexF]);
 			pDC->SetBkColor(pDoc->m_BackColors[indexB]);
         }
-        pDC->ExtTextOut(OutRect.left, OutRect.top, ETO_OPAQUE, &OutRect, "", 0, NULL);
+        pDC->ExtTextOut(OutRect.left, OutRect.top, ETO_OPAQUE, &OutRect, L"", 0, NULL);
     } else {
         do  {
             // Get text to draw
-            char Text[BUFFER_SIZE];
-            char* dest = Text;
+            wchar_t Text[BUFFER_SIZE];
+            wchar_t* dest = Text;
             int TextLen = 0;
-            while (*src && *src != 0x1B ) {
+            while (*src && *src != L'\x1B' ) {
                 *dest++ = *src++;
                 TextLen++;
             }
@@ -636,7 +636,7 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
             // Draw text
 
             // Skip \n  from the end
-            while ( TextLen && (Text[TextLen-1] == '\n' ) )
+            while ( TextLen && (Text[TextLen-1] == L'\n' ) )
                 TextLen--;
 
             indexF = m_nCurrentFg + (m_bAnsiBold && !pDoc->m_bDarkOnly ? 8 : 0 );
@@ -690,9 +690,9 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 break;
 
             // check for [ command and digit after it. IF not - skip to end of ESC command
-            if ( *src != '[' /*|| !isdigit(*src)*/ ) {
-                while ( *src && *src != 'm' ) src++;
-                if ( *src == 'm' )
+            if ( *src != L'[' /*|| !isdigit(*src)*/ ) {
+                while ( *src && *src != L'm' ) src++;
+                if ( *src == L'm' )
                     src++;
                 continue;
             }
@@ -701,12 +701,12 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
                 // may be need skip to ; . But .... Speed
                 Text[0] = 0;
                 dest = Text;
-                while ( isdigit(*src) ) 
+                while ( iswdigit(*src) ) 
                     *dest++ = *src++;
                 *dest = 0;
                 if ( Text[0] ) 
                     SetCurrentANSI(Text);
-            } while ( *src && *src++ != 'm' );
+            } while ( *src && *src++ != L'm' );
         }while ( *src );
         OutRect = rect;
         OutRect.left += LeftSide;
@@ -722,7 +722,7 @@ void CSmcView::DrawWithANSI(CDC* pDC, CRect& rect, CString* str, int nStrPos)
 		//pDC->SetTextColor(pDoc->m_ForeColors[indexF]);
 		pDC->SetBkColor(pDoc->m_BackColors[indexB]);
 
-        pDC->ExtTextOut(OutRect.left, OutRect.top, ETO_OPAQUE, &OutRect, "", 0, NULL);
+        pDC->ExtTextOut(OutRect.left, OutRect.top, ETO_OPAQUE, &OutRect, L"", 0, NULL);
     }
 }
 
@@ -745,10 +745,10 @@ void CSmcView::OnLButtonDown(UINT nFlags, CPoint point)
     m_nStartTrackX = m_nEndTrackX = m_nStartSelectX = m_nEndSelectX = x;
 }
 
-static char* SkipAnsi(char* ptr)
+static const wchar_t* SkipAnsi(const wchar_t* ptr)
 {
 
-    for ( ; *ptr && *ptr != 'm'; ptr++ ) {};
+    for ( ; *ptr && *ptr != L'm'; ptr++ ) {};
 
 	if (*ptr)
 		ptr++;
@@ -776,12 +776,12 @@ void CSmcView::OnLButtonUp(UINT nFlags, CPoint point)
         int i = m_nStartSelectY;
         do { 
             CString tmpStr = m_strList.GetAt(pos);
-            char* ptr = (LPSTR)(LPCSTR)tmpStr;
+            const wchar_t* ptr = tmpStr;
             int count = 0;
             if (pDoc->m_bRectangleSelection || i == m_nStartSelectY) {
                 // Skip to StartX character
                 while ( count < m_nStartSelectX && *ptr){
-                    if ( *ptr == 0x1B ){
+                    if ( *ptr == L'\x1B' ){
                         ptr = SkipAnsi(ptr);
                     }
                     else {
@@ -795,16 +795,16 @@ void CSmcView::OnLButtonUp(UINT nFlags, CPoint point)
             do {
 				if ( !(*ptr))
 					break;
-                if ( *ptr == '\n' ) {
+                if ( *ptr == L'\n' ) {
                     ptr++;
                     continue;
                 }
 				if ( count > m_nEndSelectX && (pDoc->m_bRectangleSelection || i == m_nEndSelectY)) 
                     break;
-                if ( *ptr == 0x1B ) {
-                    char *endansi = SkipAnsi(ptr);
+                if ( *ptr == L'\x1B' ) {
+                    const wchar_t *endansi = SkipAnsi(ptr);
 					if (!pDoc->m_bRemoveESCSelection)
-						for (char *p = ptr; p < endansi; p++)
+						for (const wchar_t *p = ptr; p < endansi; p++)
 							ResultStr += *p;
 					ptr = endansi;
                     continue;
@@ -813,28 +813,24 @@ void CSmcView::OnLButtonUp(UINT nFlags, CPoint point)
                 count++;
             } while ( *ptr );
             if ( i != m_nEndSelectY ) 
-                ResultStr +="\r\n";
+                ResultStr +=L"\r\n";
             i++;
             pos = m_strList.FindIndex(ScrollIndex+i);
         } while ( i<=m_nEndSelectY && pos );
         // Put to clipboard
-		if (strlen(ResultStr) != 0)
+		if (wcslen(ResultStr) != 0)
 		{
 			VERIFY(OpenClipboard());
 
 			VERIFY(EmptyClipboard());
 
-			LCID lc = GetUserDefaultLCID();
-			HANDLE hData = GlobalAlloc(GMEM_ZEROINIT, sizeof(lc) );
-			LCID* pLc = (LCID*)GlobalLock(hData);
-			*pLc = lc;
+			HANDLE hData;
+
+			hData = GlobalAlloc(GMEM_ZEROINIT, (ResultStr.GetLength()+1)*sizeof(wchar_t) );
+			wchar_t* buff = (wchar_t*)GlobalLock(hData);
+			wcscpy (buff, ResultStr);
 			GlobalUnlock(hData);
-			SetClipboardData(CF_LOCALE, hData);
-			hData = GlobalAlloc(GMEM_ZEROINIT, ResultStr.GetLength()+1 );
-			char* buff = (char*)GlobalLock(hData);
-			strcpy (buff, (LPSTR)(LPCSTR)ResultStr);
-			GlobalUnlock(hData);
-			SetClipboardData(CF_TEXT, hData);
+			SetClipboardData(CF_UNICODETEXT, hData);
 			CloseClipboard();
 		}
     }
@@ -922,12 +918,12 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 			SYSTEMTIME st;
 			if (pDoc->m_bShowTimestamps) {
 				GetLocalTime(&st);
-				timestr.Format("\x1b[1;30m[%02d:%02d:%02d] ",
+				timestr.Format(L"\x1b[1;30m[%02d:%02d:%02d] ",
 					st.wHour, st.wMinute, st.wSecond);
 			}
 
 			CString str = pDoc->m_strTempList.GetHead();
-			str.Replace((char)END_OF_PROMPT_MARK, (char)' ');
+			str.Replace(END_OF_PROMPT_MARK, L' ');
 			if (pDoc->m_bShowTimestamps)
 				str = timestr + str;
 	        m_strList.SetAt(m_strList.GetTailPosition(), str);
@@ -935,19 +931,21 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 
             POSITION pos = pDoc->m_strTempList.GetHeadPosition();
             CString last_line = pDoc->m_strTempList.GetNext(pos);
+			if (pDoc->m_bShowTimestamps)
+				last_line = timestr + last_line;
 
 			int dcnt_last_line = 0;
 			int cnt_last_line = 1;
 			if (pDoc->m_bLineWrap && m_LineCountsList.size() > 0) {
 				int old_len = m_LineCountsList[0];
-				cnt_last_line = NumOfLines(LengthWithoutANSI((const char*)last_line), m_nLineWidth);
+				cnt_last_line = NumOfLines(LengthWithoutANSI(last_line), m_nLineWidth);
 				dcnt_last_line = cnt_last_line - old_len;
 			}
 
 			int new_lines = 0;
 	        while(pos) {
 		        str = pDoc->m_strTempList.GetNext(pos);
-				str.Replace((char)END_OF_PROMPT_MARK, (char)' ');
+				str.Replace(END_OF_PROMPT_MARK, L' ');
 
 				if (pDoc->m_bShowTimestamps)
 					str = timestr + str;
@@ -957,7 +955,7 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 				m_TotalLinesReceived++;
 
 				new_lines += pDoc->m_bLineWrap ? 
-					NumOfLines(LengthWithoutANSI((const char*)str), m_nLineWidth) : 1;;
+					NumOfLines(LengthWithoutANSI(str), m_nLineWidth) : 1;;
 	        }
             // check for splitted and head view 
             if ( pMainWnd->m_wndSplitter.GetRowCount () > 1 && pMainWnd->m_wndSplitter.GetPane(0,0) == this ) {
@@ -987,7 +985,7 @@ void CSmcView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
         }
         if ( nScrollSize > m_strList.GetCount() ) {
             while ( nScrollSize > m_strList.GetCount() ) 
-                m_strList.AddHead("");
+                m_strList.AddHead(L"");
         }
         SetScrollSettings();
         InvalidateRect(NULL, FALSE);

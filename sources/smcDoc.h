@@ -67,7 +67,7 @@ public:
 	LOGFONT m_lfText;
 	CFont m_fntText;
 
-    char m_cCommandChar; // command char. default is '#'
+    wchar_t m_cCommandChar; // command char. default is '#'
 
     BOOL m_bFrozen;
 
@@ -92,7 +92,7 @@ public:
     COLORREF m_BackColors[16];
 
     CStringList m_lstTabWords;
-    void FillTabWords(LPCSTR strWords);
+    void FillTabWords(const wchar_t* strWords);
 
 
 //vls-begin// multiple output
@@ -113,7 +113,7 @@ public:
 
     CCriticalSection m_KeyListSection;
 
-    void DrawSome(LPSTR str);
+    void DrawSome(const wchar_t* str);
 
     BOOL m_bSplitOnBackscroll;
 

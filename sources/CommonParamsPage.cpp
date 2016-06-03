@@ -5,6 +5,8 @@
 #include "smc.h"
 #include "CommonParamsPage.h"
 
+extern DLLEXPORT UINT MudCodePage;
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -74,6 +76,7 @@ void CCommonParamsPage::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SPLIT_ONBACKSCROLL, m_bSplitOnBackscroll);
 	DDX_Check(pDX, IDC_MINIMIZE_TO_TRAY, m_bMinimizeToTray);
 	DDX_Text(pDX, IDC_TRIG_DELAY, m_nTrigDelay);
+	DDX_Control(pDX, IDC_MUD_CODEPAGE, m_cCodePage);
 	DDX_Text(pDX, IDC_BCAST_UDP_PORT, m_wBCastUdpPort);
 	DDV_MinMaxUInt(pDX, m_wBCastUdpPort, 5000, 30000);
 	DDX_Check(pDX, IDC_BCAST_LOCAL_IP, m_bBCastLocalIP);
@@ -90,9 +93,38 @@ void CCommonParamsPage::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CCommonParamsPage, CPropertyPage)
 	//{{AFX_MSG_MAP(CCommonParamsPage)
+	ON_CBN_SELCHANGE(IDC_MUD_CODEPAGE, OnSelchangeCodePage)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // CCommonParamsPage message handlers
+
+BOOL CCommonParamsPage::OnInitDialog() 
+{
+	CPropertyPage::OnInitDialog();
+
+	wchar_t cpname[BUFFER_SIZE];
+	int cpid;
+	int i = 0;
+	m_vIndexToCPID.clear();
+	while ( (cpid = enumerate_codepage(i++, cpname, sizeof(cpname))) >= 0) {
+		int ind = m_cCodePage.AddString (cpname);
+		if ( cpid == m_nMudCodePage )
+			m_cCodePage.SetCurSel(ind);
+		m_vIndexToCPID.push_back(cpid);
+	}
+    
+	return TRUE;  // return TRUE unless you set the focus to a control
+	              // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+
+void CCommonParamsPage::OnSelchangeCodePage() 
+{
+	int ind = m_cCodePage.GetCurSel();
+    if ( ind < 0 || ind >= m_vIndexToCPID.size() ) 
+        return;
+	m_nMudCodePage = m_vIndexToCPID[ind];
+}
 

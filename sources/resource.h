@@ -171,6 +171,8 @@
 #define IDC_INPUT_ON_NEW_LINE           1133
 #define IDC_DISPLAY_PING                1134
 #define IDC_DISPLAY_TIMESTAMPS          1135
+#define IDC_MUD_CODEPAGE                1136
+#define IDC_LOG_CODEPAGE                1137
 #define ID_OPTIONS_SCROLLBUFFER         32771
 #define ID_OPTIONS_FONT                 32772
 #define ID_OPTIONS_HOTKEYS              32774
@@ -240,7 +242,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        179
 #define _APS_NEXT_COMMAND_VALUE         32809
-#define _APS_NEXT_CONTROL_VALUE         1135
+#define _APS_NEXT_CONTROL_VALUE         1138
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

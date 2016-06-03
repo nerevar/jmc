@@ -13,7 +13,7 @@
 // See smc.cpp for the implementation of this class
 //
 
-extern char szGLOBAL_PROFILE[MAX_PATH];
+extern wchar_t szGLOBAL_PROFILE[MAX_PATH];
 
 BOOL WritePrivateProfileBinary(LPCTSTR lpszSection, LPCTSTR lpszEntry,
 	LPBYTE pData, UINT nBytes, LPCTSTR lpszFile);

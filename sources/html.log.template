@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-equiv="content-type" content="text/html; charset=windows-1251" />
+    <meta http-equiv="content-type" content="text/html; charset=%charset%" />
     <meta name="generator" content="Jaba Mud Client http://nerevar.github.io/jmc/" />
     <title>%title%</title>
     <style type="text/css">

@@ -73,19 +73,19 @@ static int LastParsedBg = 40, LastParsedFg = 37, LastParsedBold = 0;
 BOOL bScriptFileListChanged = FALSE;
 //vls-end//
 
-static void ParseAnsiValues (char* AnsiStr, CString* pLastESC)
+static void ParseAnsiValues (const wchar_t* AnsiStr, CString* pLastESC)
 {
-    char* src = AnsiStr;
-    char Num[128] ;
+    const wchar_t* src = AnsiStr;
+    wchar_t Num[128] ;
 
     do {
-        char* dest = Num;
-        while (isdigit(*src) ) {
+        wchar_t* dest = Num;
+        while (iswdigit(*src) ) {
             *dest++ = *src++;
         }
         *dest = 0;
         if ( Num[0] ) {
-            int Value = atoi(Num);
+            int Value = _wtoi(Num);
             if ( Value <38 && Value >=30 ) 
                 LastParsedFg = Value;
             else 
@@ -104,12 +104,12 @@ static void ParseAnsiValues (char* AnsiStr, CString* pLastESC)
         }
     } while (*src++ ) ;
 
-    pLastESC->Format("%c[%d;%d;%dm" , 0x1B, LastParsedBold, LastParsedFg, LastParsedBg );
+    pLastESC->Format(L"%c[%d;%d;%dm" , L'\x1B', LastParsedBold, LastParsedFg, LastParsedBg );
 }
 
-static void AddToOutList(char* str, int wndCode)
+static void AddToOutList(const wchar_t* str, int wndCode)
 {
-    char  strAdd[BUFFER_SIZE+32];
+    wchar_t  strAdd[BUFFER_SIZE+32];
 
     CStringList* pList;
     CString* pLastEsc;
@@ -134,7 +134,7 @@ static void AddToOutList(char* str, int wndCode)
 
 	strTail = pList->GetTail();
 
-	int len, maxlength = sizeof(strAdd) - 1;
+	int len, maxlength = sizeof(strAdd)/sizeof(wchar_t) - 1;
 
 	bool set_tail = false;
 	bool user_input = false,
@@ -150,7 +150,7 @@ static void AddToOutList(char* str, int wndCode)
 	}
 
     int TailLen = strTail.GetLength();
-	bool uncomplete_line = TailLen && (strTail[TailLen-1] != '\n') && (strTail[TailLen-1] != END_OF_PROMPT_MARK);
+	bool uncomplete_line = TailLen && (strTail[TailLen-1] != L'\n') && (strTail[TailLen-1] != END_OF_PROMPT_MARK);
 	bool prompt_line = TailLen && (strTail[TailLen-1] == END_OF_PROMPT_MARK);
 	bool copy_tail = false;
 
@@ -171,7 +171,7 @@ static void AddToOutList(char* str, int wndCode)
 			set_tail = true;
 			copy_tail = true;
 		} else {
-			strTail.Replace((char)END_OF_PROMPT_MARK, (char)'\n');
+			strTail.Replace(END_OF_PROMPT_MARK, L'\n');
 			set_tail = false;
 		}
 	}
@@ -180,41 +180,41 @@ static void AddToOutList(char* str, int wndCode)
 		len = TailLen;
 		if ( len > maxlength )
 			len = maxlength;
-		strncpy(strAdd , (LPCSTR)strTail, len);
+		wcsncpy(strAdd , strTail, len);
 		strAdd[len] = '\0';
 		maxlength -= len;
     } else {
-		len = strlen((LPCSTR)*pLastEsc);
+		len = wcslen(*pLastEsc);
 		if ( len > maxlength )
 			len = maxlength;
-		strncpy(strAdd , (LPCSTR)*pLastEsc, len);
-		strAdd[len] = '\0';
+		wcsncpy(strAdd , *pLastEsc, len);
+		strAdd[len] = L'\0';
 		maxlength -= len;
 	}
 	
-	len = strlen(str);
+	len = wcslen(str);
 	if ( len > maxlength )
 		len = maxlength;
-    strncat(strAdd, str, len);
+    wcsncat(strAdd, str, len);
 	maxlength -= len;
 
     // Now we are ready to parse string, split it to few strings to fit to window etc.
     // Lets start
-    char AllANSIFromCurrString[BUFFER_SIZE];
-    char* src = strAdd;
-    char* ansi = AllANSIFromCurrString;
-    char OutputBuffer[BUFFER_SIZE+32];
-    char* dest = OutputBuffer;
+    wchar_t AllANSIFromCurrString[BUFFER_SIZE];
+    wchar_t* src = strAdd;
+    wchar_t* ansi = AllANSIFromCurrString;
+    wchar_t OutputBuffer[BUFFER_SIZE+32];
+    wchar_t* dest = OutputBuffer;
     int OutTextLen = 0;
 
     do {
         switch ( *src ) {
-        case 0x1B:
+        case L'\x1B':
             // Now skip ansi and save it to AllANSIFromCurrString
             do {
 				*ansi++ = *src;
                 *dest++ = *src++;
-            } while ( *src && *src != 'm' ) ;
+            } while ( *src && *src != L'm' ) ;
 			*ansi++ = *src;
 			*ansi = 0;
             *dest++ = *src;
@@ -247,7 +247,7 @@ static void AddToOutList(char* str, int wndCode)
     } while (*src++ ) ;
 }
 
-static void __stdcall OutTextFrom(char* str, int wndCode) 
+static void __stdcall OutTextFrom(const wchar_t* str, int wndCode) 
 {
     if ( pDoc ) {
         CCriticalSection* pSec;
@@ -261,13 +261,13 @@ static void __stdcall OutTextFrom(char* str, int wndCode)
 
         pSec->Lock();
         // now i have to split buffer to few strings
-        char* src = str;
-        char buff[BUFFER_SIZE+32];
-        char* dest = buff;
-		int maxlength = sizeof(buff);
+        const wchar_t* src = str;
+        wchar_t buff[BUFFER_SIZE+32];
+        wchar_t* dest = buff;
+		int maxlength = sizeof(buff)/sizeof(wchar_t);
         buff[0] = 0;
         do {
-            if ( *src == '\n' ) {
+            if ( *src == L'\n' ) {
 				if ( maxlength > 1 ) {
 					*dest++ = *src;
 					--maxlength;
@@ -275,7 +275,7 @@ static void __stdcall OutTextFrom(char* str, int wndCode)
                 *dest = 0;
                 AddToOutList(buff, wndCode);
                 dest = buff;
-				maxlength = sizeof(buff);
+				maxlength = sizeof(buff)/sizeof(wchar_t);
             } else if ( *src == 0 ) {
 				*dest = 0;
                 if ( buff[0] )
@@ -357,16 +357,16 @@ unsigned long __stdcall ClientThread(void * pParam)
 
         if ( dwWait == WAIT_OBJECT_0 ) {// got input 
             InputSection.Lock();
-            CString str = (LPCSTR)strInput;
-            strInput = "";
+            CString str = strInput;
+            strInput = L"";
             InputSection.Unlock();
             // TRACE("Inpuit = %s\n",(LPCSTR)str);
-            CompileInput((LPSTR)(LPCSTR)str);
+            CompileInput(str);
         }
 
 
         if ( pDoc->m_ParseDlg.m_bDoParseScriptlet ) {
-            ParseScript((LPCSTR)pDoc->m_ParseDlg.m_strText);
+            ParseScript(pDoc->m_ParseDlg.m_strText);
             pDoc->m_ParseDlg.m_bDoParseScriptlet = FALSE;
             // SetEvent(pDoc->m_ParseDlg.m_hParseDoneEvent);
         }
@@ -429,8 +429,8 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
     }
 //vls-end//
 
-    pStrLastESC = "\x1B";
-    pStrLastESC += "[0m";
+    pStrLastESC = L"\x1B";
+    pStrLastESC += L"[0m";
 
     m_bFrozen = FALSE;
 
@@ -454,35 +454,35 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
 
 
     // Init default command char 
-    bConnectBeep = ::GetPrivateProfileInt("Options" , "ConnectBeep" , FALSE , szGLOBAL_PROFILE);
-    bAutoReconnect = ::GetPrivateProfileInt("Options" , "AutoReconnect" , FALSE , szGLOBAL_PROFILE);
-    cCommandChar = m_cCommandChar = (char)::GetPrivateProfileInt("Options" , "CommandChar" , '#' , szGLOBAL_PROFILE);
+    bConnectBeep = ::GetPrivateProfileInt(L"Options" , L"ConnectBeep" , FALSE , szGLOBAL_PROFILE);
+    bAutoReconnect = ::GetPrivateProfileInt(L"Options" , L"AutoReconnect" , FALSE , szGLOBAL_PROFILE);
+    cCommandChar = m_cCommandChar = (wchar_t)::GetPrivateProfileInt(L"Options" , L"CommandChar" , L'#' , szGLOBAL_PROFILE);
 
-	wBCastUdpPort = ::GetPrivateProfileInt("Options" , "BroadCastUdpPort" , 8326 , szGLOBAL_PROFILE);
-	bBCastFilterIP = ::GetPrivateProfileInt("Options" , "BroadCastFilterIP" , TRUE , szGLOBAL_PROFILE);
-	bBCastFilterPort = ::GetPrivateProfileInt("Options" , "BroadCastFilterPort" , TRUE , szGLOBAL_PROFILE);
+	wBCastUdpPort = ::GetPrivateProfileInt(L"Options" , L"BroadCastUdpPort" , 8326 , szGLOBAL_PROFILE);
+	bBCastFilterIP = ::GetPrivateProfileInt(L"Options" , L"BroadCastFilterIP" , TRUE , szGLOBAL_PROFILE);
+	bBCastFilterPort = ::GetPrivateProfileInt(L"Options" , L"BroadCastFilterPort" , TRUE , szGLOBAL_PROFILE);
 	reopen_bcast_socket();
 
-    m_bSplitOnBackscroll = ::GetPrivateProfileInt("Options" , "SplitOnBackscroll" , 1, szGLOBAL_PROFILE);
+    m_bSplitOnBackscroll = ::GetPrivateProfileInt(L"Options" , L"SplitOnBackscroll" , 1, szGLOBAL_PROFILE);
 
-	m_bRectangleSelection = ::GetPrivateProfileInt("Options" , "RectangleSelection" , 0, szGLOBAL_PROFILE);
-	m_bRemoveESCSelection = ::GetPrivateProfileInt("Options" , "RemoveESCSelection" , 1, szGLOBAL_PROFILE);
-	m_bLineWrap = ::GetPrivateProfileInt("Options" , "LineWrap" , 1, szGLOBAL_PROFILE);
-	m_bShowTimestamps = ::GetPrivateProfileInt("Options" , "LineTimeStamps" , 0, szGLOBAL_PROFILE);
-	m_bShowHiddenText = ::GetPrivateProfileInt("Options" , "ShowHiddenText" , 1, szGLOBAL_PROFILE);
+	m_bRectangleSelection = ::GetPrivateProfileInt(L"Options" , L"RectangleSelection" , 0, szGLOBAL_PROFILE);
+	m_bRemoveESCSelection = ::GetPrivateProfileInt(L"Options" , L"RemoveESCSelection" , 1, szGLOBAL_PROFILE);
+	m_bLineWrap = ::GetPrivateProfileInt(L"Options" , L"LineWrap" , 1, szGLOBAL_PROFILE);
+	m_bShowTimestamps = ::GetPrivateProfileInt(L"Options" , L"LineTimeStamps" , 0, szGLOBAL_PROFILE);
+	m_bShowHiddenText = ::GetPrivateProfileInt(L"Options" , L"ShowHiddenText" , 1, szGLOBAL_PROFILE);
 
-    nScripterrorOutput  = ::GetPrivateProfileInt("Script" , "ErrOutput", 0 , szGLOBAL_PROFILE);
+    nScripterrorOutput  = ::GetPrivateProfileInt(L"Script" , L"ErrOutput", 0 , szGLOBAL_PROFILE);
 
     UINT  nSize;
     LPBYTE pData;
 	// Font initialization
 	memset ( &m_lfText, 0 , sizeof(m_lfText) );
-    if ( !::GetPrivateProfileBinary ("Font" , "LOGFONT" ,&pData, &nSize, szGLOBAL_PROFILE) ) {
+    if ( !::GetPrivateProfileBinary (L"Font" , L"LOGFONT" ,&pData, &nSize, szGLOBAL_PROFILE) ) {
 	    m_lfText.lfHeight = -13;
 	    m_lfText.lfWeight = FW_NORMAL;
 	    m_lfText.lfCharSet = ANSI_CHARSET;
 	    m_lfText.lfPitchAndFamily = FIXED_PITCH;
-	    strcpy(m_lfText.lfFaceName, "Fixedsys");
+	    wcscpy(m_lfText.lfFaceName, L"Fixedsys");
     }
     else {
         ASSERT(nSize == sizeof(m_lfText));
@@ -495,67 +495,57 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
     RecalcCharSize();
 
     // Load color settings 
-    if ( ::GetPrivateProfileBinary ("Colors" , "Foreground" ,&pData, &nSize, szGLOBAL_PROFILE) ) {
+    if ( ::GetPrivateProfileBinary (L"Colors" , L"Foreground" ,&pData, &nSize, szGLOBAL_PROFILE) ) {
         ASSERT(nSize==sizeof(m_ForeColors));
         memcpy(m_ForeColors, pData, nSize);
         delete pData;
         pData = NULL;
     }
-    if ( ::GetPrivateProfileBinary ("Colors" , "Background" ,&pData, &nSize, szGLOBAL_PROFILE) ) {
+    if ( ::GetPrivateProfileBinary (L"Colors" , L"Background" ,&pData, &nSize, szGLOBAL_PROFILE) ) {
         ASSERT(nSize==sizeof(m_BackColors));
         memcpy(m_BackColors, pData, nSize);
         delete pData;
         pData = NULL;
     }
-    m_bDarkOnly = ::GetPrivateProfileInt("Colors" , "DarkOnly" ,0 , szGLOBAL_PROFILE) ;
+    m_bDarkOnly = ::GetPrivateProfileInt(L"Colors" , L"DarkOnly" ,0 , szGLOBAL_PROFILE) ;
 
-    bAllowDebug = ::GetPrivateProfileInt("Script" , "AllowDebug" ,0 , szGLOBAL_PROFILE) ;
+    bAllowDebug = ::GetPrivateProfileInt(L"Script" , L"AllowDebug" ,0 , szGLOBAL_PROFILE) ;
 
     pDoc = this;
 
     // Load keywords list 
-//vls-begin// base dir
-//    HANDLE hFile  = CreateFile("tabwords.txt", GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL );
     CString strTabwordsFile = szBASE_DIR;
-    strTabwordsFile += "\\tabwords.txt";
-    HANDLE hFile  = CreateFile(strTabwordsFile, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL );
-//vls-end//
-    if ( hFile!=INVALID_HANDLE_VALUE ) { 
-//vls-begin// bugfix
-//        DWORD dwSize;
-//        dwSize = GetFileSize(hFile, &dwSize);
-        DWORD dwSize = GetFileSize(hFile, NULL);
-//vls-end//
-        char* buff = new char[dwSize+2];
-        buff[dwSize] = 0;
-        ReadFile(hFile, buff, dwSize, &dwSize, NULL);
-        CloseHandle(hFile);
-        FillTabWords(buff);
-        delete buff;
-    }
+    strTabwordsFile += L"\\tabwords.txt";
+	int len = read_file_contents(strTabwordsFile, NULL, 0);
+	if (len > 0) {
+		wchar_t * buff = new wchar_t[len];
+		read_file_contents(strTabwordsFile, buff, len);
+		FillTabWords(buff);
+		delete[] buff;
+	}
 	FillTabWords(NULL);
 }
 
 CSmcDoc::~CSmcDoc()
 {
-    ::WritePrivateProfileInt("Options" , "Scroll" , nScrollSize, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "CommandChar" , cCommandChar, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "ConnectBeep" , bConnectBeep , szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "AutoReconnect" , bAutoReconnect , szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "SplitOnBackscroll" , m_bSplitOnBackscroll, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Script" , "AllowDebug" ,bAllowDebug  , szGLOBAL_PROFILE) ;
+    ::WritePrivateProfileInt(L"Options" , L"Scroll" , nScrollSize, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"CommandChar" , cCommandChar, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"ConnectBeep" , bConnectBeep , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"AutoReconnect" , bAutoReconnect , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"SplitOnBackscroll" , m_bSplitOnBackscroll, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Script" , L"AllowDebug" ,bAllowDebug  , szGLOBAL_PROFILE) ;
 
-	::WritePrivateProfileInt("Options" , "BroadCastUdpPort" , wBCastUdpPort , szGLOBAL_PROFILE);
-	::WritePrivateProfileInt("Options" , "BroadCastFilterIP" , bBCastFilterIP , szGLOBAL_PROFILE);
-	::WritePrivateProfileInt("Options" , "BroadCastFilterPort" , bBCastFilterPort , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"BroadCastUdpPort" , wBCastUdpPort , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"BroadCastFilterIP" , bBCastFilterIP , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"BroadCastFilterPort" , bBCastFilterPort , szGLOBAL_PROFILE);
 
-	::WritePrivateProfileInt("Options" , "RectangleSelection" , m_bRectangleSelection , szGLOBAL_PROFILE);
-	::WritePrivateProfileInt("Options" , "RemoveESCSelection" , m_bRemoveESCSelection , szGLOBAL_PROFILE);
-	::WritePrivateProfileInt("Options" , "LineWrap" , m_bLineWrap , szGLOBAL_PROFILE);
-	::WritePrivateProfileInt("Options" , "LineTimeStamps" , m_bShowTimestamps , szGLOBAL_PROFILE);
-	::WritePrivateProfileInt("Options" , "ShowHiddenText", m_bShowHiddenText , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"RectangleSelection" , m_bRectangleSelection , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"RemoveESCSelection" , m_bRemoveESCSelection , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"LineWrap" , m_bLineWrap , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"LineTimeStamps" , m_bShowTimestamps , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"ShowHiddenText", m_bShowHiddenText , szGLOBAL_PROFILE);
 
-    ::WritePrivateProfileInt("Script" , "ErrOutput", nScripterrorOutput , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Script" , L"ErrOutput", nScripterrorOutput , szGLOBAL_PROFILE);
 
     bExit = TRUE;
     SetEvent(hInputDoneEvent);
@@ -564,11 +554,11 @@ CSmcDoc::~CSmcDoc()
     CloseHandle(hStateClosedEvent);
 
 	CString strTabwordsFile = szBASE_DIR;
-	strTabwordsFile += "\\tabwords.txt";
+	strTabwordsFile += L"\\tabwords.txt";
 
 	if (m_lstTabWords.IsEmpty()) {
 		// delete keywords empty file
-		DeleteFile((LPCSTR)strTabwordsFile);
+		DeleteFile(strTabwordsFile);
 	} else {
 		//save tabwords
 		CString strWords;
@@ -576,17 +566,14 @@ CSmcDoc::~CSmcDoc()
 		while ( pos ) {
 			CString word = m_lstTabWords.GetNext (pos);
 			if ( word[0] != cCommandChar )
-				strWords += word + "\r\n";
+				strWords += word + L"\r\n";
 		}
 
 		HANDLE hFile;
-		//vls-begin// base dir
-		//    hFile = CreateFile("tabwords.txt", GENERIC_READ| GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, NULL, NULL );
 		hFile = CreateFile(strTabwordsFile, GENERIC_READ| GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, NULL, NULL );
-		//vls-end//
 		if ( hFile!=INVALID_HANDLE_VALUE ) { 
 			DWORD Written;
-			WriteFile(hFile , (LPCSTR)strWords, strWords.GetLength() , &Written, NULL );
+			WriteFile(hFile , strWords, strWords.GetLength() , &Written, NULL );
 			CloseHandle(hFile);
 		}
 	}
@@ -608,7 +595,7 @@ BOOL CSmcDoc::OnNewDocument()
 //    CString strProfileFile (".\\settings\\");
 //    strProfileFile += m_strProfileName + ".opt";
     CString strProfileFile (szSETTINGS_DIR);
-    strProfileFile += "\\" + m_strProfileName + ".opt";
+    strProfileFile += L"\\" + m_strProfileName + L".opt";
 //vls-end//
     
     pApp->m_pszProfileName = _tcsdup(strProfileFile);
@@ -617,36 +604,37 @@ BOOL CSmcDoc::OnNewDocument()
 //vls-begin// base dir
 //    m_strDefSetFile = AfxGetApp()->GetProfileString("Options" , "AutoLoadFile" , m_strProfileName + ".set");
 //    m_strDefSaveFile = AfxGetApp()->GetProfileString("Options" , "AutoSaveFile" , m_strDefSetFile);
-    char *p = m_strDefSetFile.GetBuffer(MAX_PATH+2);
-    MakeAbsolutePath(p, AfxGetApp()->GetProfileString("Options" , "AutoLoadFile" , m_strProfileName + ".set"), szBASE_DIR);
+    wchar_t *p = m_strDefSetFile.GetBuffer(MAX_PATH+2);
+    MakeAbsolutePath(p, AfxGetApp()->GetProfileString(L"Options" , L"AutoLoadFile" , m_strProfileName + L".set"), szBASE_DIR);
     m_strDefSetFile.ReleaseBuffer();
 
     p = m_strDefSaveFile.GetBuffer(MAX_PATH+2);
-    MakeAbsolutePath(p, AfxGetApp()->GetProfileString("Options" , "AutoSaveFile" , m_strDefSetFile), szBASE_DIR);
+    MakeAbsolutePath(p, AfxGetApp()->GetProfileString(L"Options" , L"AutoSaveFile" , m_strDefSetFile), szBASE_DIR);
     m_strDefSaveFile.ReleaseBuffer();
 //vls-end//
-	m_strSaveCommand = AfxGetApp()->GetProfileString("Options" , "AutoSaveCommand" , "");
-	CString Delimiter = AfxGetApp()->GetProfileString("Options" , "CommandDelimiter" , ";");
+	m_strSaveCommand = AfxGetApp()->GetProfileString(L"Options" , L"AutoSaveCommand" , L"");
+	CString Delimiter = AfxGetApp()->GetProfileString(L"Options" , L"CommandDelimiter" , L";");
 	cCommandDelimiter = Delimiter[0];
 
     // Load ANSi settings 
-	bRMASupport = AfxGetApp()->GetProfileInt("ANSI" , "RMAsupport" , 0);
-	bAppendLogTitle = AfxGetApp()->GetProfileInt("ANSI" , "AppendLogTitle" , 0);
-	bANSILog = AfxGetApp()->GetProfileInt("ANSI" , "ANSILog" , 0);
-	bDefaultLogMode = AfxGetApp()->GetProfileInt("ANSI" , "AppendMode" , 0);
-	bHTML = AfxGetApp()->GetProfileInt("ANSI" , "HTMLLog" , 0);
-	bHTMLTimestamps = AfxGetApp()->GetProfileInt("ANSI" , "HTMLLogTimestamps" , 0);
-	bLogAsUserSeen = AfxGetApp()->GetProfileInt("ANSI" , "LogAsUserSeen" , 0);
+	bRMASupport = AfxGetApp()->GetProfileInt(L"ANSI" , L"RMAsupport" , 0);
+	bAppendLogTitle = AfxGetApp()->GetProfileInt(L"ANSI" , L"AppendLogTitle" , 0);
+	bANSILog = AfxGetApp()->GetProfileInt(L"ANSI" , L"ANSILog" , 0);
+	bDefaultLogMode = AfxGetApp()->GetProfileInt(L"ANSI" , L"AppendMode" , 0);
+	bHTML = AfxGetApp()->GetProfileInt(L"ANSI" , L"HTMLLog" , 0);
+	bHTMLTimestamps = AfxGetApp()->GetProfileInt(L"ANSI" , L"HTMLLogTimestamps" , 0);
+	bLogAsUserSeen = AfxGetApp()->GetProfileInt(L"ANSI" , L"LogAsUserSeen" , 0);
+	LogCodePage = AfxGetApp()->GetProfileInt(L"ANSI" , L"LogCodePage" , 0);
 
-	bIACSendSingle = AfxGetApp()->GetProfileInt("Substitution" , "IACSendSingle" , 0);
-	bIACReciveSingle = AfxGetApp()->GetProfileInt("Substitution" , "IACReciveSingle" , 0);
+	bIACSendSingle = AfxGetApp()->GetProfileInt(L"Substitution" , L"IACSendSingle" , 0);
+	bIACReciveSingle = AfxGetApp()->GetProfileInt(L"Substitution" , L"IACReciveSingle" , 0);
 
 
     // Chars substitutions restore
     UINT  nSize;
     LPBYTE pData;
-    bSubstitution = AfxGetApp()->GetProfileInt("Options" , "bSubstitution" , 0);
-    if ( AfxGetApp()->GetProfileBinary( "Options" , "charsSubstitution" , &pData, &nSize) ) {
+    bSubstitution = AfxGetApp()->GetProfileInt(L"Options" , L"bSubstitution" , 0);
+    if ( AfxGetApp()->GetProfileBinary( L"Options" , L"charsSubstitution" , &pData, &nSize) ) {
         memcpy(substChars, pData , nSize);
         delete pData;
     }
@@ -658,7 +646,7 @@ BOOL CSmcDoc::OnNewDocument()
 	strInput += "read ";
 //vls-begin// base dir
 //    strInput += pDoc->m_strDefSetFile;
-    strInput += "{" + m_strDefSetFile + "}";
+    strInput += L"{" + m_strDefSetFile + L"}";
 //vls-end//
     InputSection.Unlock();
 
@@ -731,73 +719,67 @@ BOOL CSmcDoc::DoProfileSave()
 	// Lets save all 
 
     // Start characters substitutions save
-    AfxGetApp()->WriteProfileInt("Options" , "bSubstitution" , bSubstitution);
-    AfxGetApp()->WriteProfileBinary( "Options" , "charsSubstitution" , (LPBYTE)substChars, SUBST_ARRAY_SIZE);
+    AfxGetApp()->WriteProfileInt(L"Options" , L"bSubstitution" , bSubstitution);
+    AfxGetApp()->WriteProfileBinary( L"Options" , L"charsSubstitution" , (LPBYTE)substChars, SUBST_ARRAY_SIZE);
     // End characters substitutions save
 
-	 AfxGetApp()->WriteProfileInt("Substitution" , "IACSendSingle" , bIACSendSingle);
-	 AfxGetApp()->WriteProfileInt("Substitution" , "IACReciveSingle" , bIACReciveSingle);
+	 AfxGetApp()->WriteProfileInt(L"Substitution" , L"IACSendSingle" , bIACSendSingle);
+	 AfxGetApp()->WriteProfileInt(L"Substitution" , L"IACReciveSingle" , bIACReciveSingle);
 
 //vls-begin// base dir
 //    AfxGetApp()->WriteProfileString("Options" , "AutoLoadFile" , m_strDefSetFile);
 //	AfxGetApp()->WriteProfileString("Options" , "AutoSaveFile" , m_strDefSaveFile);
-    char loc[MAX_PATH+2];
+    wchar_t loc[MAX_PATH+2];
     MakeLocalPath(loc, m_strDefSetFile, szBASE_DIR);
-    AfxGetApp()->WriteProfileString("Options" , "AutoLoadFile" , loc);
+    AfxGetApp()->WriteProfileString(L"Options" , L"AutoLoadFile" , loc);
     MakeLocalPath(loc, m_strDefSaveFile, szBASE_DIR);
-    AfxGetApp()->WriteProfileString("Options" , "AutoSaveFile" , loc);
+    AfxGetApp()->WriteProfileString(L"Options" , L"AutoSaveFile" , loc);
 //vls-end//
-	AfxGetApp()->WriteProfileString("Options" , "AutoSaveCommand" , m_strSaveCommand);
+	AfxGetApp()->WriteProfileString(L"Options" , L"AutoSaveCommand" , m_strSaveCommand);
 
 	CString Delimiter(cCommandDelimiter);
-	AfxGetApp()->WriteProfileString("Options" , "CommandDelimiter" , Delimiter);
+	AfxGetApp()->WriteProfileString(L"Options" , L"CommandDelimiter" , Delimiter);
 
     // Save editbar settings
     CMainFrame* pFrm = (CMainFrame*)AfxGetMainWnd();
     ASSERT_KINDOF(CMainFrame , pFrm);
-    AfxGetApp()->WriteProfileInt("Main" , "CursorWileList" , pFrm->m_editBar.m_nCursorPosWhileListing);
-    AfxGetApp()->WriteProfileInt("Main", "MinStrLen" , pFrm->m_editBar.m_nMinStrLen);
+    AfxGetApp()->WriteProfileInt(L"Main" , L"CursorWileList" , pFrm->m_editBar.m_nCursorPosWhileListing);
+    AfxGetApp()->WriteProfileInt(L"Main", L"MinStrLen" , pFrm->m_editBar.m_nMinStrLen);
 
     // Save ANSI settings
-	AfxGetApp()->WriteProfileInt("ANSI" , "RMAsupport" , bRMASupport);
-	AfxGetApp()->WriteProfileInt("ANSI" , "AppendLogTitle" , bAppendLogTitle);
-	AfxGetApp()->WriteProfileInt("ANSI" , "ANSILog" , bANSILog);
-	AfxGetApp()->WriteProfileInt("ANSI" , "AppendMode" , bDefaultLogMode);
-	AfxGetApp()->WriteProfileInt("ANSI" , "HTMLLog" , bHTML);
-	AfxGetApp()->WriteProfileInt("ANSI" , "HTMLLogTimestamps" , bHTMLTimestamps);
-	AfxGetApp()->WriteProfileInt("ANSI" , "LogAsUserSeen" , bLogAsUserSeen);
+	AfxGetApp()->WriteProfileInt(L"ANSI" , L"RMAsupport" , bRMASupport);
+	AfxGetApp()->WriteProfileInt(L"ANSI" , L"AppendLogTitle" , bAppendLogTitle);
+	AfxGetApp()->WriteProfileInt(L"ANSI" , L"ANSILog" , bANSILog);
+	AfxGetApp()->WriteProfileInt(L"ANSI" , L"AppendMode" , bDefaultLogMode);
+	AfxGetApp()->WriteProfileInt(L"ANSI" , L"HTMLLog" , bHTML);
+	AfxGetApp()->WriteProfileInt(L"ANSI" , L"HTMLLogTimestamps" , bHTMLTimestamps);
+	AfxGetApp()->WriteProfileInt(L"ANSI" , L"LogAsUserSeen" , bLogAsUserSeen);
+	AfxGetApp()->WriteProfileInt(L"ANSI" , L"LogCodePage" , LogCodePage);
 
-
-    ::WritePrivateProfileBinary("Colors" , "Foreground", (LPBYTE)m_ForeColors, sizeof(m_ForeColors), szGLOBAL_PROFILE);
-    ::WritePrivateProfileBinary("Colors" , "Background", (LPBYTE)m_BackColors, sizeof(m_BackColors), szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Colors" , "DarkOnly" ,m_bDarkOnly , szGLOBAL_PROFILE);
+    ::WritePrivateProfileBinary(L"Colors" , L"Foreground", (LPBYTE)m_ForeColors, sizeof(m_ForeColors), szGLOBAL_PROFILE);
+    ::WritePrivateProfileBinary(L"Colors" , L"Background", (LPBYTE)m_BackColors, sizeof(m_BackColors), szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Colors" , L"DarkOnly" ,m_bDarkOnly , szGLOBAL_PROFILE);
 
 
     // Save scripts here 
     // saves all scriptlets here in one file 
-//vls-begin// script files
-//    if ( m_ParseDlg.m_lstScriptlets.GetCount () > 2) {
     int size;
     GetScriptFileList(&size);
     if ( m_ParseDlg.m_lstScriptlets.GetCount () > 2 + size) {
-//vls-end//
         CString strAllScripts;
         for ( POSITION pos = m_ParseDlg.m_lstScriptlets.GetHeadPosition () ; pos ; ) {
             CString strScriptlet = m_ParseDlg.m_lstScriptlets.GetNext(pos);
             strAllScripts += strScriptlet;
-            strAllScripts += "\r\n";
+            strAllScripts += L"\r\n";
         }
         // now save it to file ".\\settings\\union.scr"
         HANDLE hFile;
-//vls-begin// base dir
-//        hFile = CreateFile(".\\settings\\union.scr", GENERIC_READ| GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, NULL, NULL );
         CString strFile = szSETTINGS_DIR;
-        strFile += "\\union.scr";
+        strFile += L"\\union.scr";
         hFile = CreateFile(strFile, GENERIC_READ| GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, NULL, NULL );
-//vls-end//
         if ( hFile!=INVALID_HANDLE_VALUE ) { 
             DWORD Written;
-            WriteFile(hFile , (LPCSTR)strAllScripts, strAllScripts.GetLength() , &Written, NULL );
+            WriteFile(hFile , strAllScripts, strAllScripts.GetLength() , &Written, NULL );
             CloseHandle(hFile);
         }
     }
@@ -836,10 +818,10 @@ void CSmcDoc::DeleteContents()
 void CSmcDoc::RecalcCharSize()
 {
     CDC dc;
-    dc.CreateDC("display" , NULL , NULL, NULL);
+    dc.CreateDC(L"display" , NULL , NULL, NULL);
     CFont* pOldFont = dc.SelectObject(&m_fntText);
 
-    CSize size = dc.GetTextExtent("A");
+    CSize size = dc.GetTextExtent(L"A");
     
     dc.SelectObject(pOldFont);
 
@@ -855,7 +837,7 @@ void CSmcDoc::OnOptionsFont()
 	if ( fd.DoModal() == IDOK ) {
 		m_fntText.DeleteObject();
 		m_fntText.CreateFontIndirect(&m_lfText);
-        ::WritePrivateProfileBinary("Font" , "LOGFONT" ,(LPBYTE)&m_lfText, sizeof(m_lfText), szGLOBAL_PROFILE);
+        ::WritePrivateProfileBinary(L"Font" , L"LOGFONT" ,(LPBYTE)&m_lfText, sizeof(m_lfText), szGLOBAL_PROFILE);
 
         RecalcCharSize();
         ((CMainFrame*)AfxGetMainWnd())->m_editBar.GetDlgItem(IDC_EDIT)->SetFont(&m_fntText);
@@ -964,7 +946,7 @@ void CSmcDoc::OnUpdatePause(CCmdUI* pCmdUI)
 	
 }
 
-void CSmcDoc::DrawSome(LPSTR str)
+void CSmcDoc::DrawSome(const wchar_t* str)
 {
     OutTextFrom(str, 0);
 }
@@ -996,22 +978,16 @@ void CSmcDoc::OnScriptingReload()
     m_ParseDlg.m_lstScriptlets.RemoveAll();
     m_ParseDlg.m_nScriptletIndex = 0;
 
-//vls-begin// base dir
-//    HANDLE hFile = CreateFile(".\\settings\\commonlib.scr", GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL );
+	DWORD dwSize;
+
     CString ScriptFileName = szSETTINGS_DIR;
-    ScriptFileName += "\\commonlib.scr";
-    HANDLE hFile = CreateFile(ScriptFileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL );
-//vls-end//
-    if ( hFile!=INVALID_HANDLE_VALUE ) { 
-        DWORD dwSize;
-//vls-begin// bugfix
-//        dwSize = GetFileSize(hFile, &dwSize);
-        dwSize = GetFileSize(hFile, NULL);
-//vls-end//
-        void* buff = strScriptText.GetBuffer ((int)dwSize);
-        ReadFile(hFile, buff, dwSize, &dwSize, NULL);
-        CloseHandle(hFile);
-        strScriptText.ReleaseBuffer ();
+    ScriptFileName += L"\\commonlib.scr";
+
+    if ( (dwSize = read_file_contents(ScriptFileName, NULL, 0)) > 0 ) { 
+        wchar_t *buff = strScriptText.GetBuffer(dwSize * sizeof(wchar_t));
+		read_file_contents(ScriptFileName, buff, dwSize);
+		strScriptText.ReleaseBuffer();
+
         m_ParseDlg.m_lstScriptlets.AddTail (strScriptText);
     } else {
         strScriptText.Empty ();
@@ -1019,53 +995,38 @@ void CSmcDoc::OnScriptingReload()
     m_ParseDlg.m_strText = strScriptText;
     
     // Load scripts text
-//vls-begin// base dir
-//    CString ScriptFileName;
-//    ScriptFileName.Format (".\\settings\\%s.scr" , (LPCSTR)m_strProfileName);
-    char p[MAX_PATH+2];
-    //vls-begin// script files
+    wchar_t p[MAX_PATH+2];
     MakeAbsolutePath(p, szPROFILESCRIPT, szSETTINGS_DIR);
     ScriptFileName = p;
-//vls-end//
     CString strText;
 
-    hFile = CreateFile(ScriptFileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL );
-    if ( hFile!=INVALID_HANDLE_VALUE ) { 
-        DWORD dwSize;
-//vls-begin// bugfix
-//        dwSize = GetFileSize(hFile, &dwSize);
-        dwSize = GetFileSize(hFile, NULL);
-//vls-end//
-        void* buff = strText.GetBuffer ((int)dwSize);
-        ReadFile(hFile, buff, dwSize, &dwSize, NULL);
-        CloseHandle(hFile);
-        strText.ReleaseBuffer ();
+	if ( (dwSize = read_file_contents(ScriptFileName, NULL, 0)) > 0 ) { 
+        wchar_t *buff = strText.GetBuffer(dwSize * sizeof(wchar_t));
+		read_file_contents(ScriptFileName, buff, dwSize);
+		strText.ReleaseBuffer();
+
         m_ParseDlg.m_lstScriptlets.AddTail (strText);
         strScriptText += strText;
-    } 
-    m_ParseDlg.m_strText = strText;
+    }
 
-//vls-begin// script files
     int size;
     GetScriptFileList(&size);
     for (int pos = 0; pos < size; pos++) {
         PCScriptFile pScr = GetScriptFile(pos);
-        char p[MAX_PATH+2];
+        wchar_t p[MAX_PATH+2];
         MakeAbsolutePath(p, pScr->m_strName.data(), szSETTINGS_DIR);
-        hFile = CreateFile(p, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL );
-        if ( hFile!=INVALID_HANDLE_VALUE ) { 
-            DWORD dwSize = GetFileSize(hFile, NULL);
-            CString strText;
-            void* buff = strText.GetBuffer ((int)dwSize);
-            ReadFile(hFile, buff, dwSize, &dwSize, NULL);
-            CloseHandle(hFile);
-            strText.ReleaseBuffer ();
-            m_ParseDlg.m_lstScriptlets.AddTail (strText);
-            strScriptText += strText;
-        }
+
+		if ( (dwSize = read_file_contents(p, NULL, 0)) > 0 ) { 
+			wchar_t *buff = strText.GetBuffer(dwSize * sizeof(wchar_t));
+			read_file_contents(p, buff, dwSize);
+			strText.ReleaseBuffer();
+
+			m_ParseDlg.m_lstScriptlets.AddTail (strText);
+			strScriptText += strText;
+		}
+
         m_ParseDlg.m_strText = strText;
     }
-//vls-end//
 
     if( m_ParseDlg.m_lstScriptlets.GetCount () ) 
         m_ParseDlg.m_nScriptletIndex = m_ParseDlg.m_lstScriptlets.GetCount () ;
@@ -1107,31 +1068,31 @@ void CSmcDoc::OnBreakScript()
     BreakScript();
 }
 
-void CSmcDoc::FillTabWords(LPCSTR strWords)
+void CSmcDoc::FillTabWords(const wchar_t* strWords)
 {
-    unsigned char* ptr  = (UCHAR*)strWords;
-	char *commands = NULL;
+    const wchar_t* ptr  = strWords;
+	wchar_t *commands = NULL;
 
 	if (!ptr) {
 		int len = GetCommandsList(NULL);
-		commands = new char[len + 1];
+		commands = new wchar_t[len + 1];
 		GetCommandsList(commands);
-		ptr = (unsigned char*)commands;
+		ptr = (const wchar_t*)commands;
 	}
     
 	while ( *ptr ) {
-        while ( *ptr && *ptr <= ' ' ) 
+        while ( *ptr && iswspace(*ptr) ) 
             ptr++;
         if ( !*ptr ) 
             break;
 
-        unsigned char* ptrWord = ptr++;
-        while ( *ptr && *ptr > ' ' ) 
+        const wchar_t* ptrWord = ptr++;
+        while ( *ptr && !iswspace(*ptr) ) 
             ptr++;
 
         int size = ptr-ptrWord;
-        char* buff = new char[size+1];
-        strncpy((char*)buff, (LPCSTR)ptrWord, size);
+        wchar_t* buff = new wchar_t[size+1];
+        wcsncpy(buff, ptrWord, size);
         buff[size] = 0;
         m_lstTabWords.AddTail(buff);
         delete[] buff;
@@ -1149,7 +1110,7 @@ void CSmcDoc::OnOptionsKeywords()
     while ( pos ) {
 		CString str = m_lstTabWords.GetNext (pos);
 		if (str[0] != cCommandChar)
-			dlg.m_strKeys += str + "\r\n";
+			dlg.m_strKeys += str + L"\r\n";
     }
 
     if ( dlg.DoModal() ) {

@@ -3,7 +3,7 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "recore"=.\recore\recore.dsp - Package Owner=<4>
+Project: "recore"=".\recore\recore.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -19,23 +19,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "wolfssl"=.\wolfssl\wolfssl.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-    begin source code control
-    "$/smc/wolfssl", VDAAAAAA
-    .\wolfssl
-    end source code control
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
-Project: "smc"=.\smc.dsp - Package Owner=<4>
+Project: "smc"=".\smc.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -63,24 +47,37 @@ Package=<4>
 
 ###############################################################################
 
-Project: "ttcoreex"=.\ttcoreex\ttcoreex.dsp - Package Owner=<4>
+Project: "ttcoreex"=".\ttcoreex\ttcoreex.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
     begin source code control
     "$/smc/ttcoreex", KEAAAAAA
-    .\ttcoreex
+    ..\..\..\..\trash\arda\jmc-clone\jmc\sources\ttcoreex
     end source code control
 }}}
 
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name recore
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name wolfssl
     End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "wolfssl"=".\wolfssl\wolfssl.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    "$/smc/wolfssl", VDAAAAAA
+    ..\..\..\..\trash\arda\jmc-clone\jmc\sources\wolfssl
+    end source code control
+}}}
+
+Package=<4>
+{{{
 }}}
 
 ###############################################################################
