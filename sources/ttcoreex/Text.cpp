@@ -7,7 +7,7 @@ extern wchar_t *get_arg_in_braces();
 /**********************************/
 void read_file(wchar_t *arg)
 {
-  get_arg_in_braces(arg,arg,WITH_SPACES,sizeof(arg)/sizeof(wchar_t)-1);
+  get_arg_in_braces(arg,arg,WITH_SPACES,BUFFER_SIZE-1);
 
   if ( !arg || !*arg ) {
 	  tintin_puts2(rs::rs(1173));

@@ -646,9 +646,9 @@ void logadd_command(wchar_t *arg)
     wchar_t msg[BUFFER_SIZE];
 	wchar_t tmp[BUFFER_SIZE];
 
-	get_arg_in_braces(arg,arg,WITH_SPACES,sizeof(arg)/sizeof(wchar_t)-1);
+	get_arg_in_braces(arg,msg,WITH_SPACES,sizeof(msg)/sizeof(wchar_t)-1);
 
-    substitute_vars(arg,tmp, sizeof(tmp)/sizeof(wchar_t));
+    substitute_vars(msg,tmp, sizeof(tmp)/sizeof(wchar_t));
     substitute_myvars(tmp,msg, sizeof(msg)/sizeof(wchar_t));
 
 	log(msg);

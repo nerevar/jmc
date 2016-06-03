@@ -434,7 +434,7 @@ bool parse_tintin_command(wchar_t *command, wchar_t *arg)
 	  int a1=0;
 	  int a2=0;
   	  swscanf(command,L"%d:%d",&a1,&a2);
-	  get_arg_in_braces(arg,arg,WITH_SPACES,sizeof(arg)/sizeof(wchar_t)-1);
+	  get_arg_in_braces(arg,arg,WITH_SPACES,BUFFER_SIZE-1);
 
     do_cycle(      1,     a1,    1,         a2,  arg    );
  /* do_cycle( bound1, bound2, step,      delay,  command); */
