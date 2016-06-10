@@ -21,6 +21,7 @@
 #include "telnet.h"
 
 UINT DLLEXPORT MudCodePage;
+UINT DLLEXPORT MudCodePageUsed;
 std::map< UINT, std::wstring > CPNames;
 std::map< std::wstring, UINT > CPIDs;
 
@@ -56,9 +57,10 @@ LONG DLLEXPORT lPingMUD;
 LONG DLLEXPORT lPingProxy;
 
 SOCKET BCASTSocket;
+BOOL DLLEXPORT bBCastEnabled = FALSE;
 BOOL DLLEXPORT bBCastFilterIP = TRUE;
 BOOL DLLEXPORT bBCastFilterPort = TRUE;
-WORD DLLEXPORT wBCastUdpPort = 1024;
+WORD DLLEXPORT wBCastUdpPort = 8136;
 
 wchar_t LoopBackBuffer[BUFFER_SIZE];
 int LoopBackCount = 0;
@@ -133,6 +135,9 @@ wchar_t sOutputLogName[MAX_OUTPUT][BUFFER_SIZE];
 int ignore;
 BOOL bInterrupted = TRUE;
 // -----------------------
+
+wchar_t DLLEXPORT strProductName[256];
+wchar_t DLLEXPORT strProductVersion[256];
 
 int mesvar[MSG_MAXNUM];
 
@@ -423,14 +428,14 @@ void write_line_mud(const wchar_t *line)
         OriginalLen = len = wcslen(line);
 
 		int count;
-		if (MudCodePage == 1200) {
+		if (MudCodePageUsed == 1200) {
 			count = len * 2;
 			memcpy(coded, line, count);
-		} else if (MudCodePage == 1201) {
+		} else if (MudCodePageUsed == 1201) {
 			count = len * 2;
 			utf16le_to_utf16be((wchar_t*)coded, line, len);
 		} else {
-			count = WideCharToMultiByte(MudCodePage, 0, &line[ret], len, coded, sizeof(coded) - 1, NULL, NULL);
+			count = WideCharToMultiByte(MudCodePageUsed, 0, &line[ret], len, coded, sizeof(coded) - 1, NULL, NULL);
 		}
         
 		if ( bIACSendSingle ) 
@@ -590,8 +595,15 @@ START1:
 	reset_telnet_protocol();
 	multiline_length = 0;
 
-    tintin_puts2(rs::rs(1189));
-    connectresult=proxy_connect(sock,(struct sockaddr *)&sockaddr, sizeof(sockaddr));
+	if (ulProxyAddress) {
+		wchar_t buf[BUFFER_SIZE];
+		swprintf(buf, rs::rs(1303),
+			(ulProxyAddress >> 24) & 0xff, (ulProxyAddress >> 16) & 0xff, (ulProxyAddress >> 8) & 0xff, (ulProxyAddress >> 0) & 0xff);
+		tintin_puts2(buf);
+	} else {
+		tintin_puts2(rs::rs(1189));
+	}
+    connectresult = proxy_connect(sock,(struct sockaddr *)&sockaddr, sizeof(sockaddr));
 
     if(connectresult || tls_open(sock) < 0) {
         proxy_close(sock);
@@ -1347,7 +1359,7 @@ void DLLEXPORT ReadMud()
 			LoopBackCount = 0;
 		}
 
-		if (BCASTSocket != INVALID_SOCKET) {
+		if (bBCastEnabled && BCASTSocket != INVALID_SOCKET) {
 			wchar_t buf[BUFFER_SIZE];
 			unsigned long len;
 
@@ -1384,6 +1396,7 @@ void DLLEXPORT ReadMud()
 						continue;
 				}
 				if( !bBCastFilterPort || htons(dest.sin_port) == wBCastUdpPort ) {
+					len /= sizeof(wchar_t);
 					buf[len++] = L'\n';
 					buf[len] = L'\0';
 
@@ -1749,7 +1762,10 @@ void DLLEXPORT reopen_bcast_socket()
 {
 	if( BCASTSocket != INVALID_SOCKET ) {
 		closesocket(BCASTSocket);
+		BCASTSocket = INVALID_SOCKET;
 	}
+	if( !bBCastEnabled )
+		return;
 	if( (BCASTSocket = socket(AF_INET, SOCK_DGRAM, 0)) != INVALID_SOCKET ) {
 		BOOL bVal = TRUE;
 		if( setsockopt(BCASTSocket, SOL_SOCKET, SO_BROADCAST, (const char*)&bVal, sizeof(bVal)) == SOCKET_ERROR ||

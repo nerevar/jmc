@@ -20,6 +20,6 @@ assertEqual VERY_LONG_VARIABLE_VALUE ThousandSymbols ThousandSymbolsCorrect
 #var LongestVarLength 1
 #alias makeLongestVar {#var Temp {1$LongestVar}; #strcmp {$Temp} {$LongestVar} {} {#math LongestVarLength {$LongestVarLength + 1}; #var LongestVar {$Temp}; makeLongestVar}}
 makeLongestVar
-#var MinBufsize 1950
+#var MinBufsize 1850
 assertLess BUFFER_SIZE MinBufsize LongestVarLength
 

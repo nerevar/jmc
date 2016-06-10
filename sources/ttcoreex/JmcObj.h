@@ -105,6 +105,9 @@ public:
 	STDMETHOD(ToText)(/*[in]*/ BSTR bstrANSI, /*[out, retval]*/ BSTR *bstrText);
 	STDMETHOD(ToColored)(/*[in]*/ BSTR bstrANSI, /*[out, retval]*/ BSTR *bstrColored);
 	STDMETHOD(FromColored)(/*[in]*/ BSTR bstrColored, /*[out, retval]*/ BSTR *bstrANSI);
+	STDMETHOD(MSDP2GMCP)(/*[in]*/ BSTR bstrMSDP, /*[out, retval]*/ BSTR *bstrGMCP);
+	STDMETHOD(GMCP2MSDP)(/*[in]*/ BSTR bstrGMCP, /*[out, retval]*/ BSTR *bstrMSDP);
+	STDMETHOD(MSSP2GMCP)(/*[in]*/ BSTR bstrMSSP, /*[out, retval]*/ BSTR *bstrGMCP);
 };
 
 extern CComObject<CJmcObj>* pJmcObj;

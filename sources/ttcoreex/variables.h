@@ -29,6 +29,9 @@ jmc_special_variable jmc_vars[JMC_SPECIAL_VARIABLES_NUM]={
 		   {L"ESC", &variable_value_esc},
 
 		   {L"PING", &variable_value_ping},
-		   {L"PINGPROXY", &variable_value_ping_proxy}
+		   {L"PINGPROXY", &variable_value_ping_proxy},
+
+		   {L"PRODUCTNAME", &variable_value_product_name},
+		   {L"PRODUCTVERSION", &variable_value_product_version}
 	   };
 #endif

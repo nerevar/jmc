@@ -245,6 +245,11 @@ void do_one_high(wchar_t *line)
 
 void add_codes(const wchar_t *line, wchar_t *result, const wchar_t *htype, BOOL bAddTAil)
 {
+  if (bAddTAil && is_abrev(htype, L"colorcodes")) {
+	  convert_colored_to_ansi(line, result, BUFFER_SIZE - 1);
+	  return;
+  }
+  
   const wchar_t *tmp1, *tmp2;
   wchar_t tmp3[BUFFER_SIZE];
   int code;

@@ -63,6 +63,8 @@ CJMCStatus::CJMCStatus()
     m_bmpMarked.LoadBitmap (IDB_MARKED);
 }
 
+extern int LengthWithoutANSI(const wchar_t* str);
+
 //vls-begin// multiple output
 static void __stdcall GetOutputName(int wnd, wchar_t *name, int maxlen)
 {
@@ -82,18 +84,21 @@ static void __stdcall GetOutputName(int wnd, wchar_t *name, int maxlen)
 static void __stdcall GetWindowSizeFunc(int wnd, int &width, int &height)
 {
 	width = height = 0;
-	if (wnd >= 0 && wnd < MAX_OUTPUT)
-    {
+	if (wnd >= 0 && wnd < MAX_OUTPUT) {
         CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
-        height = pMainFrm->m_coolBar[wnd].m_wndAnsi.m_nPageSize;
-		width = pMainFrm->m_coolBar[wnd].m_wndAnsi.m_nLineWidth;
-    }
-	else
-	{
+		if (pMainFrm) {
+			height = pMainFrm->m_coolBar[wnd].m_wndAnsi.m_nPageSize;
+			width = pMainFrm->m_coolBar[wnd].m_wndAnsi.m_nLineWidth;
+		}
+    } else {
 		CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
-		CSmcView* pView = (CSmcView*)pMainFrm->GetActiveView();
-		height = pView->m_nPageSize;
-		width = pView->m_nLineWidth;
+		if (pMainFrm) {
+			CSmcView* pView = (CSmcView*)pMainFrm->GetActiveView();
+			if (pView) {
+				height = pView->m_nPageSize;
+				width = pView->m_nLineWidth;
+			}
+		}
 	}
 }
 static void __stdcall SetWindowSizeFunc(int wnd, int width, int height)
@@ -113,48 +118,70 @@ static void DrawColoredText(LPDRAWITEMSTRUCT lpDrawItemStruct, const wchar_t* st
 
     int Bg = 0, Fg = 7, bold = 0;
 
-    
-    // parse ANSI colors here 
-    wchar_t* ptr = (wchar_t*)strText;
-    if ( *ptr == L'\x1B' ) {
-        ptr += 2; // skip [ symbol
-        while ( *ptr && *ptr != L'm' ) { 
-            wchar_t col[32];
-            wchar_t* dest = col;
-            while ( iswdigit(*ptr) ) 
-                *dest++ = *ptr++;
-            // now set up color 
-            *dest = 0;
-            int value = _wtoi(col);
-            if ( !value ) {
-                Bg = 0;
-                Fg = 7;
-                bold = 0;
-            }
-            if ( value == 1 ) 
-                bold = 1;
-            if ( value <= 37 && value >= 30) {
-                Fg = value-30;
-            }
-            if ( value <= 47 && value >= 40) {
-                Bg = value-40;
-            }
-            if ( *ptr == L';' ) 
-                ptr++;
-        }
-        if ( *ptr ) 
-            ptr++;
+	SelectObject(lpDrawItemStruct->hDC ,pDoc->m_fntText.GetSafeHandle ());
 
-    }
-    // now set up colors 
-    SetTextColor(lpDrawItemStruct->hDC , pDoc->m_ForeColors[Fg+bold*8]);
-    SetBkColor(lpDrawItemStruct->hDC , pDoc->m_BackColors[Bg+bold*8]);
+	CRect rect = lpDrawItemStruct->rcItem;
+	int shift = 0;
 
-    SelectObject(lpDrawItemStruct->hDC ,pDoc->m_fntText.GetSafeHandle ());
+	wchar_t* ptr = (wchar_t*)strText;
+	while (*ptr) {
+		if (*ptr == L'\x1B') {
+			ptr += 2; // skip [ symbol
+			while ( *ptr && *ptr != L'm' ) { 
+				wchar_t col[32];
+				wchar_t* dest = col;
+				while ( iswdigit(*ptr) ) 
+					*dest++ = *ptr++;
+				// now set up color 
+				*dest = 0;
+				int value = _wtoi(col);
+				if ( !value ) {
+					Bg = 0;
+					Fg = 7;
+					bold = 0;
+				}
+				if ( value == 1 ) 
+					bold = 1;
+				if ( value <= 37 && value >= 30) {
+					Fg = value-30;
+				}
+				if ( value <= 47 && value >= 40) {
+					Bg = value-40;
+				}
+				if ( *ptr == L';' ) 
+					ptr++;
+			}
+			if ( *ptr ) 
+				ptr++;
+		}
+		wchar_t *end = ptr;
+		while (*end && *end != L'\x1B')
+			end++;
 
-    ExtTextOut(lpDrawItemStruct->hDC , 
-        lpDrawItemStruct->rcItem.left , lpDrawItemStruct->rcItem.top, 
-        ETO_OPAQUE, &lpDrawItemStruct->rcItem, ptr, wcslen(ptr), NULL);
+		SetTextColor(lpDrawItemStruct->hDC , pDoc->m_ForeColors[Fg+bold*8]);
+		SetBkColor(lpDrawItemStruct->hDC , pDoc->m_BackColors[Bg]);
+
+		if (end > ptr) {
+			int len = end - ptr;
+			CRect rctext(0, 0, 0, 0);
+
+			DrawText(lpDrawItemStruct->hDC, ptr, len, &rctext, DT_LEFT | DT_SINGLELINE | DT_NOCLIP | DT_CALCRECT | DT_NOPREFIX );
+
+			CRect rc = rect;
+			rc.left += shift;
+			ExtTextOut(lpDrawItemStruct->hDC, rc.left , rc.top, ETO_OPAQUE, &rc, ptr, len, NULL);
+
+			shift += rctext.Width();
+		}
+
+		ptr = end;
+	}
+
+	if (shift == 0) {
+		SetTextColor(lpDrawItemStruct->hDC , pDoc->m_ForeColors[Fg+bold*8]);
+		SetBkColor(lpDrawItemStruct->hDC , pDoc->m_BackColors[Bg]);
+		ExtTextOut(lpDrawItemStruct->hDC, rect.left , rect.top, ETO_OPAQUE, &rect, L"", 0, NULL);
+	}
 }
 
 void CJMCStatus::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
@@ -782,7 +809,7 @@ void CMainFrame::OnUpdateInfo1(CCmdUI* pUI)
     if ( m_strInfo1 != strInfo1  ) {
         m_strInfo1 = strInfo1;
 
-		int Width = m_strInfo1.GetLength() * pDoc->m_nCharX;
+		int Width = LengthWithoutANSI(m_strInfo1) * pDoc->m_nCharX;
 		UINT Style, ID;
 		int Size;
 		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO1 , ID, Style, Size);
@@ -801,7 +828,7 @@ void CMainFrame::OnUpdateInfo2(CCmdUI* pUI)
 	{
         m_strInfo2 = strInfo2;
 
-		int Width = m_strInfo2.GetLength() * pDoc->m_nCharX;
+		int Width = LengthWithoutANSI(m_strInfo2) * pDoc->m_nCharX;
 		UINT Style, ID;
 		int Size;
 		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO2 , ID, Style, Size);
@@ -819,7 +846,7 @@ void CMainFrame::OnUpdateInfo3(CCmdUI* pUI)
     if ( m_strInfo3 != strInfo3  ) {
         m_strInfo3 = strInfo3;
 
-		int Width = m_strInfo3.GetLength() * pDoc->m_nCharX;
+		int Width = LengthWithoutANSI(m_strInfo3) * pDoc->m_nCharX;
 		UINT Style, ID;
 		int Size;
 		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO3 , ID, Style, Size);
@@ -837,7 +864,7 @@ void CMainFrame::OnUpdateInfo4(CCmdUI* pUI)
     if ( m_strInfo4 != strInfo4  ) {
         m_strInfo4 = strInfo4;
 
-		int Width = m_strInfo4.GetLength() * pDoc->m_nCharX;
+		int Width = LengthWithoutANSI(m_strInfo4) * pDoc->m_nCharX;
 		UINT Style, ID;
 		int Size;
 		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO4 , ID, Style, Size);
@@ -855,7 +882,7 @@ void CMainFrame::OnUpdateInfo5(CCmdUI* pUI)
     if ( m_strInfo5 != strInfo5  ) {
         m_strInfo5 = strInfo5;
 
-		int Width = m_strInfo5.GetLength() * pDoc->m_nCharX;
+		int Width = LengthWithoutANSI(m_strInfo5) * pDoc->m_nCharX;
 		UINT Style, ID;
 		int Size;
 		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO5 , ID, Style, Size);

@@ -22,6 +22,8 @@
 #define TN_EOR_OPT      0031    /* EOR option */
 #define TN_TSPEED       0040    /* not used */
 #define TN_LINEMODE     0042    /* not used */
+#define TN_CHARSET		0052	/* Requesting/accepting character set */
+#define TN_AYT_OPT		7001    /* NOT FROM TELNET STANDART, just for JMC enabling/disabling purposes */
 
 /* MUD-specific protocols */
 #define TN_TTYPE        0030    /* MUD Terminal Type Standard (MTTS) */
@@ -59,6 +61,15 @@
 #define MSSP_VAR			1
 #define MSSP_VAL			2
 
+/* CHARSET definitions */
+#define CHARSET_REQUEST			1
+#define CHARSET_ACCEPTED		2
+#define CHARSET_REJECTED		3
+#define CHARSET_TTABLE_IS		4 /* not implemented */
+#define CHARSET_TTABLE_REJECTED	5 /* not implemented */
+#define CHARSET_TTABLE_ACK		6 /* not implemented */
+#define CHARSET_TTABLE_NAK		7 /* not implemented */
+
 #define TN_EOR          0357    /* End-Of-Record */
 #define TN_SE           0360    /* End subnegotioation */
 #define TN_NOP          0361    /* not used */
@@ -66,7 +77,7 @@
 #define TN_BRK          0363    /* not used */
 #define TN_IP           0364    /* not used */
 #define TN_AO           0365    /* not used */
-#define TN_AYT          0366    /* not used */
+#define TN_AYT          0366    /* Are you there? */
 #define TN_EC           0367    /* not used */
 #define TN_EL           0370    /* not used */
 #define TN_GA           0371    /* Go Ahead */
@@ -77,10 +88,10 @@
 #define TN_DONT         0376    /* Stop ~ing!, or nack for WILL */
 #define TN_IAC          0377    /* telnet Is A Command character */
 
-#define TELNET_OPTIONS_NUM 13
+#define TELNET_OPTIONS_NUM 15
 typedef struct
 {
-	unsigned char Code;
+	unsigned int Code;
 	const wchar_t *Name;
 	const wchar_t *Descr;
 } TelnetOption;

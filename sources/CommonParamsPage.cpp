@@ -6,6 +6,7 @@
 #include "CommonParamsPage.h"
 
 extern DLLEXPORT UINT MudCodePage;
+extern DLLEXPORT UINT MudCodePageUsed;
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

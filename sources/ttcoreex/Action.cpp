@@ -236,7 +236,7 @@ void substitute_vars(const wchar_t *arg, wchar_t *result, int maxlength)
 		maxlength -= len;
       }
     }
-    if(*arg=='$') { /* substitute variable */
+    else if(*arg=='$') { /* substitute variable */
       numands=0;
       while(*(arg+numands)=='$') 
         numands++;

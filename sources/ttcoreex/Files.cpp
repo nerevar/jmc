@@ -128,6 +128,8 @@ int DLLEXPORT write_file_contents(const wchar_t *FilePath, const wchar_t *Buffer
 		codepage = it->second;
 	
 	fout = _wfopen(FilePath, L"wb");
+	if (!fout)
+		return -1;
 
 	char *buf;
 	int len;
@@ -163,16 +165,63 @@ int DLLEXPORT write_file_contents(const wchar_t *FilePath, const wchar_t *Buffer
 /***********************************/
 static void process_file(const wchar_t*FilePath, int Size)
 {
-    wchar_t *buffer;
+    wchar_t *buffer, *command;
 
 
     EnterCriticalSection(&secReadingConfig);
     ResetEvent(eventReadingHasUse);
     SetEvent(eventReadingConfig);
 
-	buffer = new wchar_t[Size];
+	buffer = new wchar_t[Size + 1];
+	command = new wchar_t[Size + 1];
 	read_file_contents(FilePath, buffer, Size);
 
+	buffer[Size] = L'\0';
+
+	wchar_t *src = buffer;
+	wchar_t *dst = command;
+	wchar_t* cptr = buffer;
+	while(Size > 0) {
+		wchar_t *start = cptr;
+
+		int nested = 0;
+		dst = command;
+        for(; *cptr && Size > 0; cptr++, Size--) {
+			if (*cptr == DEFAULT_OPEN)
+				nested++;
+			else if (*cptr == DEFAULT_CLOSE)
+				nested--;
+			else if (*cptr == L'\r' || *cptr == L'\n') {
+				bool skip_newline = false;
+				if (nested > 0) {
+					skip_newline = true;
+				} else {
+					wchar_t *nextch = space_out(cptr);
+					skip_newline = (*nextch == DEFAULT_OPEN || *nextch == DEFAULT_CLOSE);
+				}
+
+				if (!skip_newline) 
+					break;
+				
+				int spaces = space_out(cptr) - cptr - 1;
+				cptr += spaces;
+				Size -= spaces;
+				*(cptr) = L' ';
+			}
+			*(dst++) = *cptr;
+		}
+
+        *cptr=L'\0';
+		*(dst++) = L'\0';
+		//for(; iswspace(*start); start++); //skip empty lines
+		start = space_out(command);
+        if ( *start && wcslen(start) ) 
+            parse_input(start, TRUE);
+
+		cptr++;
+		Size--;
+    }
+	/*
 	wchar_t* cptr = buffer;
     while(Size > 0) {
 		wchar_t *start = cptr;
@@ -184,6 +233,9 @@ static void process_file(const wchar_t*FilePath, int Size)
 		cptr++;
 		Size--;
     }
+	*/
+		
+	delete[] command;
 	delete[] buffer;
 
     ResetEvent(eventReadingConfig);
@@ -261,7 +313,7 @@ void write_command(wchar_t *arg)
 	std::wstring set_lines, glob_lines;
 	wchar_t set_fn[MAX_PATH+2], glob_fn[MAX_PATH+2];
 
-    wchar_t buffer[BUFFER_SIZE + MAX_VARNAME_LENGTH + 128], filename[BUFFER_SIZE], group[BUFFER_SIZE];
+    wchar_t buffer[BUFFER_SIZE*10], filename[BUFFER_SIZE], group[BUFFER_SIZE];
     struct listnode *nodeptr;
     int i;
     CGROUP* grp ;
@@ -284,7 +336,6 @@ void write_command(wchar_t *arg)
         }
         grp = ind->second;
     }
-
 
     if ( *group == 0 ) {
         MakeAbsolutePath(set_fn, filename, szBASE_DIR);
@@ -396,6 +447,120 @@ void write_command(wchar_t *arg)
         swprintf(buffer, L"%lcrace format %ls\n",cCommandChar,race_format);
         set_lines += buffer;
 //*/en
+
+		//save proxy settings
+		if (!ulProxyAddress) {
+			prepare_for_write(L"proxy", L"disable", L"", L"", L"", buffer);
+		} else {
+			wchar_t addr[BUFFER_SIZE];
+			if (dwProxyPort)
+				swprintf(addr, L"%d.%d.%d.%d:%d", 
+					(ulProxyAddress >> 24) & 0xff, 
+					(ulProxyAddress >> 16) & 0xff, 
+					(ulProxyAddress >>  8) & 0xff, 
+					(ulProxyAddress >>  0) & 0xff,
+					dwProxyPort);
+			else
+				swprintf(addr, L"%d.%d.%d.%d", 
+					(ulProxyAddress >> 24) & 0xff, 
+					(ulProxyAddress >> 16) & 0xff, 
+					(ulProxyAddress >>  8) & 0xff, 
+					(ulProxyAddress >>  0) & 0xff);
+			prepare_for_write(L"proxy", 
+				(dwProxyType == PROXY_SOCKS4) ? L"socks4" : L"socks5",
+				addr,
+				A2W(sProxyUserName),
+				A2W(sProxyUserPassword),
+				buffer);
+		}
+		set_lines += buffer;
+
+		//save secure settings
+		switch (lTLSType) {
+		default:
+		case TLS_DISABLED:
+			prepare_for_write(L"secure", L"disable", L"", L"", L"", buffer);
+			break;
+		case TLS_SSL3:
+			prepare_for_write(L"secure", L"ssl3", L"ca", 
+				(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
+			break;
+		case TLS_TLS1:
+			prepare_for_write(L"secure", L"tls1", L"ca", 
+				(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
+			break;
+		case TLS_TLS1_1:
+			prepare_for_write(L"secure", L"tls1.1", L"ca", 
+				(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
+			break;
+		case TLS_TLS1_2:
+			prepare_for_write(L"secure", L"tls1.2", L"ca", 
+				(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
+			break;
+		}
+		set_lines += buffer;
+
+		//save codepage settings
+		prepare_for_write(L"codepage", CPNames[MudCodePage].c_str(), L"", L"", L"", buffer);
+		set_lines += buffer;
+
+		//save telnet options
+		for(int opt = 0; opt < vEnabledTelnetOptions.size(); opt++) {
+			wchar_t optname[64];
+			get_telnet_option_name(vEnabledTelnetOptions[opt], optname);
+			prepare_for_write(L"telnet", optname, L"on", L"", L"", buffer);
+			set_lines += buffer;
+		}
+		if (bTelnetDebugEnabled)
+			prepare_for_write(L"telnet", L"debug", L"on", L"", L"", buffer);
+		else
+			prepare_for_write(L"telnet", L"debug", L"off", L"", L"", buffer);
+		set_lines += buffer;
+
+		//save oob (out-of-band) settings
+		map< wstring, oob_module_info >::const_iterator oob_it;
+		for (oob_it = oob_modules.begin(); oob_it != oob_modules.end(); oob_it++) {
+			set <wstring>::const_iterator oob_sub_it;
+			set <wstring> submods = oob_it->second.submodules;
+			wstring all_mods = L"";
+
+			for (oob_sub_it = submods.begin(); oob_sub_it != submods.end(); oob_sub_it++) {
+				if (all_mods.length() > 0)
+					all_mods += L' ';
+				all_mods += (*oob_sub_it);
+			}
+
+			if (all_mods.length() == 0)
+				prepare_for_write(L"oob", oob_it->first.c_str(), L"disable", L"", L"", buffer);
+			else
+				prepare_for_write(L"oob", oob_it->first.c_str(), L"add", all_mods.c_str(), L"", buffer);
+
+			set_lines += buffer;
+		}
+
+		//save broadcast settings
+		prepare_for_write(L"broadcast", L"filterip", bBCastFilterIP ? L"on" : L"off", L"", L"", buffer);
+		set_lines += buffer;
+		
+		prepare_for_write(L"broadcast", L"filterip", bBCastFilterPort ? L"on" : L"off", L"", L"", buffer);
+		set_lines += buffer;
+
+		wchar_t portnum[BUFFER_SIZE];
+		swprintf(portnum, L"%d", wBCastUdpPort);
+		prepare_for_write(L"broadcast", L"port", portnum, L"", L"", buffer);
+		set_lines += buffer;
+		
+		prepare_for_write(L"broadcast", bBCastEnabled ? L"enable" : L"disable", L"", L"", L"", buffer);
+		set_lines += buffer;
+		
+
+		//save end-of-prompt char settings
+		if (!bPromptEndEnabled) {
+			prepare_for_write(L"promptend", L"disable", L"", L"", L"", buffer);
+		} else {
+			prepare_for_write(L"promptend", strPromptEndSequence, strPromptEndReplace, L"", L"", buffer);
+		}
+		set_lines += buffer;
 
 
         ALIAS_INDEX ind = AliasList.begin();
@@ -585,84 +750,6 @@ void write_command(wchar_t *arg)
         }
 //vls-end//
     }
-
-	//save proxy settings
-	if (!ulProxyAddress) {
-		prepare_for_write(L"proxy", L"disable", L"", L"", L"", buffer);
-	} else {
-		wchar_t addr[BUFFER_SIZE];
-		if (dwProxyPort)
-			swprintf(addr, L"%d.%d.%d.%d:%d", 
-				(ulProxyAddress >> 24) & 0xff, 
-				(ulProxyAddress >> 16) & 0xff, 
-				(ulProxyAddress >>  8) & 0xff, 
-				(ulProxyAddress >>  0) & 0xff,
-				dwProxyPort);
-		else
-			swprintf(addr, L"%d.%d.%d.%d", 
-				(ulProxyAddress >> 24) & 0xff, 
-				(ulProxyAddress >> 16) & 0xff, 
-				(ulProxyAddress >>  8) & 0xff, 
-				(ulProxyAddress >>  0) & 0xff);
-		prepare_for_write(L"proxy", 
-			(dwProxyType == PROXY_SOCKS4) ? L"socks4" : L"socks5",
-			addr,
-			A2W(sProxyUserName),
-			A2W(sProxyUserPassword),
-			buffer);
-	}
-	set_lines += buffer;
-
-	//save secure settings
-	switch (lTLSType) {
-	default:
-	case TLS_DISABLED:
-		prepare_for_write(L"secure", L"disable", L"", L"", L"", buffer);
-		break;
-	case TLS_SSL3:
-		prepare_for_write(L"secure", L"ssl3", L"ca", 
-			(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
-		break;
-	case TLS_TLS1:
-		prepare_for_write(L"secure", L"tls1", L"ca", 
-			(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
-		break;
-	case TLS_TLS1_1:
-		prepare_for_write(L"secure", L"tls1.1", L"ca", 
-			(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
-		break;
-	case TLS_TLS1_2:
-		prepare_for_write(L"secure", L"tls1.2", L"ca", 
-			(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
-		break;
-	}
-	set_lines += buffer;
-
-	//save codepage settings
-
-	prepare_for_write(L"codepage", CPNames[MudCodePage].c_str(), L"", L"", L"", buffer);
-	set_lines += buffer;
-
-	//save telnet options
-	for(int opt = 0; opt < vEnabledTelnetOptions.size(); opt++) {
-		wchar_t optname[64];
-		get_telnet_option_name(vEnabledTelnetOptions[opt], optname);
-		prepare_for_write(L"telnet", optname, L"on", L"", L"", buffer);
-		set_lines += buffer;
-	}
-	if (bTelnetDebugEnabled)
-		prepare_for_write(L"telnet", L"debug", L"on", L"", L"", buffer);
-	else
-		prepare_for_write(L"telnet", L"debug", L"off", L"", L"", buffer);
-	set_lines += buffer;
-
-	//save end-of-prompt char settings
-	if (!bPromptEndEnabled) {
-		prepare_for_write(L"promptend", L"disable", L"", L"", L"", buffer);
-	} else {
-		prepare_for_write(L"promptend", strPromptEndSequence, strPromptEndReplace, L"", L"", buffer);
-	}
-	set_lines += buffer;
 
 	if(set_lines.length() > 0 && write_file_contents(set_fn, set_lines.c_str(), set_lines.length()) <= 0) {
 		wchar_t buff[BUFFER_SIZE];
@@ -945,8 +1032,13 @@ void sos_command(wchar_t *arg)
 				  (bSosExact && !_wcsicmp(soski[i].name,pac->m_strLeft.c_str()))))
 			  {
 				  wchar_t buff[32];
-                  prepare_for_write(L"action", pac->m_strLeft.c_str(), pac->m_strRight.c_str(), 
-                      _itow(pac->m_nPriority, buff, 10) , pac->m_pGroup->m_strName.c_str() , buffer);
+				  prepare_for_write(L"action", 
+					act_type_to_str((int)pac->m_InputType),
+					pac->m_strLeft.c_str(), 
+					pac->m_strRight.c_str(), 
+                    _itow(pac->m_nPriority, buff, 10) , 
+					pac->m_pGroup->m_strName.c_str() , 
+					buffer);
                   lines += buffer;
 				}
 			  }

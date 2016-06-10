@@ -58,18 +58,7 @@ BOOL CAnsiWnd::PreCreateWindow(CREATESTRUCT& cs)
 	return CWnd::PreCreateWindow(cs);
 }
 
-static int LengthWithoutANSI(const wchar_t* str) 
-{
-	int ret = 0;
-	for(; *str; str++) {
-		if(*str == L'\x1B') {
-			for(; *str && *str != L'm'; str++);
-		} else {
-			ret++;
-		}
-	}
-	return ret;
-}
+extern int LengthWithoutANSI(const wchar_t* str);
 static int NumOfLines(int StrLength, int LineWidth) 
 {
 	if (LineWidth <= 0)

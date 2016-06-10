@@ -141,7 +141,7 @@ extern BOOL bPathing;
 extern BOOL bLogPassedLine;
 //vls-end//
 
-extern std::vector<unsigned char> vEnabledTelnetOptions;
+extern std::vector<unsigned int> vEnabledTelnetOptions;
 extern BOOL DLLEXPORT bTelnetDebugEnabled;
 
 //* en
@@ -454,11 +454,31 @@ int tls_close(SOCKET sock);
 
 //Telnet routines
 int get_telnet_option_num(const wchar_t *name);
-void get_telnet_option_name(unsigned char num, wchar_t *buf);
+void get_telnet_option_name(unsigned int num, wchar_t *buf);
 void send_telnet_command(unsigned char command, unsigned char option = 0);
-void send_telnet_subnegotiation(unsigned char option, const wchar_t *output, int length);
+void send_telnet_subnegotiation(unsigned char option, const wchar_t *output, int length, bool raw_bytes);
 void telnet_command(wchar_t *arg);
 void promptend_command(wchar_t *arg);
+
+//Out-of-band (GMCP/MSDP) support
+typedef struct {
+	set<wstring> submodules;
+} oob_module_info;
+extern map < wstring, oob_module_info > oob_modules;
+
+void reset_oob();
+void start_gmcp();
+void start_msdp();
+void start_mssp();
+int parse_gmcp(const wchar_t *gmcp);
+int parse_msdp(const wchar_t *msdp, int length);
+int parse_mssp(const wchar_t *mssp, int length);
+wstring convert_msdp2gmcp(const wchar_t *msdp, int length);
+wstring convert_gmcp2msdp(const wchar_t *gmcp, int length);
+wstring convert_mssp2gmcp(const wchar_t *mssp, int length);
+int get_oob_variable(const wchar_t *varname, wchar_t *value, int maxlength);
+void oob_command(wchar_t *arg);
+
 
 // VARIABLES:
 void variable_value_input(wchar_t *arg);
@@ -484,6 +504,8 @@ void variable_value_eol(wchar_t *arg);
 void variable_value_esc(wchar_t *arg);
 void variable_value_ping(wchar_t *arg);
 void variable_value_ping_proxy(wchar_t *arg);
+void variable_value_product_name(wchar_t *arg);
+void variable_value_product_version(wchar_t *arg);
 
 BOOL show_actions(wchar_t* left = NULL, CGROUP* pGroup = NULL);
 int do_one_antisub(wchar_t *line);
@@ -563,7 +585,7 @@ extern void* JMCObjRet[1000];
 // --END
 
 //* en:JMC functions struct. look cmds.h
-const int JMC_CMDS_NUM=130;
+const int JMC_CMDS_NUM=131;
 typedef struct jmc_cmd 
 	{
 	wchar_t*alias;
@@ -573,7 +595,7 @@ typedef struct jmc_cmd
 //*/en
 
 
-const int JMC_SPECIAL_VARIABLES_NUM = 23;
+const int JMC_SPECIAL_VARIABLES_NUM = 25;
 typedef struct jmc_special_variable_struct {
 	wchar_t *name;
 	void (*jmcfn)(wchar_t*);

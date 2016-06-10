@@ -400,7 +400,7 @@ public:
 
         if ( pT->m_bstrEventsHandlers[ID_Telnet].Length()  ) {
             ParseScriptlet2((BSTR)(pT->m_bstrEventsHandlers[ID_Telnet]));
-            if ( pT->m_bDropped || pT->m_pvarEventParams[0].vt != VT_BSTR) {
+            if ( pT->m_bDropped ) {
                 bRet = FALSE;
             }
             return bRet;

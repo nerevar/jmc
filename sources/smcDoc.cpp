@@ -458,11 +458,6 @@ CSmcDoc::CSmcDoc() : m_ParseDlg(AfxGetMainWnd() ), m_MudEmulator(AfxGetMainWnd()
     bAutoReconnect = ::GetPrivateProfileInt(L"Options" , L"AutoReconnect" , FALSE , szGLOBAL_PROFILE);
     cCommandChar = m_cCommandChar = (wchar_t)::GetPrivateProfileInt(L"Options" , L"CommandChar" , L'#' , szGLOBAL_PROFILE);
 
-	wBCastUdpPort = ::GetPrivateProfileInt(L"Options" , L"BroadCastUdpPort" , 8326 , szGLOBAL_PROFILE);
-	bBCastFilterIP = ::GetPrivateProfileInt(L"Options" , L"BroadCastFilterIP" , TRUE , szGLOBAL_PROFILE);
-	bBCastFilterPort = ::GetPrivateProfileInt(L"Options" , L"BroadCastFilterPort" , TRUE , szGLOBAL_PROFILE);
-	reopen_bcast_socket();
-
     m_bSplitOnBackscroll = ::GetPrivateProfileInt(L"Options" , L"SplitOnBackscroll" , 1, szGLOBAL_PROFILE);
 
 	m_bRectangleSelection = ::GetPrivateProfileInt(L"Options" , L"RectangleSelection" , 0, szGLOBAL_PROFILE);
@@ -534,10 +529,6 @@ CSmcDoc::~CSmcDoc()
     ::WritePrivateProfileInt(L"Options" , L"AutoReconnect" , bAutoReconnect , szGLOBAL_PROFILE);
     ::WritePrivateProfileInt(L"Options" , L"SplitOnBackscroll" , m_bSplitOnBackscroll, szGLOBAL_PROFILE);
     ::WritePrivateProfileInt(L"Script" , L"AllowDebug" ,bAllowDebug  , szGLOBAL_PROFILE) ;
-
-	::WritePrivateProfileInt(L"Options" , L"BroadCastUdpPort" , wBCastUdpPort , szGLOBAL_PROFILE);
-	::WritePrivateProfileInt(L"Options" , L"BroadCastFilterIP" , bBCastFilterIP , szGLOBAL_PROFILE);
-	::WritePrivateProfileInt(L"Options" , L"BroadCastFilterPort" , bBCastFilterPort , szGLOBAL_PROFILE);
 
 	::WritePrivateProfileInt(L"Options" , L"RectangleSelection" , m_bRectangleSelection , szGLOBAL_PROFILE);
 	::WritePrivateProfileInt(L"Options" , L"RemoveESCSelection" , m_bRemoveESCSelection , szGLOBAL_PROFILE);

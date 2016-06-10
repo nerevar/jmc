@@ -19,6 +19,44 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
+// CAboutDlg dialog used for App About
+
+class CAboutDlg : public CDialog
+{
+public:
+	CAboutDlg();
+
+// Dialog Data
+	//{{AFX_DATA(CAboutDlg)
+	enum { IDD = IDD_ABOUTBOX };
+	CHyperLink	m_cWww2;
+	CHyperLink	m_cWww1;
+	CHyperLink	m_cWww;
+	CHyperLink	m_cEmail;
+	CHyperLink	m_cEmail2;
+	CHyperLink	m_cEmail3;
+	CString	m_strCopyright;
+	CString	m_strProductName;
+	CString	m_strVersion;
+	//}}AFX_DATA
+
+	// ClassWizard generated virtual function overrides
+	//{{AFX_VIRTUAL(CAboutDlg)
+	protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	//}}AFX_VIRTUAL
+
+// Implementation
+protected:
+	//{{AFX_MSG(CAboutDlg)
+	virtual BOOL OnInitDialog();
+	//}}AFX_MSG
+	DECLARE_MESSAGE_MAP()
+};
+
+CAboutDlg aboutDlg;
+
+/////////////////////////////////////////////////////////////////////////////
 // CSmcApp
 
 wchar_t szGLOBAL_PROFILE[MAX_PATH] = L"jmc.ini";
@@ -165,44 +203,64 @@ BOOL CSmcApp::InitInstance()
 	ASSERT(AfxGetMainWnd());
 	((CMainFrame*)AfxGetMainWnd())->RestorePosition();
 
+		// load version info 
+    wchar_t ModuleName[MAX_PATH];
+    GetModuleFileName(AfxGetInstanceHandle(), ModuleName, MAX_PATH);
+
+    // Get the version information size for allocate the buffer
+    DWORD dwHandle;     
+    DWORD dwDataSize = ::GetFileVersionInfoSize(ModuleName, &dwHandle); 
+    if ( dwDataSize > 0 ) {
+		// Allocate buffer and retrieve version information
+		LPBYTE lpVersionData = new BYTE[dwDataSize]; 
+		if (::GetFileVersionInfo(ModuleName, dwHandle, dwDataSize, (void**)lpVersionData) ) {
+			// Retrieve the first language and character-set identifier
+			UINT nQuerySize;    
+			DWORD* pTransTable;
+			if (::VerQueryValue(lpVersionData, _T("\\VarFileInfo\\Translation"),(void **)&pTransTable, &nQuerySize) ) {
+				// Swap the words to have lang-charset in the correct format
+				DWORD dwLangCharset = MAKELONG(HIWORD(pTransTable[0]), LOWORD(pTransTable[0]));
+
+				LPVOID lpData;    
+				CString strBlockName;
+
+				strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%ls"), 
+									 dwLangCharset, L"ProductName");
+				if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) ) {
+					aboutDlg.m_strProductName = (LPCTSTR)lpData;
+				} else {
+					aboutDlg.m_strProductName = L"JMC";
+				}
+				wcscpy(strProductName, aboutDlg.m_strProductName);
+				
+				strBlockName.ReleaseBuffer();
+
+
+				strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%ls"), 
+									 dwLangCharset, L"ProductVersion");
+				if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) )  {
+					aboutDlg.m_strVersion = (LPCTSTR)lpData;
+				} else {
+					aboutDlg.m_strVersion = L"0";
+				}
+				wcscpy(strProductVersion, aboutDlg.m_strVersion);
+				aboutDlg.m_strVersion = "Version " + aboutDlg.m_strVersion;
+				strBlockName.ReleaseBuffer();
+
+				strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%ls"), 
+									 dwLangCharset, L"LegalCopyright");
+
+				if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) )        
+					aboutDlg.m_strCopyright = (LPCTSTR)lpData;
+				strBlockName.ReleaseBuffer();
+    
+				aboutDlg.m_strCopyright += L"\nAll rights reserved.";
+			}
+		}
+		delete[] lpVersionData;
+	}
 	return TRUE;
 }
-
-/////////////////////////////////////////////////////////////////////////////
-// CAboutDlg dialog used for App About
-
-class CAboutDlg : public CDialog
-{
-public:
-	CAboutDlg();
-
-// Dialog Data
-	//{{AFX_DATA(CAboutDlg)
-	enum { IDD = IDD_ABOUTBOX };
-	CHyperLink	m_cWww2;
-	CHyperLink	m_cWww1;
-	CHyperLink	m_cWww;
-	CHyperLink	m_cEmail;
-	CHyperLink	m_cEmail2;
-	CHyperLink	m_cEmail3;
-	CString	m_strCopyright;
-	CString	m_strProductName;
-	CString	m_strVersion;
-	//}}AFX_DATA
-
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CAboutDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
-
-// Implementation
-protected:
-	//{{AFX_MSG(CAboutDlg)
-	virtual BOOL OnInitDialog();
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
-};
 
 CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
 {
@@ -238,8 +296,7 @@ END_MESSAGE_MAP()
 // App command to run the dialog
 void CSmcApp::OnAppAbout()
 {
-	CAboutDlg aboutDlg;
-	aboutDlg.DoModal();
+//	aboutDlg.DoModal();
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -426,61 +483,6 @@ void CSmcApp::OnHelpContents()
 BOOL CAboutDlg::OnInitDialog() 
 {
 	CDialog::OnInitDialog();
-	
-	// load version info 
-    wchar_t ModuleName[MAX_PATH];
-    GetModuleFileName(AfxGetInstanceHandle(), ModuleName, MAX_PATH);
-
-
-    // Get the version information size for allocate the buffer
-    DWORD dwHandle;     
-    DWORD dwDataSize = ::GetFileVersionInfoSize(ModuleName, &dwHandle); 
-    if ( dwDataSize == 0 )         
-        return TRUE;
-    // Allocate buffer and retrieve version information
-    LPBYTE lpVersionData = new BYTE[dwDataSize]; 
-    if (!::GetFileVersionInfo(ModuleName, dwHandle, dwDataSize, (void**)lpVersionData) ) { 
-        delete[] lpVersionData;
-        return TRUE;    
-    }
-    // Retrieve the first language and character-set identifier
-    UINT nQuerySize;    
-    DWORD* pTransTable;
-    if (!::VerQueryValue(lpVersionData, _T("\\VarFileInfo\\Translation"),(void **)&pTransTable, &nQuerySize) ) {
-        delete[] lpVersionData;
-        return TRUE;    
-    }
-    // Swap the words to have lang-charset in the correct format
-    DWORD dwLangCharset = MAKELONG(HIWORD(pTransTable[0]), LOWORD(pTransTable[0]));
-
-
-    LPVOID lpData;    
-    CString strBlockName;
-
-    strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%s"), 
-	                     dwLangCharset, "ProductName");
-    if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) )        
-        m_strProductName = (LPCTSTR)lpData;
-    strBlockName.ReleaseBuffer();
-
-
-    strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%s"), 
-	                     dwLangCharset, "ProductVersion");
-    m_strVersion = "Version ";
-    if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) )        
-        m_strVersion += (LPCTSTR)lpData;
-    strBlockName.ReleaseBuffer();
-
-    strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%s"), 
-	                     dwLangCharset, "LegalCopyright");
-
-    if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) )        
-        m_strCopyright = (LPCTSTR)lpData;
-    strBlockName.ReleaseBuffer();
-    
-    CString t;
-    m_strCopyright += "\nAll rights reserved.";
-
     UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE

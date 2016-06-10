@@ -7,14 +7,82 @@
 #variable AssertFail 0
 #variable AssertSuccess 0
 
-#alias {assertEqual}    {#math AssertCounter {$AssertCounter + 1};#strcmp {$%%2} {$%%3} {#math AssertSuccess {$AssertSuccess + 1};#output {[OK] %%%1:  %%%2 == %%%3}}                               {#math AssertFail    {$AssertFail    + 1};#output {[FAIL] %%%1:  %%%2 ($%%%2) should be equal to %%%3 ($%%%3)}}} {default}
-#alias {assertNotEqual} {#math AssertCounter {$AssertCounter + 1};#strcmp {$%%2} {$%%3} {#math AssertFail    {$AssertFail    + 1};#output {[FAIL] %%%1:  %%%2 should not be equal to %%%3 ($%%%3)}} {#math AssertSuccess {$AssertSuccess + 1};#output {[OK] %%%1:  %%%2 ($%%%2) =/= %%%3 ($%%%3)}}} {default}
-#alias {assertLess}     {#math AssertCounter {$AssertCounter + 1};#if {$%%2 < $%%3}     {#math AssertSuccess {$AssertSuccess + 1};#output {[OK] %%%1:  %%%2 ($%%%2) < %%%3 ($%%%3)}}                {#math AssertFail    {$AssertFail    + 1};#output {[FAIL] %%%1:  %%%2 ($%%%2) should be less than %%%3 ($%%%3)}}} {default}
+#alias {assertEqual} 
+    {
+        #math AssertCounter {$AssertCounter + 1};
+        #strcmp {$%%2} {$%%3} 
+            {
+                #math AssertSuccess {$AssertSuccess + 1};
+                #output {[OK] %%%1:  %%%2 == %%%3}
+            }
+            {
+                #math AssertFail    {$AssertFail    + 1};
+                #output {[FAIL] %%%1:  %%%2 ($%%%2) should be equal to %%%3 ($%%%3)}
+            }
+    } 
+    {default}
 
-#alias {runTestN} {#output {Running test: %0.test}; #read $TestsPath/%0.test} {default}
-#alias {runTest} {runTestN $TestNum; #math TestNum {$TestNum+1}; #if {$TestNum < $NTests} {runTest} {}} {default}
-#alias {reportAsserts} {#showme {Total tests: $AssertCounter, success: $AssertSuccess, fail: $AssertFail}}
-#alias {runtests} {#var TestNum 0; #math NTests {$MaxTestNum + 1}; runTest; #clear; reportAsserts; #killall} {default}
+#alias {assertNotEqual} 
+    {
+        #math AssertCounter {$AssertCounter + 1};
+        #strcmp {$%%2} {$%%3} 
+            {
+                #math AssertFail    {$AssertFail    + 1};
+                #output {[FAIL] %%%1:  %%%2 should not be equal to %%%3 ($%%%3)}
+            } 
+            {
+                #math AssertSuccess {$AssertSuccess + 1};
+                #output {[OK] %%%1:  %%%2 ($%%%2) =/= %%%3 ($%%%3)}
+            }
+    } 
+    {default}
+
+#alias {assertLess}     
+    {
+        #math AssertCounter {$AssertCounter + 1};
+        #if {$%%2 < $%%3}     
+            {
+                #math AssertSuccess {$AssertSuccess + 1};
+                #output {[OK] %%%1:  %%%2 ($%%%2) < %%%3 ($%%%3)}
+            }
+            {
+                #math AssertFail    {$AssertFail    + 1};
+                #output {[FAIL] %%%1:  %%%2 ($%%%2) should be less than %%%3 ($%%%3)}
+            }
+    } 
+    {default}
+
+#alias {runTestN} 
+    {
+        #output {Running test: %0.test}; 
+        #read $TestsPath/%0.test
+    } 
+    {default}
+
+#alias {runTest} 
+    {
+        runTestN $TestNum; 
+        #math TestNum {$TestNum+1}; 
+        #if {$TestNum < $NTests} {runTest}
+    }
+    {default}
+
+#alias {reportAsserts} 
+    {
+        #showme {Total tests: $AssertCounter, success: $AssertSuccess, fail: $AssertFail}
+    }
+    {default}
+
+#alias {runtests} 
+    {
+        #var TestNum 0; 
+        #math NTests {$MaxTestNum + 1}; 
+        runTest; 
+        #clear; 
+        reportAsserts; 
+        #killall
+    } 
+    {default}
 
 #variable {TestsPath} {./selftests}
 #variable {MaxTestNum} {6}

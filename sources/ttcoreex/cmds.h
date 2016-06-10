@@ -130,6 +130,7 @@ jmc_cmdi jmc_cmds[JMC_CMDS_NUM]={
 		   {L"replace", &replace_command, L"\0"},
 		   {L"secure", &secure_command, L"\0"},
 		   {L"codepage", &codepage_command, L"\0"},
-		   {L"bar", &bar_command, L"\0"}
+		   {L"bar", &bar_command, L"\0"},
+		   {L"oob", &oob_command, L"\0"}
 	   };
 #endif

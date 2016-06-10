@@ -92,3 +92,14 @@ std::vector<int> split(const wstring &s, wchar_t delim) {
     }
     return elems;
 }
+
+std::vector< wstring > split_str(const wstring &s, wchar_t delim) {
+	vector< wstring > elems;
+    wstringstream ss(s);
+    wstring item;
+
+    while(std::getline(ss, item, delim) && (item.length() > 0)) {
+         elems.push_back(item);
+    }
+    return elems;
+}

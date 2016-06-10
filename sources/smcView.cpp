@@ -82,12 +82,13 @@ BOOL CSmcView::PreCreateWindow(CREATESTRUCT& cs)
 /////////////////////////////////////////////////////////////////////////////
 // CSmcView drawing
 
-static int LengthWithoutANSI(const wchar_t* str) 
+int LengthWithoutANSI(const wchar_t* str) 
 {
 	int ret = 0;
-	for(; *str; str++) {
+	const wchar_t *maxp = str + 1000;
+	for(; *str && str < maxp; str++) {
 		if(*str == L'\x1B') {
-			for(; *str && *str != L'm'; str++);
+			for(; *str && *str != L'm' && str < maxp; str++);
 		} else {
 			ret++;
 		}

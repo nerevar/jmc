@@ -184,6 +184,15 @@ void substitute_myvars(const wchar_t *arg, wchar_t *result, int maxlength)
 					maxlength -= len;
 				
 					arg+=counter+varlen;
+				} else if (get_oob_variable(varname, specialVariableValue, sizeof(specialVariableValue) / sizeof(wchar_t) - 1) > 0) {
+					int len = wcslen(specialVariableValue);
+					if (len > maxlength)
+						len = maxlength;
+					wcsncpy(result, specialVariableValue, len);
+					result += len;
+					maxlength -= len;
+				
+					arg+=counter+varlen;
 				} else {
 					VAR_INDEX ind = VarList.find(varname);
 					if( ind != VarList.end() ) {
@@ -489,4 +498,14 @@ void variable_value_ping(wchar_t *arg)
 void variable_value_ping_proxy(wchar_t *arg)
 {
 	swprintf(arg, L"%d", lPingProxy);
+}
+
+void variable_value_product_name(wchar_t *arg)
+{
+	swprintf(arg, L"%ls", strProductName);
+}
+
+void variable_value_product_version(wchar_t *arg)
+{
+	swprintf(arg, L"%ls", strProductVersion);
 }

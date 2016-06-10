@@ -15,7 +15,7 @@
 #define BUFFER_SIZE				2048
 #define MULTILINE_BUFFER_SIZE	(BUFFER_SIZE*32)
 #define EMULATOR_BUFFER_SIZE	(BUFFER_SIZE/2)
-#define MAX_VARNAME_LENGTH		64
+#define MAX_VARNAME_LENGTH		128
 
 #define MIN_SCROLL_SIZE			100
 #define MAX_SCROLL_SIZE			30000
@@ -58,6 +58,7 @@ LONG  DLLEXPORT GetCommandsList(wchar_t *List);
 
 LPWSTR DLLEXPORT act_type_to_str(int type);
 
+extern BOOL DLLEXPORT bBCastEnabled;
 extern BOOL DLLEXPORT bBCastFilterIP;
 extern BOOL DLLEXPORT bBCastFilterPort;
 extern WORD DLLEXPORT wBCastUdpPort;
@@ -72,6 +73,7 @@ extern wchar_t DLLEXPORT szSETTINGS_DIR[MAX_PATH];
 extern wchar_t DLLEXPORT szPROFILESCRIPT[MAX_PATH];
 
 extern DLLEXPORT UINT MudCodePage;
+extern DLLEXPORT UINT MudCodePageUsed;
 extern DLLEXPORT UINT LogCodePage;
 extern int DLLEXPORT read_file_contents(const wchar_t *FilePath, wchar_t *Buffer, int Capacity);
 extern int DLLEXPORT write_file_contents(const wchar_t *FilePath, const wchar_t *Buffer, int Length);
@@ -150,6 +152,9 @@ extern WORD DLLEXPORT dwProxyPort;
 extern WORD DLLEXPORT dwProxyType;
 extern char DLLEXPORT sProxyUserName[256];
 extern char DLLEXPORT sProxyUserPassword[256];
+
+extern wchar_t DLLEXPORT strProductName[256];
+extern wchar_t DLLEXPORT strProductVersion[256];
 
 #endif /* */
 

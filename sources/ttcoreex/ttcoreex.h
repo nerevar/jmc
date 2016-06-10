@@ -2,6 +2,7 @@
 
 
 /* File created by MIDL compiler version 5.01.0164 */
+/* at Sat Jun 11 01:50:22 2016
  */
 /* Compiler settings for D:\github\jmc\jmc-clone\jmc\sources\ttcoreex\ttcoreex.idl:
     Oicf (OptLev=i2), W1, Zp8, env=Win32, ms_ext, c_ext
@@ -323,6 +324,18 @@ EXTERN_C const IID IID_IJmcObj;
             /* [in] */ BSTR bstrColored,
             /* [retval][out] */ BSTR __RPC_FAR *bstrANSI) = 0;
         
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE MSDP2GMCP( 
+            /* [in] */ BSTR bstrMSDP,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrGMCP) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE GMCP2MSDP( 
+            /* [in] */ BSTR bstrGMCP,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrMSDP) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE MSSP2GMCP( 
+            /* [in] */ BSTR bstrMSSP,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrGMCP) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -515,6 +528,21 @@ EXTERN_C const IID IID_IJmcObj;
             /* [in] */ BSTR bstrColored,
             /* [retval][out] */ BSTR __RPC_FAR *bstrANSI);
         
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE __RPC_FAR *MSDP2GMCP )( 
+            IJmcObj __RPC_FAR * This,
+            /* [in] */ BSTR bstrMSDP,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrGMCP);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE __RPC_FAR *GMCP2MSDP )( 
+            IJmcObj __RPC_FAR * This,
+            /* [in] */ BSTR bstrGMCP,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrMSDP);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE __RPC_FAR *MSSP2GMCP )( 
+            IJmcObj __RPC_FAR * This,
+            /* [in] */ BSTR bstrMSSP,
+            /* [retval][out] */ BSTR __RPC_FAR *bstrGMCP);
+        
         END_INTERFACE
     } IJmcObjVtbl;
 
@@ -643,6 +671,15 @@ EXTERN_C const IID IID_IJmcObj;
 
 #define IJmcObj_FromColored(This,bstrColored,bstrANSI)	\
     (This)->lpVtbl -> FromColored(This,bstrColored,bstrANSI)
+
+#define IJmcObj_MSDP2GMCP(This,bstrMSDP,bstrGMCP)	\
+    (This)->lpVtbl -> MSDP2GMCP(This,bstrMSDP,bstrGMCP)
+
+#define IJmcObj_GMCP2MSDP(This,bstrGMCP,bstrMSDP)	\
+    (This)->lpVtbl -> GMCP2MSDP(This,bstrGMCP,bstrMSDP)
+
+#define IJmcObj_MSSP2GMCP(This,bstrMSSP,bstrGMCP)	\
+    (This)->lpVtbl -> MSSP2GMCP(This,bstrMSSP,bstrGMCP)
 
 #endif /* COBJMACROS */
 
@@ -1037,6 +1074,45 @@ void __RPC_STUB IJmcObj_ToColored_Stub(
 
 
 void __RPC_STUB IJmcObj_FromColored_Stub(
+    IRpcStubBuffer *This,
+    IRpcChannelBuffer *_pRpcChannelBuffer,
+    PRPC_MESSAGE _pRpcMessage,
+    DWORD *_pdwStubPhase);
+
+
+/* [helpstring][id] */ HRESULT STDMETHODCALLTYPE IJmcObj_MSDP2GMCP_Proxy( 
+    IJmcObj __RPC_FAR * This,
+    /* [in] */ BSTR bstrMSDP,
+    /* [retval][out] */ BSTR __RPC_FAR *bstrGMCP);
+
+
+void __RPC_STUB IJmcObj_MSDP2GMCP_Stub(
+    IRpcStubBuffer *This,
+    IRpcChannelBuffer *_pRpcChannelBuffer,
+    PRPC_MESSAGE _pRpcMessage,
+    DWORD *_pdwStubPhase);
+
+
+/* [helpstring][id] */ HRESULT STDMETHODCALLTYPE IJmcObj_GMCP2MSDP_Proxy( 
+    IJmcObj __RPC_FAR * This,
+    /* [in] */ BSTR bstrGMCP,
+    /* [retval][out] */ BSTR __RPC_FAR *bstrMSDP);
+
+
+void __RPC_STUB IJmcObj_GMCP2MSDP_Stub(
+    IRpcStubBuffer *This,
+    IRpcChannelBuffer *_pRpcChannelBuffer,
+    PRPC_MESSAGE _pRpcMessage,
+    DWORD *_pdwStubPhase);
+
+
+/* [helpstring][id] */ HRESULT STDMETHODCALLTYPE IJmcObj_MSSP2GMCP_Proxy( 
+    IJmcObj __RPC_FAR * This,
+    /* [in] */ BSTR bstrMSSP,
+    /* [retval][out] */ BSTR __RPC_FAR *bstrGMCP);
+
+
+void __RPC_STUB IJmcObj_MSSP2GMCP_Stub(
     IRpcStubBuffer *This,
     IRpcChannelBuffer *_pRpcChannelBuffer,
     PRPC_MESSAGE _pRpcMessage,

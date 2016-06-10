@@ -9,7 +9,8 @@
 #include <vector>
 
 const TelnetOption TelnetOptions[TELNET_OPTIONS_NUM] = {
-	{TN_EOR_OPT,   L"EOR",   L"End-of-record"},						/* should be controlled by JMC */
+	{TN_EOR_OPT,   L"EOR",   L"End-of-record"},							/* should be controlled by JMC */
+	{TN_AYT_OPT,   L"AYT",   L"Are you there?"},						/* should be controlled by JMC */
 	{TN_ECHO,      L"ECHO",  L"Server echoes user's input"},			/* should be controlled by JMC */
 	{TN_NAWS,      L"NAWS",  L"Negotiate about window size"},			/* should be controlled by JMC */
 	{TN_TTYPE,     L"MTTS",  L"MUD Terminal Type Standard"},			/* should be controlled by JMC */
@@ -21,10 +22,11 @@ const TelnetOption TelnetOptions[TELNET_OPTIONS_NUM] = {
 	{TN_MSP,       L"MSP",   L"MUD Sound Protocol"},
 	{TN_MXP,       L"MXP",   L"MUD eXtension Protocol"},
 	{TN_ATCP,      L"ATCP",  L"Achaea Telnet Client Protocol"},
-	{TN_GMCP,      L"GMCP",  L"Generic MUD Communication Protocol"}
+	{TN_GMCP,      L"GMCP",  L"Generic MUD Communication Protocol"},
+	{TN_CHARSET,   L"CHARSET",L"Character set selection"}				/* should be controlled by JMC */
 	};
 
-std::vector<unsigned char> vEnabledTelnetOptions;
+std::vector<unsigned int> vEnabledTelnetOptions;
 std::vector<char> SubnegotiationBuffer;
 
 extern GET_WNDSIZE_FUNC GetWindowSize;
@@ -40,7 +42,7 @@ int get_telnet_option_num(const wchar_t *name)
 			return TelnetOptions[i].Code;
 	return -1;
 }
-void get_telnet_option_name(unsigned char num, wchar_t *buf)
+void get_telnet_option_name(unsigned int num, wchar_t *buf)
 {
 	int i;
 	for(i = 0; i < TELNET_OPTIONS_NUM; i++)
@@ -50,7 +52,7 @@ void get_telnet_option_name(unsigned char num, wchar_t *buf)
 		}
 	swprintf(buf, L"%d", num);
 }
-static void get_telnet_option_descr(unsigned char num, wchar_t *buf)
+static void get_telnet_option_descr(unsigned int num, wchar_t *buf)
 {
 	int i;
 	for(i = 0; i < TELNET_OPTIONS_NUM; i++)
@@ -64,7 +66,7 @@ static void get_telnet_option_descr(unsigned char num, wchar_t *buf)
 	swprintf(buf, L"%d [unknown telnet option]", num);
 }
 
-BOOL telnet_option_enabled(unsigned char Option)
+BOOL telnet_option_enabled(unsigned int Option)
 {
 	int i;
 	for(i = 0; i < vEnabledTelnetOptions.size(); i++)
@@ -86,6 +88,7 @@ BOOL DLLEXPORT bPromptEndEnabled = FALSE;
 unsigned char State;
 unsigned char CurrentSubnegotiation;
 bool SentDoCompress2;
+bool SentCharsetWILL;
 int MttsCounter;
 unsigned int SocketFlags;
 int LastWidthReported, LastHeightReported;
@@ -295,7 +298,7 @@ void telnet_command(wchar_t *arg)
 			tintin_puts2(tmp);
 	} else {
 		int opt = get_telnet_option_num(option);
-		if(opt <= 0 || opt >= 255) {
+		if(opt <= 0) {
 			swprintf(tmp, rs::rs(1280), option);
 			tintin_puts2(tmp);
 		} else {
@@ -343,10 +346,13 @@ void promptend_command(wchar_t *arg)
 			wcscpy(strPromptEndSequence, left);
 			wcscpy(strPromptEndReplace, right);
 
-			WideCharToMultiByte(MudCodePage, 0, strPromptEndSequence, wcslen(strPromptEndSequence), 
+			int len = WideCharToMultiByte(MudCodePageUsed, 0, strPromptEndSequence, wcslen(strPromptEndSequence), 
 				(char*)strPromptEndSeqBytes, sizeof(strPromptEndSeqBytes), NULL, NULL);
-			WideCharToMultiByte(MudCodePage, 0, strPromptEndReplace, wcslen(strPromptEndReplace), 
+			strPromptEndSeqBytes[len] = '\0';
+
+			len = WideCharToMultiByte(MudCodePageUsed, 0, strPromptEndReplace, wcslen(strPromptEndReplace), 
 				(char*)strPromptEndReplBytes, sizeof(strPromptEndReplBytes), NULL, NULL);
+			strPromptEndReplBytes[len] = '\0';
 			
 			bPromptEndEnabled = TRUE;
 			swprintf(buff, rs::rs(1279), strPromptEndSequence, strPromptEndReplace);
@@ -393,13 +399,16 @@ void reset_telnet_protocol()
 	stop_decompressing();
 	SocketFlags = 0;
 	SentDoCompress2 = false;
+	SentCharsetWILL = false;
 	MttsCounter = 0;
 	LastWidthReported = LastHeightReported = 0;
 	CurrentSubnegotiation = 0;
 	InputSize = OutputSize = DecompressedSize = 0;
 	State = '\0';
 	SubnegotiationBuffer.clear();
+	reset_oob();
 	PromptEndIndex = 0;
+	MudCodePageUsed = MudCodePage;
 }
 
 void telnet_push_back(const char *src, int size)
@@ -470,18 +479,31 @@ int telnet_pop_front(wchar_t *dst, int maxsize)
 		/* Codepages 1200 (UTF-16LE) and 1201 (UTF-16BE) doesn't supported for unmanager applications
 		   though they can be very simply implemented for almost(!) all situations
 		 */
-		if (MudCodePage == 1200) {
+		if (MudCodePageUsed == 1200) {
 			int count = min(len, processed) / sizeof(wchar_t);
 			memcpy(dst, pOutputData, count * sizeof(wchar_t));
 			len = processed = count * sizeof(wchar_t);
 			retConv = S_OK;
-		} else if (MudCodePage == 1201) {
+		} else if (MudCodePageUsed == 1201) {
 			int count = min(len, processed) / sizeof(wchar_t);
 			utf16le_to_utf16be(dst, (const wchar_t*)pOutputData, count);
 			len = processed = count * sizeof(wchar_t);
 			retConv = S_OK;
 		} else {
-			retConv = fConvertINetMultiByteToUnicode(&mode, MudCodePage, pOutputData, &processed, dst, &len);
+			static int last_bytes_rest = 0;
+			// there is a bug with ConvertINetMultiByteToUnicode() when converting same incomplete
+			// sequence send time in a row
+			if (processed == last_bytes_rest) {
+				processed = len = 0;
+				retConv = S_OK;
+			} else {
+				int to_conv = processed;
+				retConv = fConvertINetMultiByteToUnicode(&mode, MudCodePageUsed, pOutputData, &processed, dst, &len);
+				if (retConv == S_OK)
+					last_bytes_rest = to_conv - processed;
+				else
+					last_bytes_rest = 0;
+			}
 		}
 		if (retConv != S_OK) {
 			wchar_t buf[BUFFER_SIZE];
@@ -497,14 +519,139 @@ int telnet_pop_front(wchar_t *dst, int maxsize)
 	return ret;
 }
 
-void send_telnet_subnegotiation(unsigned char option, const wchar_t *output, int length)
+static void request_charsets()
+{
+	char cpname[128];
+	vector<char> buf;
+	char sep = ' ';
+
+	buf.push_back((char)TN_IAC);
+	buf.push_back((char)TN_SB);
+	buf.push_back((char)TN_CHARSET);
+	buf.push_back((char)CHARSET_REQUEST);
+	for (map< wstring, UINT >::iterator it = CPIDs.begin(); it != CPIDs.end(); it++) {
+		buf.push_back(sep);
+		int len = WideCharToMultiByte(CP_UTF8, 0, it->first.c_str(), it->first.length(), 
+			cpname, sizeof(cpname), NULL, NULL);
+		for (int i = 0; i < len; i++)
+			buf.push_back(cpname[i]);
+	}
+	buf.push_back((char)TN_IAC);
+	buf.push_back((char)TN_SE);
+	
+	tls_send(MUDSocket, buf.begin(), buf.size());
+}
+
+static void handle_charsets(const char *data, int length)
+{
+	if (length <= 0)
+		return;
+
+	wchar_t cpname[128];
+
+	char code = data[0];
+	data++;
+	length--;
+
+	vector<char> confirm;
+	UINT confirmed_codepage;
+	wstring confirmed_cpname;
+
+	switch (code) {
+	case CHARSET_REQUEST:
+		{
+			char sep = data[0];
+			data++;
+			length--;
+			for (const char *start = data; length >= 0; length--, data++) {
+				if ((data[0] == sep || length == 0) && (data > start)) {
+					int l = MultiByteToWideChar(CP_UTF8, 0, start, data - start, cpname, sizeof(cpname));
+					cpname[l] = L'\0';
+					
+					for (int i = 0; i < l; i++)
+						cpname[i] = towlower(cpname[i]);
+					
+					map< wstring, UINT>::iterator it;
+					if ((it = CPIDs.find(cpname)) != CPIDs.end()) {
+						confirmed_codepage = it->second;
+						confirmed_cpname = it->first;
+
+						confirm.clear();
+						for (const char *src = start; src != data; src++)
+							confirm.push_back(*src);
+						
+						if (it->second == MudCodePage) {
+							
+							break;
+						}
+					}
+					start = data + 1;
+				}
+			}
+			if (confirm.size() > 0) {
+				confirm.insert(confirm.begin(), (char)CHARSET_ACCEPTED);
+				MudCodePageUsed = confirmed_codepage;
+
+				if (mesvar[MSG_TELNET]) {
+					wchar_t buffer[BUFFER_SIZE];
+					swprintf(buffer, rs::rs(1305), confirmed_cpname.c_str());
+					tintin_puts2(buffer);
+				}
+			} else {
+				confirm.insert(confirm.begin(), (char)CHARSET_REJECTED);
+				tintin_puts2(rs::rs(1304));
+			}
+			confirm.insert(confirm.begin(), (char)TN_CHARSET);
+			confirm.insert(confirm.begin(), (char)TN_SB);
+			confirm.insert(confirm.begin(), (char)TN_IAC);
+
+			confirm.push_back((char)TN_IAC);
+			confirm.push_back((char)TN_SE);
+			
+			tls_send(MUDSocket, confirm.begin(), confirm.size());
+		}
+		break;
+	case CHARSET_ACCEPTED:
+		{
+			int l = MultiByteToWideChar(CP_UTF8, 0, data, length, cpname, sizeof(cpname));
+			cpname[l] = L'\0';
+			
+			for (int i = 0; i < l; i++)
+				cpname[i] = towlower(cpname[i]);
+				
+			map< wstring, UINT>::iterator it;
+			if ((it = CPIDs.find(cpname)) != CPIDs.end()) {
+				MudCodePageUsed = confirmed_codepage = it->second;
+			}
+		}
+		break;
+	case CHARSET_REJECTED:
+		{
+			tintin_puts2(rs::rs(1304));
+		}
+		break;
+	}
+}
+
+void send_telnet_subnegotiation(unsigned char option, const wchar_t *output, int length, bool raw_bytes)
 {
 	int i;
 	vector<char> buf;
 
-	int coded_len = WideCharToMultiByte(MudCodePage, 0, output, length, NULL, 0, NULL, NULL);
-	char *coded = new char[coded_len];
-	WideCharToMultiByte(MudCodePage, 0, output, length, coded, coded_len, NULL, NULL);
+	int coded_len;
+	char *coded;
+
+	if (raw_bytes) {
+		coded_len = length;
+		coded = new char[coded_len];
+		for (i = 0; i < coded_len; i++) {
+			coded[i] = (unsigned char)output[i];
+		}
+	} else {
+		coded_len = WideCharToMultiByte(MudCodePageUsed, 0, output, length, NULL, 0, NULL, NULL);
+		coded = new char[coded_len];
+		WideCharToMultiByte(MudCodePageUsed, 0, output, length, coded, coded_len, NULL, NULL);
+	}
 
 	buf.push_back((char)TN_IAC);
 	buf.push_back((char)TN_SB);
@@ -531,10 +678,10 @@ void send_telnet_subnegotiation(unsigned char option, const wchar_t *output, int
 	tls_send(MUDSocket, buf.begin(), buf.size());
 
 	if (mesvar[MSG_TELNET]) {
-		wchar_t buf[BUFFER_SIZE], optname[64];
+		wchar_t buffer[BUFFER_SIZE], optname[64];
 		get_telnet_option_name(option, optname);
-		swprintf(buf, L"#TELNET SB-%ls: send %d byte(s)", optname, length);
-		tintin_puts(buf);
+		swprintf(buffer, L"#TELNET SB-%ls: send %d byte(s) [%ls]", optname, length, output);
+		tintin_puts(buffer);
 	}
 }
 
@@ -547,9 +694,9 @@ void recv_telnet_subnegotiation(unsigned char option, const char *input, int len
 		tintin_puts(buf);
 	}
 
-	int wide_len = MultiByteToWideChar(MudCodePage, 0, input, length, NULL, 0);
+	int wide_len = MultiByteToWideChar(MudCodePageUsed, 0, input, length, NULL, 0);
 	wchar_t *data = new wchar_t[wide_len + 1];
-	MultiByteToWideChar(MudCodePage, 0, input, length, data, wide_len);
+	MultiByteToWideChar(MudCodePageUsed, 0, input, length, data, wide_len);
 	data[wide_len] = L'\0';
 
 	pJmcObj->m_pvarEventParams[0] = ((LONG)TN_SE);
@@ -558,6 +705,20 @@ void recv_telnet_subnegotiation(unsigned char option, const char *input, int len
 	
     BOOL bRet = pJmcObj->Fire_Telnet();
 	if ( bRet ) {
+		switch (option) {
+		case TN_GMCP:
+			parse_gmcp(data);
+			break;
+		case TN_MSDP:
+			parse_msdp(data, wide_len);
+			break;
+		case TN_MSSP:
+			parse_mssp(data, wide_len);
+			break;
+		case TN_CHARSET:
+			handle_charsets(input, length);
+			break;
+		}
     }
 
 	delete[] data;
@@ -577,27 +738,24 @@ void do_telnet_protecol(const char* input, int length, int *used, char* output, 
 #endif
 
 	if (SocketFlags & SOCKNAWS) {
-		unsigned char buf[9];
+		wchar_t buf[5];
 		int w, h;
 		GetWindowSize(-1, w, h);
 		if (w != LastWidthReported || h != LastHeightReported) {
-			buf[0] = TN_IAC;
-			buf[1] = TN_SB;
-			buf[2] = TN_NAWS;
-			buf[3] = (w >> 8) & 0xFF;
-			buf[4] = (w >> 0) & 0xFF;
-			buf[5] = (h >> 8) & 0xFF;
-			buf[6] = (h >> 0) & 0xFF;
-			buf[7] = TN_IAC;
-			buf[8] = TN_SE;
-			// can't use send_telnet_subnegotiation() routine
-			// due to conversion from unicode used there
-			// this data is binary, not text
-			//send_telnet_subnegotiation(TN_NAWS, (const char*)buf, 4);
-			tls_send(MUDSocket, (char*)buf, sizeof(buf));
+			buf[0] = (w >> 8) & 0xFF;
+			buf[1] = (w >> 0) & 0xFF;
+			buf[2] = (h >> 8) & 0xFF;
+			buf[3] = (h >> 0) & 0xFF;
+			buf[5] = 0;
+			send_telnet_subnegotiation(TN_NAWS, buf, 4, true);
 			LastWidthReported = w;
 			LastHeightReported = h;
 		}
+	}
+
+	if (!SentCharsetWILL && telnet_option_enabled(TN_CHARSET)) {
+		send_telnet_command(TN_WILL, TN_CHARSET);
+		SentCharsetWILL = true;
 	}
 
     for (*used = 0; *used < length && (*generated) < capacity; (*used)++) {
@@ -606,23 +764,18 @@ void do_telnet_protecol(const char* input, int length, int *used, char* output, 
 				State = input[*used];
  				switch(State) {
 					case TN_GA:
-						if (CurrentSubnegotiation > 0) {
-							SubnegotiationBuffer.push_back(State);
-						} else {
-							//output[(*generated)++] = '\n';
-							output[(*generated)++] = END_OF_PROMPT_MARK;
-						}
+						output[(*generated)++] = END_OF_PROMPT_MARK;
 						RecvCmd(State, 0);
 						State = '\0';
 						break;
 					case TN_EOR:
-						if(SocketFlags & SOCKEOR) {
-							if (CurrentSubnegotiation > 0) {
-								SubnegotiationBuffer.push_back(State);
-							} else {
-								output[(*generated)++] = END_OF_PROMPT_MARK;
-							}
-						}
+						output[(*generated)++] = END_OF_PROMPT_MARK;
+						RecvCmd(State, 0);
+						State = '\0';
+						break;
+					case TN_AYT:
+						if (telnet_option_enabled(TN_AYT_OPT))
+							write_line_mud(L" ");
 						RecvCmd(State, 0);
 						State = '\0';
 						break;
@@ -665,7 +818,7 @@ void do_telnet_protecol(const char* input, int length, int *used, char* output, 
 
 								switch (MttsCounter) {
 								case 0:
-									swprintf(value, L"%ls", L"JMC");
+									swprintf(value, L"%ls", strProductName);
 									MttsCounter++;
 									break;
 								case 1:
@@ -677,7 +830,7 @@ void do_telnet_protecol(const char* input, int length, int *used, char* output, 
 										MTTS_ANSI | MTTS_UTF8);
 									break;
 								}
-								send_telnet_subnegotiation(TN_TTYPE, mtts_is, wcslen(value) + 1);
+								send_telnet_subnegotiation(TN_TTYPE, mtts_is, wcslen(value) + 1, false);
 							}
 							break;
 						case TN_NAWS:
@@ -726,6 +879,22 @@ void do_telnet_protecol(const char* input, int length, int *used, char* output, 
 						send_telnet_command(TN_DO, TN_COMPRESS2);
 						SentDoCompress2 = true;
 						break;
+					case TN_GMCP:
+						send_telnet_command(TN_DO, TN_GMCP);
+						start_gmcp();
+						break;
+					case TN_MSDP:
+						send_telnet_command(TN_DO, TN_MSDP);
+						start_msdp();
+						break;
+					case TN_MSSP:
+						send_telnet_command(TN_DO, TN_MSSP);
+						start_mssp();
+						break;
+					case TN_CHARSET:
+						send_telnet_command(TN_DO, TN_CHARSET);
+						request_charsets();
+						break;
 					default:
 						send_telnet_command(TN_DO, opt);
 						break;
@@ -773,7 +942,7 @@ void do_telnet_protecol(const char* input, int length, int *used, char* output, 
 						send_telnet_command(TN_WILL, TN_TTYPE);
 						break;
 					default:
-						send_telnet_command(TN_WONT, opt);
+						send_telnet_command(TN_WILL, opt);
 						break;
 					}
 				}
@@ -820,7 +989,7 @@ void do_telnet_protecol(const char* input, int length, int *used, char* output, 
 						State = TN_IAC;
 					else
 						SubnegotiationBuffer.push_back(ch);
-				} else {
+				} else if (ch != 0x00) { // why so could happens?
 					switch (ch) {
 					case 0x9:
 						if(capacity - (*generated) >= 4) {

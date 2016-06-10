@@ -244,8 +244,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,6,0,0
- PRODUCTVERSION 3,6,0,0
+ FILEVERSION 3,7,1,0
+ PRODUCTVERSION 3,7,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -263,7 +263,7 @@ BEGIN
             VALUE "Comments", "\0"
             VALUE "CompanyName", "\0"
             VALUE "FileDescription", "TINTIN++ Module\0"
-            VALUE "FileVersion", "3, 6, 0, 0\0"
+            VALUE "FileVersion", "3, 7, 1, 0\0"
             VALUE "InternalName", "ttcoreex\0"
             VALUE "LegalCopyright", "\0"
             VALUE "LegalTrademarks", "\0"
@@ -271,7 +271,7 @@ BEGIN
             VALUE "OriginalFilename", "ttcoreex.dll\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "JMC MUD Client\0"
-            VALUE "ProductVersion", "3.6\0"
+            VALUE "ProductVersion", "3.7\0"
             VALUE "SpecialBuild", "\0"
         END
     END
@@ -646,6 +646,14 @@ STRINGTABLE DISCARDABLE
 BEGIN
     1296                    "#codepage set to %d [%ls]"
     1297                    "#codepage %ls not found"
+    1298                    "#oob %ls %ls"
+    1299                    "#oob supported modules: "
+    1300                    "#oob %ls enabled submodules: "
+    1301                    "#oob syntax: #oob [<module> [enable|disable]] or #oob <module> add|del <submodule>"
+    1302                    "#broadcast %ls (filter ip: %ls; filter port: %ls; port: %d)"
+    1303                    "#Trying to connect via proxy %d.%d.%d.%d..."
+    1304                    "#warning: can't negotiate about charset"
+    1305                    "#telnet: negotiated charset %ls"
 END
 
 #endif    // English (U.S.) resources

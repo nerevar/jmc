@@ -2,8 +2,39 @@
 
 #var MaxN 20000
 
-#alias generateRandom {#random x -10000 10000; #if {$n == 0} {#var Min $x; #var Max $x} {#if {$Min > $x} {#var Min $x}; #if {$Max < $x} {#var Max $x}}; #math Sum {$Sum + $x}; #math n {$n + 1}; #if {$n < $MaxN} {generateRandom} {}}
-#alias generateRandomOutput {#random x -10000 10000; #showme {generated random number: $x}; #if {$n == 0} {#var Min $x; #var Max $x} {#if {$Min > $x} {#var Min $x}; #if {$Max < $x} {#var Max $x}}; #math Sum {$Sum + $x}; #math n {$n + 1}; #if {$n < $MaxN} {generateRandomOutput} {}}
+#alias generateRandom 
+    {
+        #random x -10000 10000; 
+        #if {$n == 0} 
+            {
+                #var Min $x; 
+                #var Max $x
+            } 
+            {
+                #if {$Min > $x} {#var Min $x}; 
+                #if {$Max < $x} {#var Max $x}
+            }; 
+        #math Sum {$Sum + $x}; 
+        #math n {$n + 1}; 
+        #if {$n < $MaxN} {generateRandom}
+    }
+#alias generateRandomOutput 
+    {
+        #random x -10000 10000; 
+        #showme {generated random number: $x}; 
+        #if {$n == 0} 
+            {
+                #var Min $x; 
+                #var Max $x
+            } 
+            {
+                #if {$Min > $x} {#var Min $x}; 
+                #if {$Max < $x} {#var Max $x}
+            }; 
+        #math Sum {$Sum + $x}; 
+        #math n {$n + 1}; 
+        #if {$n < $MaxN} {generateRandomOutput}
+    }
 
 #message variable off
 

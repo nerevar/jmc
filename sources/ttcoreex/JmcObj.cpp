@@ -311,13 +311,20 @@ STDMETHODIMP CJmcObj::GetVar(BSTR bstrVarName, BSTR *bstrRet)
         VAR* pvar = ind->second;
         ret = pvar->m_strVal.data();
     } else {
+		wchar_t specialVariableValue[BUFFER_SIZE];
+		bool found = false;
+
 		for(int i = 0; i < JMC_SPECIAL_VARIABLES_NUM; i++)
 			if (!wcscmp(bstrVarName, jmc_vars[i].name)) {
-				wchar_t specialVariableValue[BUFFER_SIZE];
 				(*(jmc_vars[i].jmcfn))(specialVariableValue);
 				ret = specialVariableValue;
+				found = true;
 				break;
 			}
+		if (!found) {
+			 if (get_oob_variable(bstrVarName, specialVariableValue, sizeof(specialVariableValue) / sizeof(wchar_t) - 1) > 0)
+				ret = specialVariableValue;
+		}
 	}
     *bstrRet = ret.Copy ();
 
@@ -427,7 +434,7 @@ STDMETHODIMP CJmcObj::DoTelnet(LONG Command, LONG Option, BSTR bstrData)
 	else if (Command != TN_SB)
 		return E_INVALIDARG;
 
-	send_telnet_subnegotiation((unsigned char)Option, bstrData, SysStringLen(bstrData));
+	send_telnet_subnegotiation((unsigned char)Option, bstrData, SysStringLen(bstrData), false);
 
 	return S_OK;
 }
@@ -493,6 +500,57 @@ STDMETHODIMP CJmcObj::FromColored(BSTR bstrColored, BSTR *bstrANSI)
 	*bstrANSI = ret.Copy();
 
 	delete[] ansi;
+
+	return S_OK;
+}
+
+STDMETHODIMP CJmcObj::MSDP2GMCP(BSTR bstrMSDP, BSTR *bstrGMCP)
+{
+	if ( !bstrMSDP ) 
+        return E_INVALIDARG;
+
+	CComBSTR ret(L"");
+	wchar_t *msdp = bstrMSDP;
+	
+	int len = SysStringLen(bstrMSDP);
+	wstring gmcp = convert_msdp2gmcp(msdp, len);
+	ret = gmcp.c_str();
+
+	*bstrGMCP = ret.Copy();
+
+	return S_OK;
+}
+
+STDMETHODIMP CJmcObj::GMCP2MSDP(BSTR bstrGMCP, BSTR *bstrMSDP)
+{
+	if ( !bstrGMCP ) 
+        return E_INVALIDARG;
+
+	CComBSTR ret(L"");
+	wchar_t *gmcp = bstrGMCP;
+	
+	int len = SysStringLen(bstrGMCP);
+	wstring msdp = convert_gmcp2msdp(gmcp, len);
+	ret = msdp.c_str();
+
+	*bstrMSDP = ret.Copy();
+
+	return S_OK;
+}
+
+STDMETHODIMP CJmcObj::MSSP2GMCP(BSTR bstrMSSP, BSTR *bstrGMCP)
+{
+	if ( !bstrMSSP ) 
+        return E_INVALIDARG;
+
+	CComBSTR ret(L"");
+	wchar_t *mssp = bstrMSSP;
+	
+	int len = SysStringLen(bstrMSSP);
+	wstring gmcp = convert_mssp2gmcp(mssp, len);
+	ret = gmcp.c_str();
+
+	*bstrGMCP = ret.Copy();
 
 	return S_OK;
 }

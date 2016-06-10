@@ -474,8 +474,7 @@ void status_command(wchar_t* arg)
 
     EnterCriticalSection(&secStatusSection);
     if ( *color ) {
-        add_codes(buff, dest, color, FALSE);
-        wcscat(dest, buff);
+        add_codes(buff, dest, color);
     } else 
         wcscpy(dest, buff);
     LeaveCriticalSection(&secStatusSection);
@@ -564,29 +563,72 @@ void loopback_command(wchar_t *arg)
 
 void broadcast_command(wchar_t *arg)
 {
-	if( BCASTSocket == INVALID_SOCKET ) {
-		tintin_puts2(rs::rs(1263));
-	} else {
-		wchar_t result[BUFFER_SIZE], strng[BUFFER_SIZE];
-    
-		arg=get_arg_in_braces(arg,strng,WITH_SPACES,sizeof(strng)/sizeof(wchar_t)-1);
+	wchar_t temp[BUFFER_SIZE], result[BUFFER_SIZE];
 
-		prepare_actionalias(strng,result, sizeof(result)/sizeof(wchar_t)); 
+	arg = get_arg_in_braces(arg, temp, STOP_SPACES, sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, result, sizeof(result)/sizeof(wchar_t)); 
 
-        struct sockaddr_in local;
+	if (is_abrev(result, L"disable")) {
+		bBCastEnabled = FALSE;
+		result[0] = L'\0';
+	} else if (is_abrev(result, L"enable")) {
+		bBCastEnabled = TRUE;
+		result[0] = L'\0';
+	} else if (is_abrev(result, L"filterip")) {
+		arg = get_arg_in_braces(arg, temp, STOP_SPACES, sizeof(temp)/sizeof(wchar_t)-1);
+		if (is_abrev(temp, L"on"))
+			bBCastFilterIP = TRUE;
+		else if (is_abrev(temp, L"off"))
+			bBCastFilterIP = FALSE;
+		result[0] = L'\0';
+	} else if (is_abrev(result, L"filterport")) {
+		arg = get_arg_in_braces(arg, temp, STOP_SPACES, sizeof(temp)/sizeof(wchar_t)-1);
+		if (is_abrev(temp, L"on"))
+			bBCastFilterPort = TRUE;
+		else if (is_abrev(temp, L"off"))
+			bBCastFilterPort = FALSE;
+		result[0] = L'\0';
+	} else if (is_abrev(result, L"port")) {
+		arg = get_arg_in_braces(arg, temp, STOP_SPACES, sizeof(temp)/sizeof(wchar_t)-1);
+		int port;
+		if (swscanf(temp, L"%u", &port) > 0)
+			wBCastUdpPort = port;
+		result[0] = L'\0';
+	} else if (is_abrev(result, L"send")) {
+		if( BCASTSocket == INVALID_SOCKET ) {
+			tintin_puts2(rs::rs(1263));
+		} else {
+			arg = get_arg_in_braces(arg, temp, WITH_SPACES, sizeof(temp)/sizeof(wchar_t)-1);
+			prepare_actionalias(temp, result, sizeof(result)/sizeof(wchar_t)); 
+			
+			struct sockaddr_in local;
 
-        local.sin_family = AF_INET;
-		local.sin_addr.S_un.S_addr = htonl(INADDR_BROADCAST);
-        local.sin_port = htons(wBCastUdpPort);
+			local.sin_family = AF_INET;
+			local.sin_addr.S_un.S_addr = htonl(INADDR_BROADCAST);
+			local.sin_port = htons(wBCastUdpPort);
 
-        int len = wcslen(result) * sizeof(wchar_t), sent;
+			int len = wcslen(result) * sizeof(wchar_t), sent;
 
-        sent = sendto(BCASTSocket, (const char*)result, len, 0, (const sockaddr*)&local, sizeof(local));
-        if(sent != len) {
-			wchar_t msg[BUFFER_SIZE];
-			swprintf(msg,rs::rs(1264), sent, len);
-			tintin_puts(msg);
+			sent = sendto(BCASTSocket, (const char*)result, len, 0, (const sockaddr*)&local, sizeof(local));
+			if(sent != len) {
+				wchar_t msg[BUFFER_SIZE];
+				swprintf(msg,rs::rs(1264), sent, len);
+				tintin_puts(msg);
+			}
 		}
+	}
+
+	if (!result[0]) {
+		wchar_t on_str[BUFFER_SIZE], off_str[BUFFER_SIZE];
+		wcscpy(on_str, rs::rs(1125));
+		wcscpy(off_str, rs::rs(1126));
+		swprintf(temp, rs::rs(1302), 
+			bBCastEnabled ? on_str : off_str,
+			bBCastFilterIP ? on_str : off_str,
+			bBCastFilterPort ? on_str : off_str,
+			wBCastUdpPort);
+		tintin_puts2(temp);
+		reopen_bcast_socket();
 	}
 }
 
@@ -663,16 +705,30 @@ void bar_command(wchar_t *arg)
 {
 	wchar_t var[BUFFER_SIZE], length[BUFFER_SIZE], 
 		fill_left[BUFFER_SIZE], fill_right[BUFFER_SIZE],
-		value[BUFFER_SIZE], maximum[BUFFER_SIZE];
+		value[BUFFER_SIZE], maximum[BUFFER_SIZE],
+		temp[BUFFER_SIZE];
 	
-	arg = get_arg_in_braces(arg,var,STOP_SPACES,sizeof(var)/sizeof(wchar_t)-1);
-	arg = get_arg_in_braces(arg,length,STOP_SPACES,sizeof(length)/sizeof(wchar_t)-1);
-	arg = get_arg_in_braces(arg,fill_left,STOP_SPACES,sizeof(fill_left)/sizeof(wchar_t)-1);
-	arg = get_arg_in_braces(arg,fill_right,STOP_SPACES,sizeof(fill_right)/sizeof(wchar_t)-1);
-	arg = get_arg_in_braces(arg,value,STOP_SPACES,sizeof(value)/sizeof(wchar_t)-1);
-	arg = get_arg_in_braces(arg,maximum,STOP_SPACES,sizeof(maximum)/sizeof(wchar_t)-1);
+	arg = get_arg_in_braces(arg,temp,STOP_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, var,sizeof(var)/sizeof(wchar_t)-1);
 
-	if (wcslen(maximum) == 0) {
+	arg = get_arg_in_braces(arg,temp,STOP_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, length,sizeof(length)/sizeof(wchar_t)-1);
+
+	arg = get_arg_in_braces(arg,temp,STOP_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, fill_left,sizeof(fill_left)/sizeof(wchar_t)-1);
+
+	arg = get_arg_in_braces(arg,temp,STOP_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, fill_right,sizeof(fill_right)/sizeof(wchar_t)-1);
+
+	arg = get_arg_in_braces(arg,temp,STOP_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, value,sizeof(value)/sizeof(wchar_t)-1);
+
+	arg = get_arg_in_braces(arg,temp,STOP_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, maximum,sizeof(maximum)/sizeof(wchar_t)-1);
+
+	if (wcslen(maximum) == 0 || 
+		wcslen(fill_left) == 0 || 
+		wcslen(fill_right) == 0) {
 		tintin_puts2(rs::rs(1283));
 		return;
 	}
@@ -687,6 +743,10 @@ void bar_command(wchar_t *arg)
 	int len = min(_wtoi(length), sizeof(value)/sizeof(wchar_t)-1);
 	int val = _wtoi(value);
 	int maxv = _wtoi(maximum);
+
+	val = max(0, val);
+	maxv = max(1, maxv);
+	val = min(val, maxv);
 
 	wstring bar = L"";
 	/*
