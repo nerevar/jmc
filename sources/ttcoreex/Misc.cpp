@@ -6,6 +6,8 @@
 
 #include <time.h>
 
+#include <windows.h>
+
 //-------------------------
 //* en
 BOOL bDaaMessage = FALSE;
@@ -850,7 +852,16 @@ void play_command(wchar_t *arg)
 //vls-begin// #flash
 void flash_command(wchar_t *arg)
 {
-    SetForegroundWindow(hwndMAIN);
+	wchar_t param[BUFFER_SIZE];
+
+	arg = get_arg_in_braces(param, arg, STOP_SPACES, sizeof(param) / sizeof(wchar_t) - 1);
+
+	if (is_abrev(param, L"nopopup")) {
+		//FLASHWINFO finfo;
+		FlashWindow(hwndMAIN, TRUE);
+	} else {
+		SetForegroundWindow(hwndMAIN);
+	}
 }
 //vls-end//
 
