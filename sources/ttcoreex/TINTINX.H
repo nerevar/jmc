@@ -156,5 +156,7 @@ extern char DLLEXPORT sProxyUserPassword[256];
 extern wchar_t DLLEXPORT strProductName[256];
 extern wchar_t DLLEXPORT strProductVersion[256];
 
+extern wchar_t DLLEXPORT strLastCommand[BUFFER_SIZE];
+
 #endif /* */
 

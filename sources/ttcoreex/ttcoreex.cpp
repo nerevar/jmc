@@ -139,6 +139,8 @@ BOOL bInterrupted = TRUE;
 wchar_t DLLEXPORT strProductName[256];
 wchar_t DLLEXPORT strProductVersion[256];
 
+wchar_t DLLEXPORT strLastCommand[BUFFER_SIZE];
+
 int mesvar[MSG_MAXNUM];
 
 BOOL bMultiAction, bMultiHighlight;
@@ -299,6 +301,8 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
 
 		hPingThread = CreateThread(NULL, 0, &PingThread, NULL, 0, &dwPingThreadID);
 
+		strLastCommand[0] = L'\0';
+
 		last_line[0] = L'\0';
     }
     else if (dwReason == DLL_PROCESS_DETACH){
@@ -426,6 +430,8 @@ void write_line_mud(const wchar_t *line)
         tintin_puts(rs::rs(1182) );
     } else {
         OriginalLen = len = wcslen(line);
+
+		wcscpy(strLastCommand, line);
 
 		int count;
 		if (MudCodePageUsed == 1200) {
@@ -605,6 +611,8 @@ START1:
 	}
     connectresult = proxy_connect(sock,(struct sockaddr *)&sockaddr, sizeof(sockaddr));
 
+	strLastCommand[0] = L'\0';
+
     if(connectresult || tls_open(sock) < 0) {
         proxy_close(sock);
         switch(connectresult) {
@@ -758,11 +766,17 @@ void do_multiline();
 
 void tintin_puts(const wchar_t *cptr)
 {
+	// cptr is almost everytime points to rs::rs() static buffer
+	// so we need to save local copy on stack to handle
+	// nested tintin_puts() which are possible due to actions checking
+	wchar_t line[BUFFER_SIZE];
+	wcscpy(line, cptr);
+
 	// allow substitutions and script-handling
 	//check_all_actions(cptr, false);
-	do_one_line((wchar_t*)cptr);
-	if (wcscmp(cptr, L"."))
-		tintin_puts2(cptr);
+	do_one_line(line);
+	if (wcscmp(line, L"."))
+		tintin_puts2(line);
 }
 
 
@@ -852,6 +866,8 @@ void  DLLEXPORT CloseState(void)
 void  DLLEXPORT ReloadScriptEngine(const wchar_t* strScriptText, GUID guidEngine, const wchar_t* strProfile)
 {
     pJmcObj->m_bstrProfile = strProfile;
+	for (int i = 0; i < 20; i++)
+		pJmcObj->m_bstrEventsHandlers[i] = L"";
     pSite->InitSite (hwndMAIN, (LPWSTR)strScriptText,  guidEngine);
 	tintin_puts(rs::rs(1196));
 }
@@ -1573,11 +1589,13 @@ void wshow_command(wchar_t *arg)
 void wname_command(wchar_t *arg)
 {
     wchar_t number[BUFFER_SIZE];
-    wchar_t option[BUFFER_SIZE];
+    wchar_t temp[BUFFER_SIZE];
+	wchar_t option[BUFFER_SIZE];
     int wnd = MAX_OUTPUT;
 
     arg=get_arg_in_braces(arg,number,STOP_SPACES,sizeof(number)/sizeof(wchar_t)-1);
-    arg=get_arg_in_braces(arg,option,STOP_SPACES,sizeof(option)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,temp,STOP_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, option, sizeof(option)/sizeof(wchar_t)-1);
 
     if (!is_all_digits(number) || !swscanf(number, L"%d", &wnd) || wnd < 0 || wnd >= MAX_OUTPUT) {
         tintin_puts2(rs::rs(1244));

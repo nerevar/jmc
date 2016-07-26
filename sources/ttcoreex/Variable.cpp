@@ -509,3 +509,8 @@ void variable_value_product_version(wchar_t *arg)
 {
 	swprintf(arg, L"%ls", strProductVersion);
 }
+
+void variable_value_command(wchar_t *arg)
+{
+	swprintf(arg, L"%ls", strLastCommand);
+}

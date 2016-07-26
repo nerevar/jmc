@@ -77,6 +77,8 @@ using namespace std;
 #define DEFAULT_HOTKEY_MESS TRUE
 #define DEFAULT_LOG_MESS TRUE
 #define DEFAULT_TELNET_MESS FALSE
+#define DEFAULT_OOB_MESS TRUE
+#define DEFAULT_MAPPER_MESS TRUE
 
 enum {
     MSG_ALIAS = 0, 
@@ -90,6 +92,8 @@ enum {
     MSG_SF,
 	MSG_LOG,
 	MSG_TELNET,
+	MSG_MUD_OOB,
+	MSG_MAPPER,
 
 	MSG_MAXNUM
 };
@@ -277,7 +281,7 @@ void free_parse_stack();
 int check_a_action(const wchar_t *line, const wchar_t *action);
 BOOL show_aliases(wchar_t* left = NULL, CGROUP* pGroup= NULL);
 wchar_t *get_arg_in_braces( wchar_t *s, wchar_t *arg, int flag, int maxlength);
-int is_all_digits(const wchar_t *number);
+int is_all_digits(const wchar_t *number, bool sign = false);
 int is_abrev(const wchar_t *s1, const wchar_t *s2);
 void prepare_actionalias(const wchar_t *string, wchar_t *result, int maxlength);
 void substitute_vars(const wchar_t *arg, wchar_t *result, int maxlength);
@@ -303,6 +307,7 @@ void help_command(wchar_t *arg);
 void parse_high(wchar_t *arg);
 void if_command(wchar_t *line);
 void strcmp_command(wchar_t *line);
+void match_command(wchar_t *line);
 void ignore_command(wchar_t* arg);
 void display_info(wchar_t* arg);
 void log_command(wchar_t *arg);
@@ -480,6 +485,10 @@ int get_oob_variable(const wchar_t *varname, wchar_t *value, int maxlength);
 void oob_command(wchar_t *arg);
 
 
+//(auto)mapper
+void mapper_command(wchar_t *arg);
+
+
 // VARIABLES:
 void variable_value_input(wchar_t *arg);
 void variable_value_date(wchar_t *arg);
@@ -506,6 +515,8 @@ void variable_value_ping(wchar_t *arg);
 void variable_value_ping_proxy(wchar_t *arg);
 void variable_value_product_name(wchar_t *arg);
 void variable_value_product_version(wchar_t *arg);
+void variable_value_command(wchar_t *arg);
+void variable_value_filename(wchar_t *arg);
 
 BOOL show_actions(wchar_t* left = NULL, CGROUP* pGroup = NULL);
 int do_one_antisub(wchar_t *line);
@@ -521,6 +532,8 @@ void do_telnet_protecol(const char* input, int length, int *used, char* output, 
 void StopLogging();
 void log(wstring st);
 void log(int wnd, wstring st);
+wstring loadHTMLFromResource(int name);
+wstring loadHTMLFromFile(const wchar_t *filename);
 wstring processLine(const wchar_t *strInput, DWORD TimeStamp = 0);
 wstring processTEXT(wstring strInput);
 wstring processRMA(wstring strInput, DWORD TimeStamp);
@@ -585,7 +598,7 @@ extern void* JMCObjRet[1000];
 // --END
 
 //* en:JMC functions struct. look cmds.h
-const int JMC_CMDS_NUM=131;
+const int JMC_CMDS_NUM=133;
 typedef struct jmc_cmd 
 	{
 	wchar_t*alias;
@@ -595,7 +608,7 @@ typedef struct jmc_cmd
 //*/en
 
 
-const int JMC_SPECIAL_VARIABLES_NUM = 25;
+const int JMC_SPECIAL_VARIABLES_NUM = 27;
 typedef struct jmc_special_variable_struct {
 	wchar_t *name;
 	void (*jmcfn)(wchar_t*);

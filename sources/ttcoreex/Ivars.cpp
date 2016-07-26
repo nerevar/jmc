@@ -1,6 +1,7 @@
 /* Autoconf patching by David Hedbor, neotron@lysator.liu.se */
 #include "stdafx.h"
 #include "tintin.h"
+#include "ttobjects.h"
 
 int stacks[100][3];
 
@@ -345,4 +346,95 @@ void strcmp_command(wchar_t *arg)
 	if( to_parse && wcslen(to_parse) ) {
 		parse_input(to_parse); 
 	}
+}
+
+void match_command(wchar_t *arg) 
+{
+	wchar_t pattern[BUFFER_SIZE], 
+		 strng[BUFFER_SIZE], 
+		 if_then[BUFFER_SIZE], 
+		 if_else[BUFFER_SIZE],
+		 temp[BUFFER_SIZE];
+	
+	CPCRE re;
+
+	arg = get_arg_in_braces(arg,temp,STOP_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, pattern, sizeof(pattern)/sizeof(wchar_t)-1);
+
+    BOOL i_flag = FALSE, m_flag = FALSE, g_flag = FALSE;
+	std::wstring regexp = pattern;
+
+    if ( *pattern == L'/' ) {
+		regexp = (wchar_t*)pattern + 1;
+        
+        int size = regexp.size();
+		
+		for (int i = size - 1; i >= 0; i--) {
+			if (regexp[i] == L'i') {
+				size--;
+				i_flag = TRUE;
+			} else if (regexp[i] == L'm') {
+				size--;
+				m_flag = TRUE;
+			} else if (regexp[i] == L'g') {
+				size--;
+				g_flag = TRUE;
+			} else if (regexp[i] == L'/') {
+				size--;
+				break;
+			} else {
+				size = regexp.size();
+				i_flag = m_flag = g_flag = FALSE;
+				break;
+			}
+		}
+		regexp.resize(size);
+    }
+
+	if (!re.SetSource(regexp, m_flag, i_flag)) {
+		return;
+	}
+
+	arg = get_arg_in_braces(arg,temp,STOP_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, strng, sizeof(strng)/sizeof(wchar_t)-1);
+ 
+	arg = get_arg_in_braces(arg,if_then,WITH_SPACES,sizeof(if_then)/sizeof(wchar_t)-1);
+
+	arg = get_arg_in_braces(arg,if_else,WITH_SPACES,sizeof(if_else)/sizeof(wchar_t)-1);
+
+	int offset = 0;
+    int offsets[33];
+
+	bool no_match = true;
+	wchar_t *test = (wchar_t*)strng;
+	int test_len = wcslen(test);
+
+	for (;;) {
+		int captured = pcre16_exec(re.m_pPcre, re.m_pExtra, test, test_len, offset, 0, offsets, 33);
+		if (captured <= 0)
+			break;
+
+		no_match = false;
+		
+		int i;
+		for (i = 0; i < 10; i++) 
+			vars[i][0] = 0;
+		for (i = 1; i < captured; i++) {
+			if (offsets[i*2] >= 0) {
+				int size = offsets[i*2 + 1] - offsets[i*2];
+				wcsncpy(vars[i-1], test + offsets[i*2], size);
+				*(vars[i-1]+size) = L'\0'; 
+			}
+		}
+		prepare_actionalias(if_then, temp, sizeof(temp)/sizeof(wchar_t)-1);
+		parse_input(temp, g_flag);
+
+		offset = offsets[1];
+
+		if (!g_flag)
+			break;
+	}
+
+	if (no_match)
+		parse_input(if_else);
 }

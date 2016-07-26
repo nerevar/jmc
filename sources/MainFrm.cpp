@@ -1379,7 +1379,7 @@ LONG CMainFrame::OnNameOutput(UINT wParam, LONG lParam)
     int wnd = (int)wParam;
     HGLOBAL hg = (HGLOBAL)lParam;
 
-    char* p = (char*)GlobalLock(hg);
+    wchar_t* p = (wchar_t*)GlobalLock(hg);
     CString cs;
     if (p && p[0]) {
         cs = p;

@@ -355,6 +355,7 @@ void promptend_command(wchar_t *arg)
 			strPromptEndReplBytes[len] = '\0';
 			
 			bPromptEndEnabled = TRUE;
+			PromptEndIndex = 0;
 			swprintf(buff, rs::rs(1279), strPromptEndSequence, strPromptEndReplace);
 		}
 	}
@@ -1006,7 +1007,7 @@ void do_telnet_protecol(const char* input, int length, int *used, char* output, 
 						break;
 					default:
 						if (bPromptEndEnabled) {
-							if (input[*used] == strPromptEndSeqBytes[PromptEndIndex]) {
+							if ((unsigned char)input[*used] == strPromptEndSeqBytes[PromptEndIndex]) {
 								PromptEndIndex++;
 								if (!strPromptEndSeqBytes[PromptEndIndex]) { //match!
 									for (char *copy = (char*)strPromptEndReplBytes; *copy; )

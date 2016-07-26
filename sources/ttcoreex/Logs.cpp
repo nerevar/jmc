@@ -142,12 +142,14 @@ void log(int wnd, wstring st)
 
 wstring loadHTMLFromResource(int name)
 {
+	USES_CONVERSION;
+
 	DWORD size;
 	HRSRC rc = ::FindResource(rs::hInst, MAKEINTRESOURCE(name), RT_HTML);
     HGLOBAL rcData = ::LoadResource(rs::hInst, rc);
 
     size = ::SizeofResource(rs::hInst, rc);
-	wstring html_content(static_cast<const wchar_t*>(::LockResource(rcData)), size);
+	wstring html_content(A2W(static_cast<const char*>(::LockResource(rcData))), size);
 
 	return html_content;
 }
@@ -380,7 +382,7 @@ std::vector<int> processParams(wstring params)
 		paramsList = split(params, ';');
 
 		// remove first 0 param - it's useless
-		if (paramsList.at(0) == 0 && paramsList.size() > 1) {
+		if (paramsList.size() > 1 && paramsList.at(0) == 0) {
 			paramsList.erase(paramsList.begin());
 		}
 	}

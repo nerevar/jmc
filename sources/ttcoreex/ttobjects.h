@@ -40,15 +40,17 @@ public:
 	~CPCRE();
 
 	std::wstring m_strSource;
-	BOOL m_bContainVars, m_bMultiline, m_bIgnoreCase;
+	DWORD m_dwOptions;
 
+	BOOL m_bContainVars;
+	
 	pcre16 *m_pPcre;
 	pcre16_extra *m_pExtra;
 
 	void Clear(BOOL ResetSource);
 	BOOL SetSource(const std::wstring Source, BOOL Multiline, BOOL IgnoreCase);
 
-	BOOL Recompile(const wchar_t *Pattern = NULL);
+	BOOL Recompile();
 };
 typedef CPCRE* PCPCRE;
 
@@ -107,7 +109,7 @@ typedef ACTION** PPACTION;
 
 class VAR {
 public :
-    VAR(wchar_t* val = NULL, BOOL bGlobal = FALSE);
+    VAR(const wchar_t* val = NULL, BOOL bGlobal = FALSE);
     std::wstring m_strVal;
     BOOL m_bGlobal;
 };

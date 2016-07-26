@@ -18,7 +18,6 @@ VARTOPCRE VarPcreDeps;
 SCRIPTFILELIST ScriptFileList;
 //vls-end//
 
-
 static std::list<std::wstring> extract_varnames(const wchar_t *line) 
 {
 	std::list<std::wstring> ret;
@@ -118,10 +117,10 @@ CGROUP::~CGROUP()
 CPCRE::CPCRE()
 {
 	m_strSource = L"";
+	m_dwOptions = 0;
 	m_pPcre = NULL;
 	m_pExtra = NULL;
 	m_bContainVars = FALSE;
-	m_bMultiline = m_bIgnoreCase = FALSE;
 }
 
 CPCRE::~CPCRE()
@@ -132,19 +131,17 @@ CPCRE::~CPCRE()
 
 void CPCRE::Clear(BOOL ResetSource)
 {
-	if ( m_pPcre ) {
-        pcre16_free(m_pPcre);
+	if (m_pPcre) {
+		pcre16_free(m_pPcre);
+		pcre16_free(m_pExtra);
 		m_pPcre = NULL;
-	}
-    if ( m_pExtra ) {
-        pcre16_free(m_pExtra);
 		m_pExtra = NULL;
 	}
 
-	if ( ResetSource ) {
+	if (ResetSource) {
 		m_strSource = L"";
+		m_dwOptions = 0;
 		m_bContainVars = FALSE;
-		m_bMultiline = m_bIgnoreCase = FALSE;
 	}
 }
 
@@ -153,55 +150,57 @@ BOOL CPCRE::SetSource(const std::wstring Source, BOOL Multiline, BOOL IgnoreCase
 	Clear(TRUE);
 
 	m_strSource = Source;
-	m_bMultiline = Multiline;
-	m_bIgnoreCase = IgnoreCase;
+	m_dwOptions = PCRE_UTF16 | PCRE_UCP;
+	if (Multiline)
+		m_dwOptions |= PCRE_MULTILINE | PCRE_DOTALL;
+	if (IgnoreCase)
+		m_dwOptions |= PCRE_CASELESS;
 
 	m_bContainVars = (add_dependencies(this, m_strSource) ? TRUE : FALSE);
 	return Recompile();
 }
 
-BOOL CPCRE::Recompile(const wchar_t *Pattern)
+BOOL CPCRE::Recompile()
 {
 	USES_CONVERSION;
 
-	if ( !Pattern ) 
-        Pattern = m_strSource.c_str();
+	const wchar_t *pattern = m_strSource.c_str();
 
     Clear(FALSE);
 
-	int options = 0;
-	options |= PCRE_UTF16 | PCRE_UCP;
-	if (m_bMultiline)
-		options |= PCRE_MULTILINE;
-	if (m_bIgnoreCase)
-		options |= PCRE_CASELESS;
-	
+	wchar_t expression[BUFFER_SIZE];
+	if (m_bContainVars) {
+		prepare_actionalias(pattern, expression, sizeof(expression)/sizeof(wchar_t));
+		pattern = expression;
+	}
+
+	m_pPcre = NULL;
+	m_pExtra = NULL;
+
 	if (!pcre_tables) 
 		pcre_tables = pcre16_maketables();
 
-	wchar_t expression[BUFFER_SIZE];
-	if (m_bContainVars) {
-		prepare_actionalias(Pattern, expression, sizeof(expression)/sizeof(wchar_t));
-		Pattern = expression;
-	}
-
     const char* err;
     int err_offset;
-    m_pPcre = pcre16_compile(Pattern, options, &err, &err_offset, pcre_tables);
-    if ( !m_pPcre ) {
+    m_pPcre = pcre16_compile(pattern, m_dwOptions, &err, &err_offset, pcre_tables);
+    if (!m_pPcre) {
         std::wstring  errstr(rs::rs(1142));
         errstr += A2W(err);
         tintin_puts2(errstr.c_str());
         return FALSE;
     }
     m_pExtra = pcre16_study(m_pPcre, 0 , &err);
-    if ( err ) {
+    if (err) {
         std::wstring  errstr(rs::rs(1142));
         errstr += A2W(err);
         tintin_puts2(errstr.c_str());
+		pcre16_free(m_pPcre);
+		if (m_pExtra)
+			pcre16_free(m_pExtra);
         return FALSE;
     }
-    return TRUE;
+
+	return TRUE;
 }
 
 ALIAS::ALIAS()
@@ -339,7 +338,7 @@ void GROUPED_NODE::SetGroup(const wchar_t* group )
 }
 
 
-VAR::VAR(wchar_t* val, BOOL bGlobal )
+VAR::VAR(const wchar_t* val, BOOL bGlobal )
 {
     if ( val ) 
         m_strVal = val;

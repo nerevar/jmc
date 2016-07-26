@@ -454,7 +454,8 @@ void check_all_actions(wchar_t *line, bool multiline)
     while (ind  != ActionList.end() ) {
         // CActionPtr pac = *ind;
         ACTION* pac = *ind;
-        if(pac->m_pGroup->m_bEnabled && !pac->m_bDeleted && pac->m_PCRE.m_bMultiline == (multiline ? TRUE : FALSE)) {
+        if(pac->m_pGroup->m_bEnabled && !pac->m_bDeleted && 
+			((pac->m_PCRE.m_dwOptions & PCRE_MULTILINE) == (multiline ? PCRE_MULTILINE : 0))) {
 			wchar_t *input;
 
 			switch (pac->m_InputType) {
@@ -561,10 +562,6 @@ int check_one_action(const wchar_t* line, ACTION* action, int *offset)
     int offsets[33];
 
 	{
-		//char *test_ansi = (char*)(line);
-		//int test_ansi_len = strlen(test_ansi);
-		//int captured = pcre_exec(action->m_PCRE.m_pPcre , action->m_PCRE.m_pExtra , 
-		//	test_ansi, test_ansi_len, start_offset, 0, offsets, 33);
 		wchar_t *test = (wchar_t*)(line);
 		int test_len = wcslen(test);
 		int captured = pcre16_exec(action->m_PCRE.m_pPcre , action->m_PCRE.m_pExtra , 

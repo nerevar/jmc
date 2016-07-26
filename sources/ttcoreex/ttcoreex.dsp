@@ -181,6 +181,10 @@ SOURCE=.\Logs.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\mapper.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Misc.cpp
 # End Source File
 # Begin Source File

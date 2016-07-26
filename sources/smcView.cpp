@@ -354,7 +354,11 @@ void CSmcView::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
         break;
     case SB_PAGEDOWN:
         if ( Pos < nScrollSize -1-m_nPageSize ) {
-            Pos += m_nPageSize;
+            //Pos += m_nPageSize;
+			//Pos += m_LineCountsList.size();
+			for(int i = 0, cnt = m_nPageSize; 
+			    i < m_LineCountsList.size() && Pos < nScrollSize-m_nPageSize && cnt >= m_LineCountsList[i]; 
+				cnt -= m_LineCountsList[i], i++, Pos++) ;
             if ( Pos > nScrollSize -1-m_nPageSize ) 
                 Pos = nScrollSize -1-m_nPageSize;
             SetScrollPos(SB_VERT, Pos, TRUE);
@@ -364,7 +368,11 @@ void CSmcView::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
         break;
     case SB_PAGEUP:
         if ( Pos ) {
-            Pos -= m_nPageSize;
+            //Pos -= m_nPageSize;
+			//Pos -= m_LineCountsList.size();
+			for(int i = m_LineCountsList.size() - 1, cnt = m_nPageSize; 
+			    i >= 0 && Pos > 0 && cnt >= m_LineCountsList[i]; 
+				cnt -= m_LineCountsList[i], i--, Pos--) ;
             if ( Pos < 0 ) 
                 Pos = 0;
             SetScrollPos(SB_VERT, Pos, TRUE);

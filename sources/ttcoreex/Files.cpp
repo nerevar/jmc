@@ -4,6 +4,7 @@
 #include <time.h>
 #include <io.h>
 #include <string>
+#include <vector>
 #include <map>
 
 #include "Proxy.h"
@@ -15,6 +16,8 @@ wchar_t DLLEXPORT szSETTINGS_DIR[MAX_PATH];
 struct completenode *complete_head;
 void prepare_for_write(const wchar_t *command, const wchar_t *type, const wchar_t *left, const wchar_t *right, const wchar_t *pr, const wchar_t* group, wchar_t *result);
 void prepare_for_write(const wchar_t *command, const wchar_t *left, const wchar_t *right, const wchar_t *pr, const wchar_t* group, wchar_t *result);
+
+std::vector<std::wstring> processed_fnames;
 
 //* en
 BOOL bSosExact = FALSE;
@@ -150,14 +153,14 @@ int DLLEXPORT write_file_contents(const wchar_t *FilePath, const wchar_t *Buffer
 		WideCharToMultiByte(codepage, 0, Buffer, Length, buf, len, NULL, NULL);
 	}
 
-	fwrite(buf, 1, len, fout);
+	int ret = fwrite(buf, 1, len, fout);
 	fclose(fout);
 
 	delete[] buf;
 
 	file_codepage[std::wstring(FilePath)] = codepage;
 
-	return Length;
+	return ret;
 }
 
 /***********************************/
@@ -249,12 +252,20 @@ static void process_file(const wchar_t*FilePath, int Size)
     LeaveCriticalSection(&secReadingConfig);
 }
 
+void variable_value_filename(wchar_t *arg)
+{
+	int sz = processed_fnames.size();
+	if (sz > 0)
+		wcscpy(arg, processed_fnames[sz - 1].c_str());
+}
+
 void read_command(wchar_t *arg)
 {
     wchar_t message[BUFFER_SIZE];
 
-    wchar_t filename[BUFFER_SIZE];
-    get_arg_in_braces(arg,filename,WITH_SPACES,sizeof(filename)/sizeof(wchar_t)-1);
+    wchar_t filename[BUFFER_SIZE], temp[BUFFER_SIZE];
+    get_arg_in_braces(arg,temp,WITH_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, filename,sizeof(filename)/sizeof(wchar_t)-1);
 
     if ( *filename == 0 ) {
         tintin_puts2(rs::rs(1238));
@@ -269,7 +280,9 @@ void read_command(wchar_t *arg)
         swprintf(message,rs::rs(1031), fn);
         tintin_puts2(message);
     } else {
+		processed_fnames.push_back(filename);
         process_file(fn, size);
+		processed_fnames.pop_back();
     }
 
     MakeAbsolutePath(fn, L"global.set", szBASE_DIR);
@@ -277,7 +290,9 @@ void read_command(wchar_t *arg)
         swprintf(message,rs::rs(1032));
         tintin_puts2(message);
     } else {
+		processed_fnames.push_back(L"global.set");
         process_file(fn, size);
+		processed_fnames.pop_back();
     }
     
     if (!verbose) {
@@ -398,6 +413,16 @@ void write_command(wchar_t *arg)
 		if ( mesvar[MSG_TELNET] ) {
             buffer[0] = cCommandChar ;
             wcscpy(buffer+1, L"message telnet ON\n");
+            set_lines += buffer;
+        }
+		if ( !mesvar[MSG_MUD_OOB] ) {
+            buffer[0] = cCommandChar ;
+            wcscpy(buffer+1, L"message oob OFF\n");
+            set_lines += buffer;
+        }
+		if ( !mesvar[MSG_MAPPER] ) {
+            buffer[0] = cCommandChar ;
+            wcscpy(buffer+1, L"message mapper OFF\n");
             set_lines += buffer;
         }
 
@@ -542,7 +567,7 @@ void write_command(wchar_t *arg)
 		prepare_for_write(L"broadcast", L"filterip", bBCastFilterIP ? L"on" : L"off", L"", L"", buffer);
 		set_lines += buffer;
 		
-		prepare_for_write(L"broadcast", L"filterip", bBCastFilterPort ? L"on" : L"off", L"", L"", buffer);
+		prepare_for_write(L"broadcast", L"filterport", bBCastFilterPort ? L"on" : L"off", L"", L"", buffer);
 		set_lines += buffer;
 
 		wchar_t portnum[BUFFER_SIZE];

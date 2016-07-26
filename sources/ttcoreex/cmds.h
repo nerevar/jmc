@@ -120,6 +120,7 @@ jmc_cmdi jmc_cmds[JMC_CMDS_NUM]={
 		   {L"loopback",&loopback_command,L"\0"},
 		   {L"broadcast",&broadcast_command,L"\0"},
 		   {L"strcmp",&strcmp_command,L"\0"},
+		   {L"match",&match_command,L"\0"},
 		   {L"srandom",&srandom_command,L"\0"},
 		   {L"random",&random_command,L"\0"},
 		   {L"sync",&sync_command,L"\0"},
@@ -131,6 +132,7 @@ jmc_cmdi jmc_cmds[JMC_CMDS_NUM]={
 		   {L"secure", &secure_command, L"\0"},
 		   {L"codepage", &codepage_command, L"\0"},
 		   {L"bar", &bar_command, L"\0"},
-		   {L"oob", &oob_command, L"\0"}
+		   {L"oob", &oob_command, L"\0"},
+		   {L"mapper", &mapper_command, L"\0"}
 	   };
 #endif

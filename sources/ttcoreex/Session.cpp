@@ -46,6 +46,8 @@ void  newactive_session()
     mesvar[MSG_HOT]=DEFAULT_HOTKEY_MESS;
     mesvar[MSG_LOG]=DEFAULT_LOG_MESS;
 	mesvar[MSG_TELNET]=DEFAULT_TELNET_MESS;
+	mesvar[MSG_MUD_OOB]=DEFAULT_OOB_MESS;
+	mesvar[MSG_MAPPER]=DEFAULT_MAPPER_MESS;
 }
 
 

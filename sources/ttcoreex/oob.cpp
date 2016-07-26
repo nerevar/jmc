@@ -66,7 +66,15 @@ static wstring scan_string_val(const wchar_t *input, wchar_t **output)
 			src++;
 		}
 	} else {
-		while (iswalpha(src[0]) || iswdigit(src[0])) {
+		bool only_digits = true, seen_dot = false;
+		while (iswalpha(src[0]) || iswdigit(src[0]) || src[0] == L'-' || src[0] == L'.') {
+			if (!iswdigit(src[0]))
+				only_digits = false;
+			if (src[0] == L'.') {
+				if (!only_digits || seen_dot)
+					break;
+				seen_dot = true;
+			}
 			ret += src[0];
 			src++;
 		}
@@ -623,7 +631,7 @@ int parse_gmcp(const wchar_t *gmcp)
 			
 			wstring module(gmcp, (size_t)(end - gmcp));
 
-			if (gmcp_modules.find(module) != gmcp_modules.end()) {
+			if (gmcp_modules.find(module) != gmcp_modules.end() && mesvar[MSG_MUD_OOB]) {
 				wchar_t buff[BUFFER_SIZE];
 
 				swprintf(buff, rs::rs(1298), L"GMCP", module.c_str());
@@ -669,7 +677,7 @@ int parse_msdp(const wchar_t *msdp, int length)
 				}
 			}
 
-			if (msdp_modules.find(module) != msdp_modules.end()) {
+			if (msdp_modules.find(module) != msdp_modules.end() && mesvar[MSG_MUD_OOB]) {
 				wchar_t buff[BUFFER_SIZE];
 
 				swprintf(buff, rs::rs(1298), L"MSDP", module.c_str());
@@ -879,7 +887,7 @@ int parse_mssp(const wchar_t *mssp, int length)
 		if (begin && end && (begin < end)) {
 			wstring module(begin + 1, (size_t)(end - begin - 1));
 
-			if (mssp_modules.find(module) != mssp_modules.end()) {
+			if (mssp_modules.find(module) != mssp_modules.end() && mesvar[MSG_MUD_OOB]) {
 				wchar_t buff[BUFFER_SIZE];
 
 				swprintf(buff, rs::rs(1298), L"MSSP", module.c_str());
@@ -994,11 +1002,11 @@ int get_oob_variable(const wchar_t *varname, wchar_t *value, int maxlength)
 					return wcslen(value);
 				}
 				int index;
-				if (swscanf(name.c_str(), L"Value%u", &index) > 5) {
+				if (swscanf(name.c_str(), L"Value%u", &index) == 1) {
 					subnode = node->child(index - 1, false);
 				} 
 				//for dictionaries: $GmcpDictKey1/2/3...
-				if (!subnode && swscanf(name.c_str(), L"Key%u", &index) > 3 && index > 0 && index <= node->childrenCount()) {
+				if (!subnode && swscanf(name.c_str(), L"Key%u", &index) == 1 && index > 0 && index <= node->childrenCount()) {
 					wstring key = node->key(index - 1);
 					int len = min(maxlength, key.length());
 					wcsncpy(value, key.c_str(), len);

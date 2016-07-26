@@ -656,6 +656,42 @@ BEGIN
     1305                    "#telnet: negotiated charset %ls"
 END
 
+STRINGTABLE DISCARDABLE 
+BEGIN
+    1306                    "#mapper collapse %d room(s) in %d group(s)"
+    1307                    "#mapper fail to merge: %ls and %ls"
+    1308                    "#mapper file %ls written %d byte(s) in %d room(s)"
+    1309                    "#mapper %ls: wrong room id format"
+    1310                    "#mapper %ls: room not found"
+    1311                    "#mapper can't track position because tracking history is empty"
+    1312                    "#mapper track valid options are: add, clear, position"
+    1313                    "#mapper wrong new room vnum: can be number or 'auto' for auto-numbering"
+    1314                    "#mapper room #%ls already exists"
+    1315                    "#mapper add new room #%ls"
+    1316                    "#mapper room deleted"
+    1317                    "#mapper exit deleted"
+    1318                    "#mapper del legal targets: room, exit"
+    1319                    "#mapper empty direction"
+    1320                    "#mapper empty room flag"
+    1321                    "#mapper unknown add object: can add direction, flag, room, exit"
+    1322                    "#mapper can't merge room with itself"
+    1323                    "#mapper avoidance level should be integer (zero for dont-enter-ever)"
+    1324                    "#mapper flag <%ls> added to room #%ls"
+    1325                    "#mapper new avoidance for room #%ls"
+    1326                    "#mapper flag %ls removed from room #%ls"
+    1327                    "#mapper added comment to room #%ls"
+    1328                    "#mapper reset targets: flag"
+    1329                    "#mapper can get values: id, name, descr, area, comment, flags, flag<1..N>, flag <name>, exits, exit<1..N>, exit <name>"
+    1330                    "#mapper can't find exit <%ls> for room %ls"
+    1331                    "#mapper open command <%ls> added to room #%ls, exit <%ls>"
+    1332                    "#mapper %ls should be a number between %d and %d"
+    1333                    "#mapper %ls set to %d"
+    1334                    "#mapper unknown set object: can set flag, pass, comment, maxdifflen, maxidentlen"
+    1335                    "#mapper available actions: clear, write, add, set, autoid, track, print"
+    1336                    "#mapper invalid filter field for search command: %ls"
+    1337                    "#mapper critical error while search path"
+END
+
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 

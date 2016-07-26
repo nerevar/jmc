@@ -1,0 +1,130 @@
+#mapper add room <id>|auto <name> [<descr> [<area> [<comment> [<flag1>{,<flag2>} [<new-id-var>]]]]]
+  add new room to internal database with certain id, name, description, area, comment and set of flags
+  <id> should be positive integer or pair of positive integers with dot as delimiter (like 123.456)
+  it is possible to use "auto-id" mode with "auto" keyword instead of <id>; in this case JMC
+  will try to enumerate rooms automatically in the following manner:
+  1. id generated as pair of keys: <primary>.<secondary>
+  2. <primary> id is hash-value based on room's <name>, <area> and <descr>
+  3. <secondary> id is hash-value based on all possible paths started from this room taking into account only primary keys and with lengths bounded according to <maxdifflen> and <maxidentlen> parameters (see below)
+  automatically generated <id> can be obtained in variable with name <new-id-var>
+  example: #mapper add room 123 {Some room.} {Just a room for example.} {Zone 1} {} {dark,ice}
+           #mapper add room auto {Some room.} {Just a room for example.} {Zone 1} {} {dark,ice} GeneratedID
+           (now var $GeneratedID can be used)
+  
+#mapper add exit <from-id> <command> <to-id> [bidirectional] [<new-from-id-var> [<new-to-id-var>]]
+  add new exit for room <from-id> (should exists) with command <command> leading to room <to-id> (can be non-existent)
+  if bidirectional option is used, then JMC also adds exit for room <to-id> (which in this case should exists also)
+  leading to room <from-id> with command in reversed direction (see below)
+  if one or both of used rooms has automatically generated ID, then they can be changed during adding new exit(s), so
+  new ids can be obtained with variable names <new-from-id-var> and <new-to-id-var>; in case one of the new ids already exists, this rooms marked as duplicates and merged automatically (see #mapper merge)
+  example: #mapper add exit 123 north 456
+           #mapper add exit 123 north 456 bidir NewFromID NewToID
+           (now vars $NewFromID and $NewToID can be used)
+
+#mapper add direction <command>{,<synonym>} <dx> <dy> <dz> [<reverse-command>{,<synonym>} [<signature>]]
+  creates new direction for map printing (see below) which accords to primary command <command> and any number of
+  synonyms stated after <command>; synonyms are used in all situations (subcommands of "#mapper") as aliases for primary command
+  parameters <dx>, <dy> and <dz> are used for map layout (see #mapper print)
+  reverse-command and its synonyms can be useful for creating bidirectional exits and for reduction of number of #mapper commands
+  (one can use one command "#mapper add direction north 1 0 0 south" instead of two commands "#mapper add direction north 1 0 0; #mapper add direction south -1 0 0)
+  if dx == 0 and dy == 0, then <signature> will be used when printing map (default is "?")
+  
+#mapper add flag <name> <signature> [<color>]
+  created new flag for rooms
+  although rooms can have arbitrary flags, only those who created with this command will be displayed on map with certain signratures and colors
+  note that signature should has exactly one printable character
+  example: #mapper add flag vendor $ green
+           #mapper add flag blacksmith {&y%} colorcodes
+
+#mapper del room <id>
+  deletes room with certain <id>
+
+#mapper del exit <id> <command>
+  deletes exit for room with id <id> in the direction <command>
+
+#mapper merge <id1> <id2> [<new-id-var>]
+  merges rooms with id <id1> and <id2>, i.e. unites sets of their exits and entrances
+  note that this is "chained" operation, i.e. neighbours of <id1> and <id2> in the same directions will be merged also
+  id of merged room can be obtained via variable with name <new-id-var>
+
+#mapper set flag <id> <value>
+  sets flag <value> for room with id <id>
+  <value> can be any string without commas
+
+#mapper set comment <id> <value>
+  sets comment for room with is <id>
+  old comment will be replaced
+
+#mapper set avoidance <id> <value>
+  sets level of avoidance for room <id>
+  this value used when searching "safest" path with command "#mapper path" or nearest room with command "#mapper search"
+  by default, all rooms have avoidance level of 1
+  use value 0 for rooms that absolutely forbidden for entering
+
+#mapper set pass <id> <command> <pass-command>
+  sets command <pass-command> for making available exit <command> for room <id>
+  example: #mapper set pass 123 north {take key chest;unlock door;open door}
+           #mapper set pass 321 east {say Open, Sesame!}
+
+#mapper set maxdifflen|maxidentlen <value>
+  sets new values for parameters of calculating secondary part of automatically generated IDs
+  when creating list of all outgoing paths for certain room, JMC will stop each path when number of different primary parts in it reach <maxdifflen> OR number of identical primary parts in a row reach <maxidentlen>
+
+#mapper reset flag <id> <flag>
+  resets flag <flag> for room <id>
+
+#mapper get name|descr|area|comment|flags|exits|flag<N>|exit<N> <id> <value-var>
+  places in the variable with name <value-var> certain information about room <id>:
+  name/descr/area/comment -- just values of these properties
+  flags/exits -- number of flags or exits
+  flag<N> -- flag number <N> (1-base index)
+  exit<N> -- command for exit with number <N> (1-base index)
+
+#mapper get flag|exit <value> <id> <bool-var>
+  places in the variable with name <bool-var> value "1" if room <id> has flag <value> or exit with command <value>, and "0" otherwise
+
+#mapper autoid <name> <descr> <area> <id-var>
+  calculates hash-code for certain room name, descr and area
+  if there is some room with such primary key, then takes its secondary key to construct full id
+  places result in variable with name <id-var>
+
+#mapper track add <command> <id>
+  adds pair <command>-<id> to track history
+  when executing this command for several rooms in a row it is easier for JMC to found your exact location on the map with automatically generated IDs
+
+#mapper track clear
+  clears track history
+
+#mapper track position <id-var>
+  places into variable with name <id-var> id of room that has the best ("deepest" or "longest") match with track history
+
+#mapper search [near <id>] [<skip-count>] {name|area|description|comment|flag <value>} <id-var>
+  searches for room with any number of filters, skips <skip-count> results and places result into variables <id-var>
+  if mode "near <id>" is used, then JMC will search for room nearest (in terms of sum of avoidance levels) to the <id> room
+  examples: #mapper search name {secret} SecretRoomID
+            #mapper search 2 name {weapon} flag {vendor} flag {plains} area {Sky city} WeaponInSkycityID
+            #mapper search near 123 name {cave} flag {danger} NearestDangerCave
+
+#mapper path <from-id> <to-id> [<first-step-var>]
+  finds shortest (in terms of sum of avoidance levels) path between room <from-id> and <to-id>
+  places result into JMCs path (see #path command)
+  also places first command of this path into variable with name <first-step-var>
+
+#mapper write <filename>
+  writes all mapper data in the file <filename>
+  this file contains just JMC commands, can be changed manually and can be read with #read command
+  note that rooms with automatically generated ids will be written with constant ids and will not
+  be accounted as auto-id after reloading mapper data
+
+#mapper print [tiny|normal|full] [nocolors|html] [crop] [exits] [header] [description] [flags] [comment] [main|w<N>|<filename>] [<width>x<height>]
+  prints map to the output window <N> or main window or file <filename>
+  html option replaces ANSI color command with HTML tags (like in HTML logs)
+  nocolors option prevents usage of colors at all
+  <width>x<height> option specifies size of output (in characters)
+  crop option deleted unused rows and columns in output
+  tiny|normal|full option specifies size of each printed room (1x1 for tiny, 5x3 for normal, 7x5 for full)
+  exits/header/description/flags/comment options specifies the need to print appropriate information on the map
+  by default, output format is colored ANSI, normal mode, main window, maximum available width/height and no exits/header/description/comment
+
+#mapper clear 
+  clears mapper database (i.e. deletes all rooms, exits, directions and flags, also clears track history)

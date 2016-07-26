@@ -65,7 +65,7 @@ STDMETHODIMP CJmcObj::Beep()
 
 STDMETHODIMP CJmcObj::Parse(BSTR bstrCommand)
 {
-	parse_input(bstrCommand);
+	parse_input(bstrCommand, TRUE);
 
 	return S_OK;
 }

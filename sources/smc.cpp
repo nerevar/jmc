@@ -296,7 +296,7 @@ END_MESSAGE_MAP()
 // App command to run the dialog
 void CSmcApp::OnAppAbout()
 {
-//	aboutDlg.DoModal();
+	aboutDlg.DoModal();
 }
 
 /////////////////////////////////////////////////////////////////////////////

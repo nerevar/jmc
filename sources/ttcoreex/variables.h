@@ -32,6 +32,10 @@ jmc_special_variable jmc_vars[JMC_SPECIAL_VARIABLES_NUM]={
 		   {L"PINGPROXY", &variable_value_ping_proxy},
 
 		   {L"PRODUCTNAME", &variable_value_product_name},
-		   {L"PRODUCTVERSION", &variable_value_product_version}
+		   {L"PRODUCTVERSION", &variable_value_product_version},
+
+		   {L"COMMAND", &variable_value_command},
+
+		   {L"FILENAME", &variable_value_filename}
 	   };
 #endif
