@@ -429,12 +429,12 @@ STDMETHODIMP CJmcObj::wGetHeight(LONG wndNum, LONG *nHeight)
 
 STDMETHODIMP CJmcObj::DoTelnet(LONG Command, LONG Option, BSTR bstrData)
 {
-	if (!bstrData)
+	if (!SysStringLen(bstrData))
 		send_telnet_command(Command, Option);
 	else if (Command != TN_SB)
 		return E_INVALIDARG;
-
-	send_telnet_subnegotiation((unsigned char)Option, bstrData, SysStringLen(bstrData), false);
+	else
+		send_telnet_subnegotiation((unsigned char)Option, bstrData, SysStringLen(bstrData), false);
 
 	return S_OK;
 }

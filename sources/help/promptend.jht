@@ -1,0 +1,6 @@
+#promptend
+  shows current end-of-prompt sequence
+#promptend disable
+  disables control of the end of prompt (use telnet GA and EOR options if possible)
+#promptend <sequence> [<substitute-with>]
+  set character sequence that ends your prompt (be sure it can't be printed by your MUD in other lines) and optionally substitute it with another one sequence

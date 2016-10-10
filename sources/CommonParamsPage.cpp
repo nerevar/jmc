@@ -37,9 +37,6 @@ CCommonParamsPage::CCommonParamsPage() : CPropertyPage(CCommonParamsPage::IDD, I
 	m_bSplitOnBackscroll = FALSE;
 	m_nTrigDelay = 0;
 	m_bMinimizeToTray = FALSE;
-	m_wBCastUdpPort = 0;
-	m_bBCastLocalIP = FALSE;
-	m_bBCastSamePort = FALSE;
 	m_bLineWrap = TRUE;
 	m_bShowTimestamps = FALSE;
 	m_bSelectRect = FALSE;
@@ -78,10 +75,6 @@ void CCommonParamsPage::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_MINIMIZE_TO_TRAY, m_bMinimizeToTray);
 	DDX_Text(pDX, IDC_TRIG_DELAY, m_nTrigDelay);
 	DDX_Control(pDX, IDC_MUD_CODEPAGE, m_cCodePage);
-	DDX_Text(pDX, IDC_BCAST_UDP_PORT, m_wBCastUdpPort);
-	DDV_MinMaxUInt(pDX, m_wBCastUdpPort, 5000, 30000);
-	DDX_Check(pDX, IDC_BCAST_LOCAL_IP, m_bBCastLocalIP);
-	DDX_Check(pDX, IDC_BCAST_SAME_PORT, m_bBCastSamePort);
 	DDX_Check(pDX, IDC_CHK_LINEWRAP, m_bLineWrap);
 	DDX_Check(pDX, IDC_DISPLAY_TIMESTAMPS, m_bShowTimestamps);
 	DDX_Check(pDX, IDC_CHK_SELECTRECT, m_bSelectRect);

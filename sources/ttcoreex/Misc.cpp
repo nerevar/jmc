@@ -553,7 +553,6 @@ void loopback_command(wchar_t *arg)
 
 	prepare_actionalias(strng,result, sizeof(result)/sizeof(wchar_t)); 
 	
-	//tintin_puts(result);
 	int len = wcslen(result);
 	if (LoopBackCount + len + 2 > sizeof(LoopBackBuffer)/sizeof(wchar_t))
 		len = sizeof(LoopBackBuffer)/sizeof(wchar_t) - LoopBackCount - 2;
@@ -615,7 +614,7 @@ void broadcast_command(wchar_t *arg)
 			if(sent != len) {
 				wchar_t msg[BUFFER_SIZE];
 				swprintf(msg,rs::rs(1264), sent, len);
-				tintin_puts(msg);
+				tintin_puts2(msg);
 			}
 		}
 	}

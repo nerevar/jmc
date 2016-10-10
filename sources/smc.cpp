@@ -100,6 +100,34 @@ BOOL CSmcApp::InitInstance()
 {
     CoInitialize (NULL);
 
+	/*
+	  It's possible to select language for UI available in resources (ru/en), though it will be
+	  platform-dependent.
+      Example:
+
+		LANGID Language = MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT); //MAKELANGID(LANG_RUSSIAN, SUBLANG_DEFAULT);
+		// (selection can be done depending on "LangSect" section of profile settings
+		//  so UI language can be changed on-the-fly)
+
+
+		OSVERSIONINFOEX osver;
+		ZeroMemory(&osver, sizeof(osver));
+		osver.dwOSVersionInfoSize = sizeof(osver);
+		GetVersionEx((OSVERSIONINFO *)&osver); 
+
+		if ( (osver.dwMajorVersion > 5)) { // >= Vista
+			typedef LANGID (WINAPI *FMSetThreadUILanguage)(LANGID wReserved);
+			FMSetThreadUILanguage fnPtr = (FMSetThreadUILanguage)GetProcAddress(GetModuleHandle(_T("kernel32.dll")),"SetThreadUILanguage"); 
+			if(fnPtr)
+				(*fnPtr)(Language);
+			else
+				SetThreadLocale(MAKELCID(Language, SORT_DEFAULT));
+		} else { // <= XP
+			SetThreadLocale(MAKELCID(Language, SORT_DEFAULT));
+		}
+	*/
+
+
 //vls-begin// base dir
 //    GetCurrentDirectory(MAX_PATH, szGLOBAL_PROFILE );
     wcscpy(szGLOBAL_PROFILE, szBASE_DIR);
@@ -180,7 +208,18 @@ BOOL CSmcApp::InitInstance()
     wchar_t buff[4096] = L"";
     DWORD ret =  ::GetPrivateProfileString(L"Main", L"LangFile", L"language.ini", buff, 4096 , szGLOBAL_PROFILE);
 	wcscpy(langfile,buff);
-    ret =  ::GetPrivateProfileString(L"Main", L"LangSect", L"English", buff, 4096 , szGLOBAL_PROFILE);
+    ret =  ::GetPrivateProfileString(L"Main", L"LangSect", L"", buff, 4096 , szGLOBAL_PROFILE);
+	if ( !buff[0] ) {
+		LANGID lang = GetThreadLocale() & 0xFF;
+		if ( lang == LANG_RUSSIAN )
+			wcscpy(buff, L"Russian");
+		else if ( lang == LANG_UKRAINIAN )
+			wcscpy(buff, L"Ukrainian");
+		else if ( lang == LANG_RUSSIAN )
+			wcscpy(buff, L"English");
+		else
+			wcscpy(buff, L"English");
+	}
 	wcscpy(langsect,buff);
 	if ( wcslen(m_lpCmdLine) ) 
         m_strCurrentProfile = m_lpCmdLine;

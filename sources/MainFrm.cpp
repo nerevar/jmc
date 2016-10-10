@@ -358,6 +358,7 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
+
     m_wndSplitter.m_bInited = FALSE;
 	
     m_wndSplitter.m_nUpSize = ::GetPrivateProfileInt(L"Main" , L"UpSize" , 300, szGLOBAL_PROFILE);
@@ -385,7 +386,6 @@ CMainFrame::~CMainFrame()
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
-
     if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
     
@@ -597,9 +597,6 @@ void CMainFrame::OnOptionsOptions()
     pg1.m_bSplitOnBackscroll = pDoc->m_bSplitOnBackscroll;
 	pg1.m_bMinimizeToTray = bMinimizeToTray;
     pg1.m_nTrigDelay = MoreComingDelay;
-	pg1.m_wBCastUdpPort = wBCastUdpPort;
-	pg1.m_bBCastLocalIP = bBCastFilterIP;
-	pg1.m_bBCastSamePort = bBCastFilterPort;
 	pg1.m_bLineWrap = pDoc->m_bLineWrap;
 	pg1.m_bShowTimestamps = pDoc->m_bShowTimestamps;
 	pg1.m_bSelectRect = pDoc->m_bRectangleSelection;
@@ -688,14 +685,6 @@ void CMainFrame::OnOptionsOptions()
         pDoc->m_bSplitOnBackscroll = pg1.m_bSplitOnBackscroll;
         if ( !pg1.m_bSplitOnBackscroll ) 
             OnUnsplit();
-		if( wBCastUdpPort != pg1.m_wBCastUdpPort ||
-			bBCastFilterIP != pg1.m_bBCastLocalIP ||
-			bBCastFilterPort != pg1.m_bBCastSamePort ) {
-			wBCastUdpPort = pg1.m_wBCastUdpPort;
-			bBCastFilterIP = pg1.m_bBCastLocalIP;
-			bBCastFilterPort = pg1.m_bBCastSamePort;
-			reopen_bcast_socket();
-		}
 		pDoc->m_bLineWrap = pg1.m_bLineWrap;
 		pDoc->m_bShowTimestamps = pg1.m_bShowTimestamps;
 		pDoc->m_bRectangleSelection = pg1.m_bSelectRect;
@@ -1004,6 +993,7 @@ BOOL CInvertSplit::SplitRow()
     // Copy contents of old view to the new view 
     pMainView->m_strList.RemoveAll();
     pMainView->m_strList.AddHead(&pView->m_strList);
+	pMainView->m_TotalLinesReceived = pView->m_TotalLinesReceived;
     pMainView->m_nCurrentBg  = pView->m_nCurrentBg;
     pMainView->m_nCurrentFg  = pView->m_nCurrentFg;
     pMainView->m_bAnsiBold = pView->m_bAnsiBold;

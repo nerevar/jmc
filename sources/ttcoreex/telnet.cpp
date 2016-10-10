@@ -682,7 +682,7 @@ void send_telnet_subnegotiation(unsigned char option, const wchar_t *output, int
 		wchar_t buffer[BUFFER_SIZE], optname[64];
 		get_telnet_option_name(option, optname);
 		swprintf(buffer, L"#TELNET SB-%ls: send %d byte(s) [%ls]", optname, length, output);
-		tintin_puts(buffer);
+		tintin_puts2(buffer);
 	}
 }
 
@@ -692,7 +692,7 @@ void recv_telnet_subnegotiation(unsigned char option, const char *input, int len
 		wchar_t buf[BUFFER_SIZE], optname[64];
 		get_telnet_option_name(option, optname);
 		swprintf(buf, L"#TELNET SB-%ls: recv %d byte(s)", optname, length);
-		tintin_puts(buf);
+		tintin_puts2(buf);
 	}
 
 	int wide_len = MultiByteToWideChar(MudCodePageUsed, 0, input, length, NULL, 0);

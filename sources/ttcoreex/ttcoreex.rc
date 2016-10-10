@@ -499,7 +499,7 @@ BEGIN
     1174                    "#Error. Cannot create file %ls"
     1175                    "#File read successful."
     1176                    "#%d Seconds till tick."
-    1177                    "#Ticker enabled."
+    1177                    "#Ticker not enabled."
     1178                    "#Ticker disabled."
     1179                    "#Ticker enabled."
     1180                    "#New tick duration set."
@@ -654,16 +654,16 @@ BEGIN
     1303                    "#Trying to connect via proxy %d.%d.%d.%d..."
     1304                    "#warning: can't negotiate about charset"
     1305                    "#telnet: negotiated charset %ls"
-END
-
-STRINGTABLE DISCARDABLE 
-BEGIN
     1306                    "#mapper collapse %d room(s) in %d group(s)"
     1307                    "#mapper fail to merge: %ls and %ls"
     1308                    "#mapper file %ls written %d byte(s) in %d room(s)"
     1309                    "#mapper %ls: wrong room id format"
     1310                    "#mapper %ls: room not found"
     1311                    "#mapper can't track position because tracking history is empty"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
     1312                    "#mapper track valid options are: add, clear, position"
     1313                    "#mapper wrong new room vnum: can be number or 'auto' for auto-numbering"
     1314                    "#mapper room #%ls already exists"
@@ -680,6 +680,10 @@ BEGIN
     1325                    "#mapper new avoidance for room #%ls"
     1326                    "#mapper flag %ls removed from room #%ls"
     1327                    "#mapper added comment to room #%ls"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
     1328                    "#mapper reset targets: flag"
     1329                    "#mapper can get values: id, name, descr, area, comment, flags, flag<1..N>, flag <name>, exits, exit<1..N>, exit <name>"
     1330                    "#mapper can't find exit <%ls> for room %ls"

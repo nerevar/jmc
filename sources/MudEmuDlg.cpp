@@ -113,9 +113,9 @@ void CMudEmuDlg::OnSend()
         return;
     }
 
-    m_nBufSize = m_strText.GetLength ();
+    m_nBufSize = m_strText.GetLength ()*sizeof(wchar_t);
     m_nOffset = 0;
-    m_pBuff = new char[(m_nBufSize+2)*sizeof(wchar_t)];
+    m_pBuff = new char[m_nBufSize+2*sizeof(wchar_t)];
     wcscpy((wchar_t*)m_pBuff, m_strText);
     m_strText.Empty ();
     UpdateData(FALSE);
@@ -151,9 +151,9 @@ void CMudEmuDlg::OnSendLine()
 
     UpdateData(FALSE);
 
-    m_nBufSize = line.GetLength ();
+    m_nBufSize = line.GetLength ()*sizeof(wchar_t);
     m_nOffset = 0;
-    m_pBuff = new char[(m_nBufSize+2)*sizeof(wchar_t)];
+    m_pBuff = new char[m_nBufSize+2*sizeof(wchar_t)];
     wcscpy((wchar_t*)m_pBuff, line);
     
     SendData();

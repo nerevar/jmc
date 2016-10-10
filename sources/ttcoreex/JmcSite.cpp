@@ -220,7 +220,7 @@ BOOL CJmcSite::InitSite(HWND hwndParentWindow, LPWSTR strScript, GUID guidEngine
 	
     if (FAILED(hr)) {
 		// If this happens, the scripting engine is probably not properly registered
-        tintin_puts(rs::rs(1092) );
+        tintin_puts2(rs::rs(1092) );
 		return FALSE;
     }
 	
@@ -228,7 +228,7 @@ BOOL CJmcSite::InitSite(HWND hwndParentWindow, LPWSTR strScript, GUID guidEngine
 
     if (FAILED(hr)) {
 		// If this happens, the scripting engine is probably not properly registered
-        tintin_puts(rs::rs(1093) );
+        tintin_puts2(rs::rs(1093) );
 		return FALSE;
     }
 

@@ -20,7 +20,7 @@ void tick_command(wchar_t*arg)
       tintin_puts(buf);
     }
     else
-      tintin_puts(rs::rs(1177));
+      tintin_puts2(rs::rs(1177));
 }
 
 /************************/

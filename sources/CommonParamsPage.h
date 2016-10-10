@@ -44,9 +44,6 @@ public:
 	BOOL	m_bMinimizeToTray;
 	int		m_nTrigDelay;
 	CComboBox m_cCodePage;
-	UINT	m_wBCastUdpPort;
-	BOOL	m_bBCastLocalIP;
-	BOOL	m_bBCastSamePort;
 	BOOL	m_bLineWrap;
 	BOOL	m_bShowTimestamps;
 	BOOL	m_bSelectRect;

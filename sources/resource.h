@@ -159,9 +159,6 @@
 #define IDC_WRITE_LOG_AS_SHOWN_BY_SERVER 1121
 #define IDC_WRITE_LOG_AS_SEEN_BY_USER   1122
 #define IDC_HTML_TIMESTAMPS             1123
-#define IDC_BCAST_UDP_PORT              1124
-#define IDC_BCAST_LOCAL_IP              1125
-#define IDC_BCAST_SAME_PORT             1126
 #define IDC_CHK_LINEWRAP                1127
 #define IDC_CHK_SELECTRECT              1128
 #define IDC_CHK_SHOWHIDDEN              1129
@@ -242,7 +239,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        179
 #define _APS_NEXT_COMMAND_VALUE         32809
-#define _APS_NEXT_CONTROL_VALUE         1138
+#define _APS_NEXT_CONTROL_VALUE         1139
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

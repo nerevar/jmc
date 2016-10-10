@@ -516,7 +516,7 @@ void write_line_mud(const wchar_t *line)
     }
 #endif
     if (  ret < 0 ) {
-        tintin_puts(rs::rs(1183) );
+        tintin_puts2(rs::rs(1183) );
     }
 }
 

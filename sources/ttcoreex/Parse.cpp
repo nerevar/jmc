@@ -67,7 +67,7 @@ static BOOL stack_maintain(int need_capacity) {
 		return TRUE;
 	} else {
 		stack_capacity = stack_length = stack_ptr = 0;
-		tintin_puts(L"#Error: out of memory");
+		tintin_puts2(L"#Error: out of memory");
 		return FALSE;
 	}
 }

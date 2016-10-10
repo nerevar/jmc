@@ -74,6 +74,10 @@ static int verify_cert(int preverify, WOLFSSL_X509_STORE_CTX* store)
 			tintin_puts2(rs::rs(1285));
 			return 0;
 		case ASN_NO_SIGNER_E:
+			if (strCAFile.size() > 0) {
+				tintin_puts2(rs::rs(1288));
+				return 0;
+			}
 			break;
 		default:
 			return 0;
