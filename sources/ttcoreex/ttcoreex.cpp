@@ -1293,7 +1293,7 @@ void DLLEXPORT ReadMud()
         else { // do delayed delete 
             // check we have delayed string without \n
 			more_coming = 0;
-			if (last_line[0] && ((int)(GetTickCount() - lastRecvd) >= MoreComingDelay)) {
+			if (last_line[0] && (MoreComingDelay > 0) && ((int)(GetTickCount() - lastRecvd) >= MoreComingDelay)) {
 				//process_incoming(L"\n");
 				process_incoming(L"\x01");
             } else if ( bDelayedActionDelete ) {

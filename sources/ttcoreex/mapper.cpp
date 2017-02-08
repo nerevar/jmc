@@ -1709,10 +1709,11 @@ static void mapper_clear()
 {
 	while (Rooms.size() > 0) {
 		map<unsigned long, map<unsigned long, CMapRoom*> >::iterator it_room = Rooms.begin();
-		int i = it_room->second.size();
-		while (i > 0) {
+		for (;;) {
+			int size = it_room->second.size();
 			delete it_room->second.begin()->second;
-			--i;
+			if (size <= 1)
+				break;
 		}
 	}
 	DelayedEntrances.clear();

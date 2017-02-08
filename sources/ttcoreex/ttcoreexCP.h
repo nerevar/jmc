@@ -408,7 +408,7 @@ public:
 
         CComVariant varResult;
 		int nConnectionIndex;
-		CComVariant* pvars = new CComVariant[1];
+		CComVariant* pvars = new CComVariant[3];
 		int nConnections = m_vec.GetSize();
 		
 		for (nConnectionIndex = 0; nConnectionIndex < nConnections; nConnectionIndex++)
@@ -420,11 +420,13 @@ public:
 			if (pDispatch != NULL)
 			{
                 VariantClear(&varResult);
-				pvars[0] = pT->m_pvarEventParams[0].bstrVal;
+				pvars[0] = pT->m_pvarEventParams[0].lVal;
+				pvars[1] = pT->m_pvarEventParams[1].lVal;
+				pvars[2] = pT->m_pvarEventParams[2];
 
-                DISPPARAMS disp = { pvars, NULL, 1, 0 };
+                DISPPARAMS disp = { pvars, NULL, 3, 0 };
 				pDispatch->Invoke(0xC, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_METHOD, &disp, &varResult, NULL, NULL);
-                if ( pT->m_bDropped || pT->m_pvarEventParams[0].vt != VT_BSTR) {
+                if ( pT->m_bDropped ) {
                     bRet = FALSE;
                 }
 			}
