@@ -915,7 +915,7 @@ void CCoolDialogBar::Load()
 
 //vls-begin// multiple output
     m_bFlag = ::GetPrivateProfileInt(strSection, L"Visible", FALSE, szGLOBAL_PROFILE);
-    m_Dock = ::GetPrivateProfileInt(strSection, L"Docking", 0xF000L, szGLOBAL_PROFILE);
+    m_Dock = ::GetPrivateProfileInt(strSection, L"Docking", CBRS_FLOAT_MULTI, szGLOBAL_PROFILE);
 	EnableDocking(m_Dock);
     ShowWindow(m_bFlag ? SW_SHOW : SW_HIDE);
     // ShowWindow(m_bVisible ? SW_SHOW : SW_HIDE);

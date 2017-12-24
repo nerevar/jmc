@@ -84,6 +84,22 @@ static wstring scan_string_val(const wchar_t *input, wchar_t **output)
 	return ret;
 }
 
+static vector<wstring> split_identifiers(const wstring &name)
+{
+	vector<wstring> ret;
+	int i0 = 0;
+	for (int i = 0; i < name.length(); i++) {
+		if (is_allowed_symbol(name[i]))
+			continue;
+		if (i - i0 > 0)
+			ret.push_back(name.substr(i0, i - i0));
+		i0 = i + 1;
+	}
+	if (name.length() - i0 > 0)
+		ret.push_back(name.substr(i0, name.length() - i0));
+	return ret;
+}
+
 wchar_t * COobObject::addGMCP(const wchar_t *GMCP, bool WithChildName, bool RemoveOldContents)
 {
 	wchar_t *src = space_out((wchar_t*)GMCP);
@@ -150,25 +166,32 @@ wchar_t * COobObject::addGMCP(const wchar_t *GMCP, bool WithChildName, bool Remo
 			}
 
 			while (src[0] && src[0] != L'}') {
+				int i;
 				COobObject *pChild = NULL;
 
 				wstring name = scan_string_val(src, &src);
 				if (name.length() > 0 && iswdigit(name[0]))
 					name = L'D' + name;
+
+				vector<wstring> path = split_identifiers(name);
 				
 				src = space_out(src);
 				switch (src[0]) {
 				case L':':
 					src++;
 					src = space_out(src);
-					pChild = child(name.c_str(), true);
+					pChild = child(path[0].c_str(), true);
+					for (i = 1; i < path.size(); i++)
+						pChild = pChild->child(path[i].c_str(), true);
 					src = pChild->addGMCP(src, false, RemoveOldContents);
 					break;
 				case L'.':
 				case L'_':
 				case L'-':
 					src++;
-					pChild = child(name.c_str(), true);
+					pChild = child(path[0].c_str(), true);
+					for (i = 1; i < path.size(); i++)
+						pChild = pChild->child(path[i].c_str(), true);
 					src = pChild->addGMCP(src, true, RemoveOldContents);
 					break;
 				default:
@@ -420,6 +443,11 @@ void oob_command(wchar_t *arg)
 						it->second.submodules.insert(L"OPPONENT_HEALTH_MAX");
 						it->second.submodules.insert(L"OPPONENT_NAME");
 						it->second.submodules.insert(L"OPPONENT_STRENGTH");
+						it->second.submodules.insert(L"GROUP");
+						it->second.submodules.insert(L"MAX_HIT");
+						it->second.submodules.insert(L"MAX_MOVE");
+						it->second.submodules.insert(L"STATE");
+						it->second.submodules.insert(L"GOLD");
 					} else if (it->first == L"MSSP") {
 						it->second.submodules.insert(L"NAME");
 						it->second.submodules.insert(L"PLAYERS");

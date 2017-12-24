@@ -139,9 +139,15 @@ systemexec_error:
     si.hStdError = hErrWrite;
     si.hStdOutput = hOutWrite;
 
+
     if (!CreateProcess(NULL, cmd, NULL, NULL, TRUE,
-        CREATE_NO_WINDOW | DETACHED_PROCESS, NULL, NULL, &si, &pi))
+        CREATE_NO_WINDOW | DETACHED_PROCESS, NULL, NULL, &si, &pi)) {
+		DWORD err = GetLastError();
+		wchar_t buf[256];
+		swprintf(buf, L"GetLastError() = %d", err);
+		tintin_puts2(buf);
         goto systemexec_error;
+	}
 
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
