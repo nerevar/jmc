@@ -398,15 +398,20 @@ void oob_command(wchar_t *arg)
 	prepare_actionalias(temp, modname, sizeof(modname) / sizeof(wchar_t) - 1);
 
 	bool modfound = false;
+	bool processed = false;
+	bool print_submodules = false;
 	if (modname[0]) {
 		for (it = oob_modules.begin(); it != oob_modules.end(); it++)
 			if (is_abrev(modname, it->first.c_str())) {
 				arg = get_arg_in_braces(arg, temp, STOP_SPACES, sizeof(temp) / sizeof(wchar_t) - 1);
 				prepare_actionalias(temp, command, sizeof(command) / sizeof(wchar_t) - 1);
 
-				if (is_abrev(command, L"disable")) {
+				if (!space_out(command)[0]) {
+					processed = print_submodules = true;
+				}
+				else if (is_abrev(command, L"disable")) {
 					it->second.submodules.clear();
-					command[0] = L'\0';
+					processed = print_submodules = true;
 				} else if (is_abrev(command, L"enable")) {
 					if (it->first == L"GMCP") {
 						it->second.submodules.insert(L"core");
@@ -497,7 +502,7 @@ void oob_command(wchar_t *arg)
 						it->second.submodules.insert(L"HIRING CODERS");
 					}
 
-					command[0] = L'\0';
+					processed = print_submodules = true;
 				} else if (is_abrev(command, L"request")) {
 					arg = get_arg_in_braces(arg, temp, WITH_SPACES, sizeof(temp) / sizeof(wchar_t) - 1);
 					prepare_actionalias(temp, command, sizeof(command) / sizeof(wchar_t) - 1);
@@ -516,7 +521,7 @@ void oob_command(wchar_t *arg)
 						}
 					}
 
-					command[0] = L'\0';
+					processed = true;
 				} else if (is_abrev(command, L"add")) {
 					arg = get_arg_in_braces(arg, temp, WITH_SPACES, sizeof(temp) / sizeof(wchar_t) - 1);
 					prepare_actionalias(temp, command, sizeof(command) / sizeof(wchar_t) - 1);
@@ -525,7 +530,7 @@ void oob_command(wchar_t *arg)
 					for (int i = 0; i < names.size(); i++)
 						it->second.submodules.insert(names[i]);
 					
-					command[0] = L'\0';
+					processed = print_submodules = true;
 				} else if (is_abrev(command, L"del")) {
 					arg = get_arg_in_braces(arg, temp, WITH_SPACES, sizeof(temp) / sizeof(wchar_t) - 1);
 					prepare_actionalias(temp, command, sizeof(command) / sizeof(wchar_t) - 1);
@@ -535,10 +540,10 @@ void oob_command(wchar_t *arg)
 						if (it->second.submodules.find(names[i]) != it->second.submodules.end())
 							it->second.submodules.erase(names[i]);
 					}
-					command[0] = L'\0';
+					processed = print_submodules = true;
 				}
 
-				if (!command[0]) {
+				if (print_submodules) {
 					swprintf(temp, rs::rs(1300), it->first.c_str());
 					set<wstring> submods = it->second.submodules;
 					bool first = true;
@@ -551,7 +556,8 @@ void oob_command(wchar_t *arg)
 					if (first)
 						wcscat(temp, L"-");
 					tintin_puts2(temp);
-				} else {
+				}
+				if (!processed) {
 					tintin_puts2(rs::rs(1301));
 				}
 

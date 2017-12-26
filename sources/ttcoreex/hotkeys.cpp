@@ -89,7 +89,7 @@ static BOOL GetHotKeyParams(wchar_t* strKey , WORD& ScanCode, WORD& AltState, wc
         AltState += HOTKEYF_SHIFT;
 
 
-    wchar_t* ptr = wcschr(strKey, L'+' );
+    wchar_t* ptr = wcsrchr(strKey, L'+' );
     if ( !ptr ) 
         wcscpy(strKeyCode, strKey);
     else 
