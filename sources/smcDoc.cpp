@@ -560,13 +560,7 @@ CSmcDoc::~CSmcDoc()
 				strWords += word + L"\r\n";
 		}
 
-		HANDLE hFile;
-		hFile = CreateFile(strTabwordsFile, GENERIC_READ| GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, NULL, NULL );
-		if ( hFile!=INVALID_HANDLE_VALUE ) { 
-			DWORD Written;
-			WriteFile(hFile , strWords, strWords.GetLength() , &Written, NULL );
-			CloseHandle(hFile);
-		}
+		write_file_contents(strTabwordsFile, strWords, strWords.GetLength());
 	}
 }
 
