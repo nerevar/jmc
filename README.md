@@ -1,4 +1,4 @@
-## [Jaba Mud Client](http://nerevar.github.io/jmc/)
+## [Jaba Mud Client](https://nerevar.github.io/jmc/)
 
 #### Чтобы развернуть локально:
 1. В `_config.yml` установить `baseurl: /`
