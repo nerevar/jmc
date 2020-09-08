@@ -103,7 +103,7 @@ void CJmcSubstPage::SetControls()
         GetDlgItem(IDC_NAME)->EnableWindow(TRUE);
         GetDlgItem(IDC_TEXT)->EnableWindow(TRUE);
         GetDlgItem(IDC_REMOVE)->EnableWindow(TRUE);
-        LPSTR pSubst = (LPSTR)m_cSubstList.GetItemData(pos);
+        LPWSTR pSubst = (LPWSTR)m_cSubstList.GetItemData(pos);
         if ( pSubst ) {
             m_strName = pSubst;
             m_strText = GetSubstText(pSubst);
@@ -119,7 +119,7 @@ int CJmcSubstPage::AddItem(void* p)
 {
     int ind;
     int i = m_cSubstList.GetItemCount ();
-    LPSTR pSubst = (LPSTR)p;
+    LPWSTR pSubst = (LPWSTR)p;
     LV_ITEM lvi;
     ZeroMemory(&lvi , sizeof(lvi));
     lvi.mask = LVIF_TEXT;
@@ -130,7 +130,7 @@ int CJmcSubstPage::AddItem(void* p)
     lvi.iItem = ind;
     lvi.iSubItem = 1;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)GetSubstText(pSubst);
+    lvi.pszText  = (LPWSTR)GetSubstText(pSubst);
     m_cSubstList.SetItem (&lvi);
     m_cSubstList.SetItemData(ind, (DWORD)pSubst);
     return ind;
@@ -152,7 +152,7 @@ void CJmcSubstPage::OnRemove()
 {
     int pos = m_cSubstList.GetNextItem(-1, LVNI_SELECTED);
     ASSERT(pos >= 0 );
-    LPSTR pSubst = (LPSTR)m_cSubstList.GetItemData(pos);
+    LPWSTR pSubst = (LPWSTR)m_cSubstList.GetItemData(pos);
     ASSERT(pSubst);
 	
     RemoveSubst(pSubst);
@@ -167,17 +167,17 @@ void CJmcSubstPage::OnChangeText()
 	UpdateData();
     int pos = m_cSubstList.GetNextItem(-1, LVNI_SELECTED);
     ASSERT(pos >= 0 );
-    LPSTR pSubst = (LPSTR)m_cSubstList.GetItemData(pos);
+    LPWSTR pSubst = (LPWSTR)m_cSubstList.GetItemData(pos);
     ASSERT(pSubst);
 
-    SetSubst((LPSTR)(LPCSTR)m_strText, (LPSTR)(LPCSTR)m_strName);
+    SetSubst(m_strText, m_strName);
 
     LV_ITEM lvi;
     ZeroMemory(&lvi , sizeof(lvi));
     lvi.iItem = pos;
     lvi.iSubItem = 1;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText = (LPSTR)(LPCSTR)m_strText;
+    lvi.pszText = (LPWSTR)(const wchar_t*)m_strText;
     m_cSubstList.SetItem (&lvi);
 }
 
@@ -191,14 +191,14 @@ void CJmcSubstPage::OnKillfocusName()
             SetControls();
             return;
         }
-        if ( GetSubstText((LPSTR)(LPCSTR)m_strName) ) {
+        if ( GetSubstText(m_strName) ) {
             CString t;
             t.LoadString(IDS_SP_ERR_EXIST);
             MessageBox(t, ::AfxGetAppName() , MB_OK | MB_ICONSTOP);
             SetControls();
             return;
         }
-        LPSTR pSubst = SetSubst("",(LPSTR)(LPCSTR)m_strName);
+        LPWSTR pSubst = SetSubst(L"",m_strName);
         if ( !pSubst ) 
             return;
         int i = AddItem(pSubst);
@@ -229,17 +229,17 @@ void CJmcSubstPage::OnChangeName()
     ASSERT(pos >= 0 );
     if ( pos < 0 ) 
         return;
-    LPSTR pSubst = (LPSTR)m_cSubstList.GetItemData(pos);
+    LPWSTR pSubst = (LPWSTR)m_cSubstList.GetItemData(pos);
     ASSERT(pSubst);
 
-    SetSubstPattern(pSubst, (LPSTR)(LPCSTR)m_strName);
+    SetSubstPattern(pSubst, m_strName);
 
     LV_ITEM lvi;
     ZeroMemory(&lvi , sizeof(lvi));
     lvi.iItem = pos;
     lvi.iSubItem = 0;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)(LPCSTR)m_strName;
+    lvi.pszText  = (LPWSTR)(const wchar_t*)m_strName;
     m_cSubstList.SetItem (&lvi);
 }
 

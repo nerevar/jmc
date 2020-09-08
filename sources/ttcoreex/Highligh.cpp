@@ -9,7 +9,7 @@
 #include "tintin.h"
 
 
-int is_high_arg(char *s);
+int is_high_arg(wchar_t *s);
 
 /***************************/
 /* the #highlight command  */
@@ -23,8 +23,8 @@ BOOL show_high(CGROUP* pGroup)
     while (ind  != HlightList.end() ) {
         HLIGHT* ph = ind->second;
         if ( !pGroup || pGroup == ph->m_pGroup  ) {
-            char temp[BUFFER_SIZE];
-            sprintf(temp, rs::rs(1009), (char*)ind->first.data(), (char*)(ph->m_strColor.data()), (char*)ph->m_pGroup->m_strName.data());
+            wchar_t temp[BUFFER_SIZE];
+            swprintf(temp, rs::rs(1009), ind->first.c_str(), ph->m_strColor.c_str(), ph->m_pGroup->m_strName.c_str());
             tintin_puts2(temp);
             bFound = TRUE;
         }
@@ -35,25 +35,25 @@ BOOL show_high(CGROUP* pGroup)
 }
 
 
-void parse_high(char *arg)
+void parse_high(wchar_t *arg)
 {
-    char left[BUFFER_SIZE], right[BUFFER_SIZE], gname[BUFFER_SIZE],  result[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE], gname[BUFFER_SIZE],  result[BUFFER_SIZE];
     int colflag = TRUE;
   
-    arg=get_arg_in_braces(arg, left, STOP_SPACES);
+    arg=get_arg_in_braces(arg,left,STOP_SPACES,sizeof(left)/sizeof(wchar_t)-1);
     if(!*left) {
         tintin_puts2(rs::rs(1064));
         show_high();
         return;
     }  
-    arg=get_arg_in_braces(arg, right, WITH_SPACES);
+    arg=get_arg_in_braces(arg,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
 
     if ( !*right ) {
         tintin_puts2(rs::rs(1065));
         return;
     }
 
-    arg=get_arg_in_braces(arg, gname, STOP_SPACES);
+    arg=get_arg_in_braces(arg,gname,STOP_SPACES,sizeof(gname)/sizeof(wchar_t)-1);
 
 
     HLIGHT_INDEX ind = HlightList.find(right);
@@ -69,7 +69,7 @@ void parse_high(char *arg)
         else 
             bSetColor = FALSE;
     } else {
-        ph = new HLIGHT;
+        ph = new HLIGHT();
         if ( ph->SetColor(left) ) {
             ph->SetGroup (gname);
             ph->m_strPattern = right;
@@ -88,7 +88,7 @@ void parse_high(char *arg)
         tintin_puts2(rs::rs(1071));
     } else {
         if (mesvar[MSG_HIGH]) {
-            sprintf(result, rs::rs(1072), right, left, (char*)ph->m_pGroup->m_strName.data());
+            swprintf(result, rs::rs(1072), right, left, ph->m_pGroup->m_strName.c_str());
             tintin_puts2(result);
         }
     }
@@ -100,20 +100,20 @@ void parse_high(char *arg)
 /* the #unhighlight command */
 /*****************************/
 
-void unhighlight_command(char *arg)
+void unhighlight_command(wchar_t *arg)
 {
-    char left[BUFFER_SIZE] ,result[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE] ,result[BUFFER_SIZE];
     BOOL bFound = FALSE;
   
-    arg=get_arg_in_braces(arg, left, WITH_SPACES);
+    arg=get_arg_in_braces(arg,left,WITH_SPACES,sizeof(left)/sizeof(wchar_t)-1);
 
     HLIGHT_INDEX ind = HlightList.begin();
 
     while (ind  != HlightList.end() ) {
-        if ( match(left, (char*)ind->first.data()) ){
+        if ( match(left, ind->first.c_str()) ){
             HLIGHT* pal = ind->second;
             if (mesvar[MSG_HIGH]) {
-                sprintf(result, rs::rs(1073), (char*)ind->first.data());
+                swprintf(result, rs::rs(1073), ind->first.c_str());
                 tintin_puts2(result);
             }
             bFound = TRUE;
@@ -125,7 +125,7 @@ void unhighlight_command(char *arg)
     }
   
     if (!bFound && mesvar[MSG_HIGH]) {
-        sprintf(result, rs::rs(1007), left);
+        swprintf(result, rs::rs(1007), left);
         tintin_puts2(result);
     }    
 
@@ -134,16 +134,16 @@ void unhighlight_command(char *arg)
 static int BG = 40;
 static int FG = 37;
 static BOOL bBold = FALSE;
-static char ANSI[128] = DEFAULT_END_COLOR;
-static void ScanForAnsi(char* ptrFirst, char* ptrLast)
+static wchar_t ANSI[128] = DEFAULT_END_COLOR;
+static void ScanForAnsi(wchar_t* ptrFirst, wchar_t* ptrLast)
 {
-    char* ptr = ptrFirst;
-    char Text[BUFFER_SIZE];
+    wchar_t* ptr = ptrFirst;
+    wchar_t Text[BUFFER_SIZE];
 
     while ( ptr <= ptrLast ) {
-        if (*ptr++ == 0x1B ) {
-            if ( *ptr++ != '[' /*|| !isdigit(*src)*/ ) {
-                while ( *ptr && *ptr != 'm' ) ptr++;
+        if (*ptr++ == ANSI_COMMAND_CHAR ) {
+            if ( *ptr++ != L'[' /*|| !isdigit(*src)*/ ) {
+                while ( *ptr && *ptr != L'm' ) ptr++;
                 if ( *ptr == 'm' )
                     ptr++;
                 continue;
@@ -151,12 +151,12 @@ static void ScanForAnsi(char* ptrFirst, char* ptrLast)
             do {        
                 // may be need skip to ; . But .... Speed
                 Text[0] = 0;
-                char* dest = Text;
-                while ( isdigit(*ptr) && ptr <= ptrLast) 
+                wchar_t* dest = Text;
+                while ( iswdigit(*ptr) && ptr <= ptrLast) 
                     *dest++ = *ptr++;
                 *dest = 0;
                 if ( Text[0] ) {
-                    int value = atoi(Text);
+                    int value = _wtoi(Text);
                     if ( !value ) {
                         BG = 40;
                         FG = 37;
@@ -176,60 +176,60 @@ static void ScanForAnsi(char* ptrFirst, char* ptrLast)
         }
     }
     if ( bBold ) 
-        sprintf(ANSI, "\x1B[1;%d;%dm" , BG, FG);
+        swprintf(ANSI, L"%c[1;%d;%dm" , ANSI_COMMAND_CHAR, BG, FG);
     else 
-        sprintf(ANSI, "\x1B[0;%d;%dm" , BG, FG);
+        swprintf(ANSI, L"%c[0;%d;%dm" , ANSI_COMMAND_CHAR, BG, FG);
 }
 
-void do_one_high(char *line)
+void do_one_high(wchar_t *line)
 {
     /* struct listnode *ln, *myhighs; */
-    char temp[BUFFER_SIZE],result[BUFFER_SIZE];
-    char *firstch_ptr;
+    wchar_t temp[BUFFER_SIZE],result[BUFFER_SIZE];
+    const wchar_t *firstch_ptr;
 
     HLIGHT_INDEX ind = HlightList.begin();
 
     while (ind  != HlightList.end() ) {
         HLIGHT* ph = ind->second;
-        if(ph->m_pGroup->m_bEnabled && check_one_action(line,(char*)ind->first.data())) {
+        if(ph->m_pGroup->m_bEnabled && check_one_action(line,ind->first.c_str())) {
             BOOL bAnchored = FALSE;
-            firstch_ptr=(char*)ind->first.data();
-            if (*(firstch_ptr)=='^') {
+            firstch_ptr=ind->first.c_str();
+            if (*(firstch_ptr)==L'^') {
                 firstch_ptr++;
                 bAnchored = TRUE;
             }
-            prepare_actionalias(firstch_ptr, temp);
-            int pattern_len = strlen(temp);
+            prepare_actionalias(firstch_ptr, temp, sizeof(temp)/sizeof(wchar_t));
+            int pattern_len = wcslen(temp);
             if ( pattern_len == 0 ) 
                 continue;
 
             result[0] = 0;
             if ( bAnchored ) {
-                strcpy(result, (char*)ph->m_strAnsi.data());
-                strcat(result,temp);
-                strcat(result,DEFAULT_END_COLOR);
-                strcat ( result , line+pattern_len);
-                strcpy(line, result);
+                wcscpy(result, ph->m_strAnsi.c_str());
+                wcscat(result,temp);
+                wcscat(result,DEFAULT_END_COLOR);
+                wcscat ( result , line+pattern_len);
+                wcscpy(line, result);
             } else {
-                char* line1 = line;
-                char* ptr, *res = result;
-                while ( (ptr = strstr(line1, temp)) != NULL ) {
+                wchar_t* line1 = line;
+                wchar_t* ptr, *res = result;
+                while ( (ptr = wcsstr(line1, temp)) != NULL ) {
                     // now find last ESC command
                     ScanForAnsi(line, ptr);
 
-                    strncpy(res, line1, ptr-line1 );
+                    wcsncpy(res, line1, ptr-line1 );
                     res += ptr-line1;
-                    strcpy(res, ph->m_strAnsi.data());
-                    strcat(res, temp);
-                    strcat(res, ANSI);
-                    res += strlen(res);
+                    wcscpy(res, ph->m_strAnsi.data());
+                    wcscat(res, temp);
+                    wcscat(res, ANSI);
+                    res += wcslen(res);
                     line1 += pattern_len + (ptr-line1);
                 
                 }
                 if ( *line1 ) {
-                    strcat(result, line1);
+                    wcscat(result, line1);
                 }
-                strcpy(line, result);
+                wcscpy(line, result);
 
             }
             if( !bMultiHighlight ) 
@@ -238,77 +238,83 @@ void do_one_high(char *line)
         ind++;
     }
     // check for last ANSI color 
-    int len = strlen(line);
+    int len = wcslen(line);
     if ( len ) 
         ScanForAnsi (line, line+len - 1);
 }
 
-void add_codes(char *line, char *result, char *htype, BOOL bAddTAil)
+void add_codes(const wchar_t *line, wchar_t *result, const wchar_t *htype, BOOL bAddTAil)
 {
-  char *tmp1, *tmp2, tmp3[BUFFER_SIZE];
+  if (bAddTAil && is_abrev(htype, L"colorcodes")) {
+	  convert_colored_to_ansi(line, result, BUFFER_SIZE - 1);
+	  return;
+  }
+  
+  const wchar_t *tmp1, *tmp2;
+  wchar_t tmp3[BUFFER_SIZE];
   int code;
-  sprintf(result, "%s", DEFAULT_BEGIN_COLOR);
+  swprintf(result, L"%s", DEFAULT_BEGIN_COLOR);
   tmp1 = htype;
   tmp2 = tmp1;
-  while (*tmp2!='\0') {
+  while (*tmp2!=L'\0') {
     tmp2++;
-    while (*tmp2!=','&&*tmp2!='\0') tmp2++;
-    while (isspace(*tmp1)) tmp1++;
-    strncpy(tmp3, tmp1, tmp2-tmp1);
-    tmp3[tmp2-tmp1]='\0';
+    while (*tmp2!=L','&&*tmp2!=L'\0') tmp2++;
+    while (iswspace(*tmp1)) tmp1++;
+    wcsncpy(tmp3, tmp1, tmp2-tmp1);
+    tmp3[tmp2-tmp1]=L'\0';
     code=-1;
-    if (isdigit(*tmp3)) {
-      sscanf(tmp3, "%d", &code);
+    if (iswdigit(*tmp3)) {
+      swscanf(tmp3, L"%d", &code);
       code--;
     }
-    if (is_abrev(tmp3, "black") || code==0) strcat(result, ";30");
-      else if (is_abrev(tmp3, "red") || code==1) strcat(result, ";31");
-      else if (is_abrev(tmp3, "green") || code==2) strcat(result, ";32");
-      else if (is_abrev(tmp3, "brown") || code==3) strcat(result, ";33");
-      else if (is_abrev(tmp3, "blue") || code==4) strcat(result, ";34");
-      else if (is_abrev(tmp3, "magenta") || code==5) strcat(result, ";35");
-      else if (is_abrev(tmp3, "cyan") || code==6) strcat(result, ";36");
-      else if (is_abrev(tmp3, "grey") || code==7) strcat(result, ";37");
-      else if (is_abrev(tmp3, "charcoal") || code==8) strcat(result, ";30;1");
-      else if (is_abrev(tmp3, "light red") || code==9) strcat(result, ";31;1");
-      else if (is_abrev(tmp3, "light green") || code==10) strcat(result, ";32;1");
-      else if (is_abrev(tmp3, "yellow") || code==11) strcat(result, ";33;1");
-      else if (is_abrev(tmp3, "light blue") || code==12) strcat(result, ";34;1");
-      else if (is_abrev(tmp3, "light magenta") || code==13) strcat(result, ";35;1");
-      else if (is_abrev(tmp3, "light cyan")|| code==14) strcat(result, ";36;1");
-      else if (is_abrev(tmp3, "white") || code==15) strcat(result, ";37;1");
-      else if (is_abrev(tmp3, "b black") || code==16) strcat(result, ";40");
-      else if (is_abrev(tmp3, "b red") || code==17) strcat(result, ";41");
-      else if (is_abrev(tmp3, "b green") || code==18) strcat(result, ";42");
-      else if (is_abrev(tmp3, "b brown") || code==19) strcat(result, ";43");
-      else if (is_abrev(tmp3, "b blue") || code==20) strcat(result, ";44");
-      else if (is_abrev(tmp3, "b magenta") || code==21) strcat(result, ";45");
-      else if (is_abrev(tmp3, "b cyan") || code==22) strcat(result, ";46");
-      else if (is_abrev(tmp3, "b grey") || code==23) strcat(result, ";47");
-      else if (is_abrev(tmp3, "b charcoal") || code==24) strcat(result, ";40;1");
-      else if (is_abrev(tmp3, "b light red") || code==25) strcat(result, ";41;1");
-      else if (is_abrev(tmp3, "b light green") || code==26) strcat(result, ";42;1");
-      else if (is_abrev(tmp3, "b yellow") || code==27) strcat(result, ";43;1");
-      else if (is_abrev(tmp3, "b light blue") || code==28) strcat(result, ";44;1");
-      else if (is_abrev(tmp3, "b light magenta") || code==29) strcat(result, ";45;1");
-      else if (is_abrev(tmp3, "b light cyan") || code==30) strcat(result, ";46;1");
-      else if (is_abrev(tmp3, "b white") || code==31) strcat(result, ";47;1");
-      else if (is_abrev(tmp3, "bold")) strcat(result, ";1");
-      else if (is_abrev(tmp3, "faint")) strcat(result, ";2");
-      else if (is_abrev(tmp3, "blink")) strcat(result, ";5");
-      else if (is_abrev(tmp3, "italic")) strcat(result, ";3");
-      else if (is_abrev(tmp3, "reverse")) strcat(result, ";7");
+    if (is_abrev(tmp3, L"black") || code==0) wcscat(result, L";30");
+      else if (is_abrev(tmp3, L"red") || code==1) wcscat(result, L";31");
+      else if (is_abrev(tmp3, L"green") || code==2) wcscat(result, L";32");
+      else if (is_abrev(tmp3, L"brown") || code==3) wcscat(result, L";33");
+      else if (is_abrev(tmp3, L"blue") || code==4) wcscat(result, L";34");
+      else if (is_abrev(tmp3, L"magenta") || code==5) wcscat(result, L";35");
+      else if (is_abrev(tmp3, L"cyan") || code==6) wcscat(result, L";36");
+      else if (is_abrev(tmp3, L"grey") || code==7) wcscat(result, L";37");
+      else if (is_abrev(tmp3, L"charcoal") || code==8) wcscat(result, L";30;1");
+      else if (is_abrev(tmp3, L"light red") || code==9) wcscat(result, L";31;1");
+      else if (is_abrev(tmp3, L"light green") || code==10) wcscat(result, L";32;1");
+      else if (is_abrev(tmp3, L"yellow") || code==11) wcscat(result, L";33;1");
+      else if (is_abrev(tmp3, L"light blue") || code==12) wcscat(result, L";34;1");
+      else if (is_abrev(tmp3, L"light magenta") || code==13) wcscat(result, L";35;1");
+      else if (is_abrev(tmp3, L"light cyan")|| code==14) wcscat(result, L";36;1");
+      else if (is_abrev(tmp3, L"white") || code==15) wcscat(result, L";37;1");
+      else if (is_abrev(tmp3, L"b black") || code==16) wcscat(result, L";40");
+      else if (is_abrev(tmp3, L"b red") || code==17) wcscat(result, L";41");
+      else if (is_abrev(tmp3, L"b green") || code==18) wcscat(result, L";42");
+      else if (is_abrev(tmp3, L"b brown") || code==19) wcscat(result, L";43");
+      else if (is_abrev(tmp3, L"b blue") || code==20) wcscat(result, L";44");
+      else if (is_abrev(tmp3, L"b magenta") || code==21) wcscat(result, L";45");
+      else if (is_abrev(tmp3, L"b cyan") || code==22) wcscat(result, L";46");
+      else if (is_abrev(tmp3, L"b grey") || code==23) wcscat(result, L";47");
+      else if (is_abrev(tmp3, L"b charcoal") || code==24) wcscat(result, L";40;1");
+      else if (is_abrev(tmp3, L"b light red") || code==25) wcscat(result, L";41;1");
+      else if (is_abrev(tmp3, L"b light green") || code==26) wcscat(result, L";42;1");
+      else if (is_abrev(tmp3, L"b yellow") || code==27) wcscat(result, L";43;1");
+      else if (is_abrev(tmp3, L"b light blue") || code==28) wcscat(result, L";44;1");
+      else if (is_abrev(tmp3, L"b light magenta") || code==29) wcscat(result, L";45;1");
+      else if (is_abrev(tmp3, L"b light cyan") || code==30) wcscat(result, L";46;1");
+      else if (is_abrev(tmp3, L"b white") || code==31) wcscat(result, L";47;1");
+      else if (is_abrev(tmp3, L"bold")) wcscat(result, L";1");
+      else if (is_abrev(tmp3, L"faint")) wcscat(result, L";2");
+      else if (is_abrev(tmp3, L"blink")) wcscat(result, L";5");
+      else if (is_abrev(tmp3, L"italic")) wcscat(result, L";3");
+      else if (is_abrev(tmp3, L"reverse")) wcscat(result, L";7");
     tmp1= tmp2+1;
   }
-  strcat(result, "m");
+  wcscat(result, L"m");
   if ( bAddTAil ) {
-      strcat(result, line);
-      strcat(result, DEFAULT_END_COLOR);
+      wcscat(result, line);
+      wcscat(result, DEFAULT_END_COLOR);
   }
 }
 
 
-void DLLEXPORT RemoveHlight(char* name) 
+void DLLEXPORT RemoveHlight(const wchar_t* name) 
 {
     HLIGHT_INDEX ind = HlightList.find(name);
     if ( ind != HlightList.end() ) {
@@ -317,7 +323,7 @@ void DLLEXPORT RemoveHlight(char* name)
     }
 }
 
-PHLIGHT DLLEXPORT SetHlight(char* color, char* pattern, char* group) 
+PHLIGHT DLLEXPORT SetHlight(const wchar_t* color, const wchar_t* pattern, const wchar_t* group) 
 {
     if ( !pattern || !*pattern) 
         return NULL;
@@ -331,7 +337,7 @@ PHLIGHT DLLEXPORT SetHlight(char* color, char* pattern, char* group)
             ph->SetGroup(group);
         }
     } else {
-        ph = new HLIGHT;
+        ph = new HLIGHT();
         if ( ph->SetColor(color) ) {
             ph->SetGroup (group);
             ph->m_strPattern = pattern;
@@ -357,7 +363,7 @@ PPHLIGHT DLLEXPORT GetHlightList(int* size)
     return (PPHLIGHT)JMCObjRet;
 }
 
-PHLIGHT DLLEXPORT GetHlight(char* name)
+PHLIGHT DLLEXPORT GetHlight(const wchar_t* name)
 {
     HLIGHT_INDEX ind = HlightList.find(name);
     if ( ind == HlightList.end() ) 

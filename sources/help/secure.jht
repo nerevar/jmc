@@ -1,0 +1,10 @@
+#secure
+  shows current security (SSL/TLS) settings
+#secure disable
+  disables SSL/TLS usage
+#secure [ssl3|tls1|tls1.1|tls1.2] [ca clear|<filename>]
+  sets SSL/TLS protocol for security control and optionally provides CA-file
+  (or clears previously set CA-file)
+  these options will be used at the next #connect command
+#secure enable
+  same as #secure tls1

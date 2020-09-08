@@ -83,7 +83,7 @@ BOOL CJmcHotkeyPage::OnInitDialog()
 {
 	CPropertyPage::OnInitDialog();
 //vls-begin// grouped hotkeys
-    AddPage("hotkey", this);
+    AddPage(L"hotkey", this);
 	
     m_ImageList.Create(IDB_GROUP_ICONS, 16 , 2, (COLORREF)0xFFFFFF);
 //vls-end//
@@ -131,7 +131,7 @@ void CJmcHotkeyPage::OnAdd()
     GetDlgItem(IDC_REMOVE)->EnableWindow(FALSE);
 //vls-begin// grouped hotkeys
     GetDlgItem(IDC_GRP)->EnableWindow(TRUE);
-    PCGROUP pGrp = GetGroup ("default");
+    PCGROUP pGrp = GetGroup (L"default");
     m_cGroup.SelectGroup (pGrp);
 //vls-end//
     m_strKey.Empty ();
@@ -177,7 +177,7 @@ void CJmcHotkeyPage::OnChangeText()
     if ( pos < 0 ) 
         return;
     CHotKey* pHot = (CHotKey*)m_cHotkeysList.GetItemData (pos);
-    SetHotText(pHot, (LPSTR)(LPCSTR)m_strText);
+    SetHotText(pHot, m_strText);
 	//pHot->m_strAction = m_strText;
 
     LV_ITEM lvi;
@@ -185,7 +185,7 @@ void CJmcHotkeyPage::OnChangeText()
     lvi.mask = LVIF_TEXT;
     lvi.iItem = pos;
     lvi.iSubItem = 1;
-    lvi.pszText  = (LPSTR)(LPCSTR)m_strText;
+    lvi.pszText  = (LPWSTR)(const wchar_t*)m_strText;
     m_cHotkeysList.SetItem (&lvi);
 
 }
@@ -194,8 +194,8 @@ void CJmcHotkeyPage::SetControls()
 {
     int pos = m_cHotkeysList.GetNextItem(-1, LVNI_SELECTED);
     if ( pos < 0 ) {
-        m_strKey = "";
-        m_strText = "";
+        m_strKey = L"";
+        m_strText = L"";
         GetDlgItem(IDC_TEXT)->EnableWindow(FALSE);
         GetDlgItem(IDC_REMOVE)->EnableWindow(FALSE);
         GetDlgItem(IDC_KEY)->EnableWindow(FALSE);
@@ -234,20 +234,20 @@ int CJmcHotkeyPage::AddItem(void* p)
         ZeroMemory(&lvi , sizeof(lvi));
         lvi.mask = LVIF_TEXT;
         lvi.iItem = i;
-        lvi.pszText  = (LPSTR)pHot->m_strKey.data();
+        lvi.pszText  = (LPWSTR)pHot->m_strKey.c_str();
         ind = m_cHotkeysList.InsertItem(&lvi);
 
         lvi.iItem = ind;
         lvi.iSubItem = 1;
         lvi.mask = LVIF_TEXT ;
-        lvi.pszText  = (LPSTR)pHot->m_strAction.data();
+        lvi.pszText  = (LPWSTR)pHot->m_strAction.c_str();
         m_cHotkeysList.SetItem (&lvi);
 
 //vls-begin// grouped hotkeys
         lvi.iItem = ind;
         lvi.iSubItem = 2;
         lvi.mask = LVIF_TEXT ;
-        lvi.pszText  = (LPSTR)pHot->m_pGroup->m_strName.data();
+        lvi.pszText  = (LPWSTR)pHot->m_pGroup->m_strName.c_str();
         m_cHotkeysList.SetItem (&lvi);
 //vls-end//
 
@@ -301,14 +301,14 @@ void CJmcHotkeyPage::OnChangeKey()
 //            pHot = SetHot (m_wndHotCtrl.m_key.scan , m_wndHotCtrl.m_key.uFlags, 
 //                (LPSTR)(LPCSTR)m_strKey , "" );
             pHot = SetHot (m_wndHotCtrl.m_key.scan , m_wndHotCtrl.m_key.uFlags, 
-                (LPSTR)(LPCSTR)m_strKey , "", NULL);
+                m_strKey , L"", NULL);
 //vls-end//
             
             LV_ITEM lvi;
             ZeroMemory(&lvi , sizeof(lvi));
             lvi.mask = LVIF_TEXT;
             lvi.iItem = i-1;
-            lvi.pszText  =  (LPSTR)(LPCSTR)m_strKey ;
+            lvi.pszText  =  (LPWSTR)(const wchar_t*)m_strKey ;
             int ind = m_cHotkeysList.SetItem(&lvi);
             m_cHotkeysList.SetItemData(i-1, (DWORD)pHot);
         } else {
@@ -348,14 +348,14 @@ void CJmcHotkeyPage::OnChangeKey()
 //        pHot = SetHot(m_wndHotCtrl.m_key.scan , m_wndHotCtrl.m_key.uFlags , 
 //            (LPSTR)(LPCSTR)m_strKey, (LPSTR)(LPCSTR)strAct);
         pHot = SetHot(m_wndHotCtrl.m_key.scan , m_wndHotCtrl.m_key.uFlags , 
-            (LPSTR)(LPCSTR)m_strKey, (LPSTR)(LPCSTR)strAct, NULL);
+            m_strKey, strAct, NULL);
 //vls-end//
         m_cHotkeysList.SetItemData (pos, (DWORD)pHot);
         LV_ITEM lvi;
         ZeroMemory(&lvi , sizeof(lvi));
         lvi.mask = LVIF_TEXT;
         lvi.iItem = pos;
-        lvi.pszText  = (LPSTR)(LPCSTR)m_strKey ;
+        lvi.pszText  = (LPWSTR)(const wchar_t*)m_strKey ;
         m_cHotkeysList.SetItem(&lvi);
     }
 }
@@ -411,7 +411,7 @@ void CJmcHotkeyPage::OnSelchangeGrp()
     lvi.iItem = pos;
     lvi.iSubItem = 2;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)pG->m_strName.data();
+    lvi.pszText  = (LPWSTR)pG->m_strName.c_str();
     m_cHotkeysList.SetItem (&lvi);
 
     lvi.iSubItem = 0;

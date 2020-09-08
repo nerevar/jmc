@@ -1,0 +1,91 @@
+##   CHECK COLORED, MULTILINE, CASE INSESITIVE AND GLOBAL ACTIONS
+## default color: [0;37m
+
+#multiaction on
+
+#var Arg1Correct {123}
+#var Arg2Correct {qwerty}
+#var Arg3Correct {AAAA}
+#var Args1Correct {$Arg1Correct.$Arg2Correct.$Arg3Correct}
+
+#action color {/^&RFor test1: &garg1 = &y(.*)&B, Arg2 = &P(.*)&c, Arg3 = &W(.*)&w\./} {#var Arg1 {%%0}; #var Arg2 {%%1}; #var Arg3 {%%2}}
+#var Arg1 0
+#var Arg2 0
+#var Arg3 0
+
+#loopback {[1;31mFor [46mtest1: [0;32mar[0;32;40mg1 = [0;33m$Arg1Correct[1;34m, Arg2 = [1;35m$Arg2Correct[0;36m, Arg3 [43m= [1;37m$Arg3Correct[0;37m.}
+#sync
+#var Args1 {$Arg1.$Arg2.$Arg3}; assertEqual ACTIONS_COLORED Args1 Args1Correct
+#loopback {[1;30mFor [46mtest1: [1;32mar[0;32;40mg1 = [0;33mArg1Correct[1;35m, Arg2 = [0;36mArg2Correct[0;31m, Arg3 [43m= [1;33mArg3Correct[0;37m.}
+#sync
+#var Args1 {$Arg1.$Arg2.$Arg3}; assertEqual ACTIONS_COLORED Args1 Args1Correct
+
+#action color {/^&WFor test2: &Garg1 = &r(.*)&g,\nArg2 = &R(.*)&G,\nArg3 = &R(.*)&w\./m} {#var Arg1 {%%0}; #var Arg2 {%%1}; #var Arg3 {%%2}}
+#var Arg1 0
+#var Arg2 0
+#var Arg3 0
+
+#loopback {fake prompt> $EOP}
+#loopback {[1;37mFor [1;37mtest2: [1;32mar[1;32;40mg1 = [0;31m$Arg1Correct[0;32m,}
+#loopback {Arg2 = [1;31m$Arg2Correct[1;32m,}
+#loopback {Arg3 [1;32;43m= [1;31m$Arg3Correct[0;37m.}
+#loopback {fake prompt> $EOP}
+#sync
+#var Args1 {$Arg1.$Arg2.$Arg3}; assertEqual ACTIONS_COLORED_MULTILINE Args1 Args1Correct
+#loopback {fake prompt> $EOP}
+#loopback {[1;37mFor [1;37mtest2: [1;32mar[1;32;40mg1 = [0;31mArg1Correct[0;32m,}
+#loopback {fake prompt> $EOP}
+#loopback {Arg2 = [1;31mArg2Correct[1;32m,}
+#loopback {fake prompt> $EOP}
+#loopback {Arg3 [1;32;43m= [1;31mArg3Correct[0;37m.}
+#loopback {fake prompt> $EOP}
+#sync
+#var Args1 {$Arg1.$Arg2.$Arg3}; assertEqual ACTIONS_COLORED_MULTILINE Args1 Args1Correct
+
+#action color {/^&WFor tEst3: &GaRg1 = &r(.*)&g, Arg2 = &R(.*)&g, arg3 = &R(.*)&w\./i} {#var Arg1 {%%0}; #var Arg2 {%%1}; #var Arg3 {%%2}}
+#var Arg1 0
+#var Arg2 0
+#var Arg3 0
+
+#loopback {[1;37mFor [1;37mteST3: [1;32mar[1;32;40mG1 = [0;31m$Arg1Correct[0;32m, Arg2 = [1;31m$Arg2Correct[1;32m, arG3 [1;32;43m= [1;31m$Arg3Correct[0;37m.}
+#sync
+#var Args1 {$Arg1.$Arg2.$Arg3}; assertEqual ACTIONS_COLORED_IGNORECASE Args1 Args1Correct
+#loopback {$EOP[1;37mFor [1;37mteST3: [1;32mar[1;32;40mG1 = [0;31mArg1Correct[0;32m,$EOL Arg2 = [1;31mArg2Correct[1;32m,$EOL arG3 [1;32;43m= [1;31mArg3Correct[0;37m.$EOP}
+#sync
+#var Args1 {$Arg1.$Arg2.$Arg3}; assertEqual ACTIONS_COLORED_IGNORECASE Args1 Args1Correct
+
+#action color {/^&WFoR test4: &garg1 = &r(.*)&g,\n arg2 = &R(.*)&G,\n ArG3 = &R(.*)&w\./mi} {#var Arg1 {%%0}; #var Arg2 {%%1}; #var Arg3 {%%2}}
+#var Arg1 0
+#var Arg2 0
+#var Arg3 0
+
+#loopback {$EOP[1;37mFor [1;37mteST4: [1;32mar[1;32;40mG1 = [0;31m$Arg1Correct[0;32m,$EOL Arg2 = [1;31m$Arg2Correct[1;32m,$EOL arG3 [1;32;43m= [1;31m$Arg3Correct[0;37m.$EOP}
+#sync
+#var Args1 {$Arg1.$Arg2.$Arg3}; assertEqual ACTIONS_COLORED_MULTILINE_IGNORECASE Args1 Args1Correct
+
+#action {/test5-1 (\d+)/g} {#math Test5Counter1 {$Test5Counter1 + 1}}
+#action {/test5-2 (\d+)/} {#math Test5Counter2 {$Test5Counter2 + 1}}
+
+#var Test5Counter1 0
+#var Test5Counter2 0
+#var Test5Counter1Correct 4
+#var Test5Counter2Correct 1
+
+#loopback {test5-1 123 test5-2 321 test5-1 456 test5-2 654 test5-1 test5-2 test5-1 0 test5-2 0 test5-1 22222222222222 test5-2 33333333333}
+#sync
+assertEqual ACTIONS_GLOBAL Test5Counter1 Test5Counter1Correct
+assertEqual ACTIONS_GLOBAL Test5Counter2 Test5Counter2Correct
+
+#action {/test5-3 (\d+)/mg} {#math Test5Counter1 {$Test5Counter1 + 1}}
+#action {/test5-4 (\d+)/m} {#math Test5Counter2 {$Test5Counter2 + 1}}
+
+#var Test5Counter1 0
+#var Test5Counter2 0
+#loopback {fake prompt> $EOP}
+#loopback {test5-3 123 $EOL test5-4 321 test5-3 456 test5-4 654 $EOL test5-3 test5-4 test5-3 0 test5-4 0 test5-3 22222222222222 test5-4 33333333333 $EOL}
+#loopback {fake prompt> $EOP}
+#sync
+assertEqual ACTIONS_GLOBAL Test5Counter1 Test5Counter1Correct
+assertEqual ACTIONS_GLOBAL Test5Counter2 Test5Counter2Correct
+
+

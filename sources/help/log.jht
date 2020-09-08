@@ -1,0 +1,10 @@
+#log
+  closes current log-file
+#log <filename> [append|overwrite|html]
+  starts logging all data from main window to the file
+  if mode is not specified then default settings from Options
+  is used
+#log <filename> all|<nlines> [append|overwrite|html]
+  starts logging and writes to the beginning of logfile
+  last <nlines> lines for scrollbuffer or all available lines
+  works also with RMA/HTMLTimestamps

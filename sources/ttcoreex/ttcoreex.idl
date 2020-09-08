@@ -57,7 +57,18 @@ import "ocidl.idl";
 //vls-end//
 //* en
 		[id(24), helpstring("method wOutput")] HRESULT wOutput([in] LONG wndNum, [in] BSTR bstrText, [in, optional] BSTR bstrColor);
-//*/en		
+//*/en	
+		[id(25), helpstring("method wGetWidth")] HRESULT wGetWidth([in] LONG wndNum, [out, retval] LONG *nWidth);
+		[id(26), helpstring("method wGetHeight")] HRESULT wGetHeight([in] LONG wndNum, [out, retval] LONG *nHeight);
+		[id(27), helpstring("method DoTelnet")] HRESULT DoTelnet([in] LONG Command, [in, optional] LONG Option, [in, optional] BSTR bstrData);
+
+		[id(28), helpstring("method toText")] HRESULT ToText([in] BSTR bstrANSI, [out, retval] BSTR *bstrText);
+		[id(29), helpstring("method toColored")] HRESULT ToColored([in] BSTR bstrANSI, [out, retval] BSTR *bstrColored);
+		[id(30), helpstring("method fromColored")] HRESULT FromColored([in] BSTR bstrColored, [out, retval] BSTR *bstrANSI);
+
+		[id(31), helpstring("method MSDP2GMCP")] HRESULT MSDP2GMCP([in] BSTR bstrMSDP, [out, retval] BSTR *bstrGMCP);
+		[id(32), helpstring("method GMCP2MSDP")] HRESULT GMCP2MSDP([in] BSTR bstrGMCP, [out, retval] BSTR *bstrMSDP);
+		[id(33), helpstring("method MSSP2GMCP")] HRESULT MSSP2GMCP([in] BSTR bstrMSSP, [out, retval] BSTR *bstrGMCP);
 	};
 
 [
@@ -97,6 +108,8 @@ library TTCOREEXLib
 		[id(8), helpstring("method Load")] HRESULT Load();
 		[id(9), helpstring("method Unload")] HRESULT Unload();
 		[id(10), helpstring("method MultiIncoming")] HRESULT MultiIncoming();
+		[id(11), helpstring("method Prompt")] HRESULT Prompt();
+		[id(12), helpstring("method Telnet")] HRESULT Telnet();
 	};
 
 	[

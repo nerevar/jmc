@@ -17,13 +17,13 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // CJmcGroupPage property page
 
-CMap<char*, char*, CGroupedPage*, CGroupedPage*> CGroupedPage::m_Pages;
+CMap<wchar_t*, wchar_t*, CGroupedPage*, CGroupedPage*> CGroupedPage::m_Pages;
 CGroupedPage::CGroupedPage(UINT nIDTemplate, UINT nIDCaption ) : CPropertyPage(nIDTemplate, nIDCaption )
 {
 
 }
 
-void CGroupedPage::AddPage(char* name, CGroupedPage* pg) 
+void CGroupedPage::AddPage(wchar_t* name, CGroupedPage* pg) 
 {
     m_Pages.SetAt(name, pg);
 }
@@ -33,7 +33,7 @@ void CGroupedPage::NotifyAll()
     POSITION pos = m_Pages.GetStartPosition();
     while (pos ) {
         CGroupedPage* pg;
-        char* key;
+        wchar_t* key;
         m_Pages.GetNextAssoc(pos, key, pg);
         pg->GroupListChanged();
     }
@@ -93,7 +93,7 @@ int CJmcGroupPage::AddItem(CGROUP* pGrp)
     lvi.iItem = ind;
     lvi.iSubItem = 1;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)pGrp->m_strName.data();
+    lvi.pszText  = (LPWSTR)pGrp->m_strName.c_str();
     m_cGroups.SetItem (&lvi);
 
     return ind;
@@ -107,11 +107,11 @@ void CJmcGroupPage::OnRemove()
     strName = m_cGroups.GetItemText(i, 1);
 
     CString strQuest;
-    strQuest.Format(IDS_GP_DEL_QUES, (LPCSTR)strName);
+    strQuest.Format(IDS_GP_DEL_QUES, strName);
     if ( MessageBox(strQuest , ::AfxGetAppName(), MB_YESNO | MB_ICONQUESTION ) != IDYES ) 
         return;
 
-    RemoveGroup((LPSTR)(LPCSTR)strName);
+    RemoveGroup(strName);
     m_cGroups.DeleteItem (i);
     m_cGroups.SetItemState(min(i, m_cGroups.GetItemCount () -1),
             LVNI_SELECTED | LVNI_FOCUSED ,  LVNI_SELECTED | LVNI_FOCUSED );
@@ -123,7 +123,7 @@ void CJmcGroupPage::OnAdd()
 {
     CAddGroupDlg dlg(this);
     if ( dlg.DoModal () == IDOK ) {
-        PCGROUP pGrp = ::SetGroup((LPSTR)(LPCSTR)dlg.m_strName , TRUE, FALSE);
+        PCGROUP pGrp = ::SetGroup(dlg.m_strName , TRUE, FALSE);
         int i = AddItem(pGrp);
         m_cGroups.SetItemState(i,LVNI_SELECTED | LVNI_FOCUSED ,  LVNI_SELECTED | LVNI_FOCUSED );
         EnableControls();
@@ -177,7 +177,7 @@ void CJmcGroupPage::EnableControls()
     } 
     CString strName;
     strName = m_cGroups.GetItemText(i, 1);
-    PCGROUP pGrp = GetGroup ((LPSTR)(LPCSTR)strName);
+    PCGROUP pGrp = GetGroup (strName);
     ASSERT(pGrp);
     
     m_cEnabled.EnableWindow (TRUE);
@@ -196,7 +196,7 @@ void CJmcGroupPage::OnEnabledGlobal()
     CString strName;
     int i = m_cGroups.GetNextItem(-1, LVNI_SELECTED);
     strName = m_cGroups.GetItemText(i, 1);
-    SetGroup ((LPSTR)(LPCSTR)strName, m_bEnabled, m_bGlobal);
+    SetGroup (strName, m_bEnabled, m_bGlobal);
     LV_ITEM lvi;
     ZeroMemory(&lvi , sizeof(lvi));
     lvi.mask = LVIF_IMAGE;
@@ -247,7 +247,7 @@ void CAddGroupDlg::OnOK()
         return;
     }
 
-    CGROUP* pGrp = GetGroup((LPSTR)(LPCSTR)m_strName);
+    CGROUP* pGrp = GetGroup(m_strName);
     if ( pGrp ) {
         CString t;
         t.LoadString(IDS_GP_ERR_EXIST);

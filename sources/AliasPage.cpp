@@ -65,7 +65,7 @@ END_MESSAGE_MAP()
 BOOL CAliasPage::OnInitDialog() 
 {
 	CPropertyPage::OnInitDialog();
-    AddPage("alias", this);
+    AddPage(L"alias", this);
 
     m_ImageList.Create(IDB_GROUP_ICONS, 16 , 2, (COLORREF)0xFFFFFF);
 
@@ -121,8 +121,8 @@ void CAliasPage::SetControls()
 {
     int pos = m_cAliasList.GetNextItem(-1, LVNI_SELECTED);
     if ( pos < 0 ) {
-        m_strName = "";
-        m_strText = "";
+        m_strName = L"";
+        m_strText = L"";
         GetDlgItem(IDC_NAME)->EnableWindow(FALSE);
         GetDlgItem(IDC_TEXT)->EnableWindow(FALSE);
         GetDlgItem(IDC_REMOVE)->EnableWindow(FALSE);
@@ -148,19 +148,19 @@ int CAliasPage::AddItem(void* p)
     ZeroMemory(&lvi , sizeof(lvi));
     lvi.mask = LVIF_IMAGE | LVIF_TEXT;
     lvi.iItem = i;
-    lvi.pszText  = (LPSTR)pAlia->m_strLeft.data();
+    lvi.pszText  = (wchar_t*)pAlia->m_strLeft.c_str();
     lvi.iImage = pAlia->m_pGroup->m_bGlobal ? 1 : 0 ;
     int ind = m_cAliasList.InsertItem(&lvi);
 
     lvi.iItem = ind;
     lvi.iSubItem = 1;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)pAlia->m_strRight.data();
+    lvi.pszText  = (wchar_t*)pAlia->m_strRight.c_str();
     m_cAliasList.SetItem (&lvi);
 
     lvi.iSubItem = 2;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)pAlia->m_pGroup->m_strName.data();
+    lvi.pszText  = (wchar_t*)pAlia->m_pGroup->m_strName.c_str();
     m_cAliasList.SetItem (&lvi);
     m_cAliasList.SetItemData(ind, (DWORD)p);
     
@@ -194,14 +194,14 @@ void CAliasPage::OnChangeText()
         return;
     PALIAS pAl = (PALIAS)m_cAliasList.GetItemData(pos);
     ASSERT(pAl);
-    SetAlias((LPSTR)pAl->m_strLeft.data(), (LPSTR)(LPCSTR)m_strText, NULL);
+    SetAlias((const wchar_t*)pAl->m_strLeft.c_str(), (const wchar_t*)m_strText, NULL);
 
     LV_ITEM lvi;
     ZeroMemory(&lvi , sizeof(lvi));
     lvi.iItem = pos;
     lvi.iSubItem = 1;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)(LPCSTR)m_strText;
+    lvi.pszText  = (LPWSTR)(const wchar_t*)m_strText;
     m_cAliasList.SetItem (&lvi);
 
 }
@@ -223,7 +223,7 @@ void CAliasPage::OnSelchangeGrp()
     lvi.iItem = pos;
     lvi.iSubItem = 2;
     lvi.mask = LVIF_TEXT ;
-    lvi.pszText  = (LPSTR)pG->m_strName.data();
+    lvi.pszText  = (LPWSTR)pG->m_strName.c_str();
     m_cAliasList.SetItem (&lvi);
 
     lvi.iSubItem = 0;
@@ -239,7 +239,7 @@ void CAliasPage::OnAdd()
 	GetDlgItem(IDC_GRP)->EnableWindow(TRUE);
     m_strName.Empty ();
     m_strText.Empty();
-    PCGROUP pGrp = GetGroup ("default");
+    PCGROUP pGrp = GetGroup (L"default");
     m_cGroup.SelectGroup (pGrp);
     UpdateData(FALSE);
     m_bNewItem = TRUE;
@@ -253,7 +253,7 @@ void CAliasPage::OnRemove()
     PALIAS pAl = (PALIAS)m_cAliasList.GetItemData(pos);
     ASSERT(pAl);
 	
-    RemoveAlias((LPSTR)pAl->m_strLeft.data());
+    RemoveAlias((LPWSTR)pAl->m_strLeft.c_str());
     m_cAliasList.DeleteItem (pos);
     m_cAliasList.SetItemState(min(pos, m_cAliasList.GetItemCount () -1),
             LVNI_SELECTED | LVNI_FOCUSED ,  LVNI_SELECTED | LVNI_FOCUSED);
@@ -269,14 +269,14 @@ void CAliasPage::OnKillfocusName()
             SetControls();
             return;
         }
-        if ( GetAlias((LPSTR)(LPCSTR)m_strName) ) {
+        if ( GetAlias((LPWSTR)(const wchar_t*)m_strName) ) {
             CString t1, t2;
             t1.LoadString(IDS_AP_ERR_EXISTS);
             MessageBox(t1 , ::AfxGetAppName() , MB_OK | MB_ICONSTOP);
             SetControls();
             return;
         }
-        PALIAS pAl = SetAlias((LPSTR)(LPCSTR)m_strName, "", NULL );
+        PALIAS pAl = SetAlias((const wchar_t*)m_strName, L"", NULL );
         int i = AddItem(pAl);
         int sel = m_cAliasList.GetNextItem(-1, LVNI_SELECTED);
         m_cAliasList.SetItemState(i,LVNI_SELECTED | LVNI_FOCUSED ,  LVNI_SELECTED | LVNI_FOCUSED  );

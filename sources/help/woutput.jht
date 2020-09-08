@@ -1,2 +1,13 @@
 #woutput {wnd} [color] {text}
- add [colored] text to output window and to log if logging this window
+  add [colored] text to output window and to log if logging this window
+  if color equals to "colorcodes", then text parsed as containing
+  color-tags:
+    &d/&D - black/dark black/grey/white
+    &r/&R - dark/bright red
+    &g/&G - dark/bright green
+    &y/&Y - dark/bright yellow/orange
+    &b/&B - dark/bright blue
+    &p/&P - dark/bright pink/magenta
+    &c/&C - dark/bright cyan/blue
+    &w/&W - dark/bright 
+    &&    - single '&' character  

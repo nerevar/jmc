@@ -1,19 +1,13 @@
 EXPORTS
 
-pcre_malloc DATA
-pcre_free DATA
+pcre16_malloc DATA
+pcre16_free DATA
 
-pcre_compile
-pcre_copy_substring
-pcre_exec
-pcre_get_substring
-pcre_get_substring_list
-pcre_info
-pcre_maketables
-pcre_study
-pcre_version
-
-regcomp
-regexec
-regerror
-regfree
+pcre16_compile
+pcre16_copy_substring
+pcre16_exec
+pcre16_get_substring
+pcre16_get_substring_list
+pcre16_maketables
+pcre16_study
+pcre16_version

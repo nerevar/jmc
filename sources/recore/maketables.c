@@ -48,7 +48,7 @@ DFTABLES is defined. */
 #include "internal.h"
 #endif
 
-
+#include <locale.h>
 
 /*************************************************
 *           Create PCRE character tables         *
@@ -78,6 +78,8 @@ yield = (unsigned char*)malloc(tables_length);
 
 if (yield == NULL) return NULL;
 p = yield;
+
+setlocale (LC_ALL, "");
 
 /* First comes the lower casing table */
 

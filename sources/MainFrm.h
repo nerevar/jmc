@@ -104,7 +104,6 @@ public:
 	DWORD m_Docks[MAX_OUTPUT];
 //vls-end//
 
-
     virtual void OnUpdateFrameTitle(BOOL);
     
     CInvertSplit m_wndSplitter;
@@ -181,6 +180,7 @@ protected:
     afx_msg LONG OnNameOutput(UINT wParam, LONG lParam);
     afx_msg LONG OnDockOutput(UINT wParam, LONG lParam);
     afx_msg LONG OnPosWOutput(UINT wParam, LONG lParam);
+	afx_msg LONG OnSizeWOutput(UINT wParam, LONG lParam);
 //vls-end//
 
     afx_msg LONG OnCleanInput(UINT wParam, LONG lParam);
@@ -190,6 +190,8 @@ protected:
 	afx_msg LONG OnUpdStat3(UINT wParam, LONG lParam);
 	afx_msg LONG OnUpdStat4(UINT wParam, LONG lParam);
 	afx_msg LONG OnUpdStat5(UINT wParam, LONG lParam);
+
+	afx_msg LONG OnUpdPing(UINT wParam, LONG lParam);
 
 	afx_msg LONG OnTrayMessage(UINT wParam, LONG lParam);
 	afx_msg void OnSysCommand(UINT wParam, LPARAM lParam);

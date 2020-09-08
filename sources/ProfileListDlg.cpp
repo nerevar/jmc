@@ -69,11 +69,11 @@ BOOL CProfileListDlg::OnInitDialog()
             continue;
         }
 
-		char Name[MAX_PATH];
-		char* out = Name;
-		char* ptr = fd.cFileName;
+		wchar_t Name[MAX_PATH];
+		wchar_t* out = Name;
+		wchar_t* ptr = fd.cFileName;
 
-		while ( *ptr && *ptr != '.' )
+		while ( *ptr && *ptr != L'.' )
 			*out++ = *ptr++;
 		*out = 0;
 		

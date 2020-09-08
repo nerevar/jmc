@@ -2,6 +2,8 @@
   show all or specified alias
 #alias <name> <command> [group]
   create alias name to command in group
+#alias /<regexp>/[i] <command> [group]
+  create alias with regular expression (optionally case insensitive)
 #unalias <name>
   delete specified alias
 #verbatim [on|off]

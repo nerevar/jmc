@@ -1,0 +1,5 @@
+#sync
+  force reading and processing all data from 
+  incoming buffers i.e. from MUD and JMC broadcasts
+  can be useful in triggers/loops/recursive aliases/etc.
+  

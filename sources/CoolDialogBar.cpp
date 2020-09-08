@@ -8,21 +8,27 @@
 #include "smc.h"
 #include "resource.h"
 
+#include "MainFrm.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
 
+using namespace std;
+
 /////////////////////////////////////////////////////////////////////////////
 // CCoolDialogBar
+
 
 CCoolDialogBar::CCoolDialogBar() : 
 m_clrBtnHilight(::GetSysColor(COLOR_BTNHILIGHT)),
 m_clrBtnShadow(::GetSysColor(COLOR_BTNSHADOW))
 {
-    /*
+    
     m_sizeMin = CSize(32, 32);
+	/*
     m_sizeHorz = CSize(200, 200);
     m_sizeVert = CSize(200, 200);
     m_sizeFloat = CSize(200, 200);
@@ -50,6 +56,7 @@ BEGIN_MESSAGE_MAP(CCoolDialogBar, CControlBar)
     ON_WM_LBUTTONUP()
     ON_WM_MOUSEMOVE()
     ON_WM_SETCURSOR()
+	ON_WM_WINDOWPOSCHANGING()
     ON_WM_WINDOWPOSCHANGED()
     ON_WM_NCPAINT()
     ON_WM_NCLBUTTONDOWN()
@@ -71,7 +78,7 @@ void CCoolDialogBar::OnUpdateCmdUI(class CFrameWnd *pTarget, int bDisableIfNoHnd
     UpdateDialogControls(pTarget, bDisableIfNoHndler);
 }
 
-BOOL CCoolDialogBar::Create(CWnd* pParentWnd, LPCSTR &pTitle, CSize& InitialSize, UINT nID, DWORD dwStyle )
+BOOL CCoolDialogBar::Create(CWnd* pParentWnd, LPWSTR &pTitle, CSize& InitialSize, UINT nID, DWORD dwStyle )
 {
     ASSERT_VALID(pParentWnd);   // must have a parent
     ASSERT (!((dwStyle & CBRS_SIZE_FIXED) && (dwStyle & CBRS_SIZE_DYNAMIC)));
@@ -102,21 +109,99 @@ BOOL CCoolDialogBar::Create(CWnd* pParentWnd, LPCSTR &pTitle, CSize& InitialSize
     return TRUE;
 }
 
+vector <CCoolDialogBar *> CCoolDialogBar::AllVisibleNeighbours(int *OwnIndex) 
+{
+	vector <CCoolDialogBar *> ret;
+	
+	CDockBar *pDockBar = (CDockBar*)GetParent();
+	ASSERT_KINDOF(CDockBar , pDockBar);
+	
+	bool row = false;
+	CPtrArray *bars = &pDockBar->m_arrBars;
+	for (int i = 0; i < bars->GetSize(); i++) {
+		//CControlBar *pBar = pDockBar->GetDockedControlBar(i);
+		CControlBar* pBar = (CControlBar*)pDockBar->m_arrBars[i];
+		if (HIWORD(pBar) == 0)
+			pBar = NULL;
+		if (!pBar) {
+			if (row)
+				break;
+			ret.clear();
+			continue;
+		}
+		if (!pBar->IsVisible())
+			continue;
+		if (this == pBar) {
+			row = true;
+			if (OwnIndex)
+				*OwnIndex = ret.size();
+		}
+		ret.push_back((CCoolDialogBar*)pBar);
+	}
+
+	return ret;
+}
+
 CSize CCoolDialogBar::CalcFixedLayout(BOOL bStretch, BOOL bHorz)
 {
-    CRect rc;
-
-    m_pDockSite->GetControlBar(AFX_IDW_DOCKBAR_TOP)->GetWindowRect(rc);
-    int nHorzDockBarWidth = bStretch ? 32767 : rc.Width() + 4;
-    m_pDockSite->GetControlBar(AFX_IDW_DOCKBAR_LEFT)->GetWindowRect(rc);
-    int nVertDockBarHeight = bStretch ? 32767 : rc.Height() + 4;
-
 	if(IsFloating())
 		return m_sizeFloat;
-    else if (bHorz)
-        return CSize(nHorzDockBarWidth, m_sizeHorz.cy);
-    else
-        return CSize(m_sizeVert.cx, nVertDockBarHeight);
+
+	CDockBar *pDockBar = (CDockBar*)GetParent();
+	ASSERT_KINDOF(CDockBar , pDockBar);
+
+	CRect dockrc;
+	pDockBar->GetWindowRect(dockrc);
+	//m_pDockSite->GetControlBar(m_nDockBarID)->GetWindowRect(dockrc);
+
+	CSize sz = (bHorz ? m_sizeHorz : m_sizeVert);
+
+	int width = (bHorz ? sz.cx : sz.cy);
+	int height = (bHorz ? sz.cy : sz.cx);
+		
+	if (bStretch) {
+		width = 32767;
+	} else {
+		int own;
+		vector <CCoolDialogBar *> row = AllVisibleNeighbours(&own);
+		for (int i = 0; i < row.size(); i++) {
+			CSize sz2 = (bHorz ? row[i]->m_sizeHorz : row[i]->m_sizeVert);
+			height = max(height, (bHorz ? sz2.cy : sz2.cx));
+		}
+		if (row.size() == 1) {
+			width = (bHorz ? dockrc.Width() : dockrc.Height());
+		} else if (own + 1 < row.size()) {
+			CRect myrc, rc;
+			GetWindowRect(myrc);
+			row[own + 1]->GetWindowRect(rc);
+			if (bHorz)
+				width = rc.left - myrc.left + 2;
+			else
+				width = rc.top - myrc.top + 1;
+		} else {
+			CRect myrc;
+			GetWindowRect(myrc);
+			if (bHorz)
+				width = dockrc.right - myrc.left - 1;
+			else
+				width = dockrc.bottom - myrc.top + 1;
+		}
+	}
+		
+	if (bHorz)
+		sz = CSize(width, height);
+	else
+		sz = CSize(height, width);
+
+	sz.cx = max(sz.cx, m_sizeMin.cx);
+	sz.cy = max(sz.cy, m_sizeMin.cy);
+
+	if (bHorz)
+		m_sizeHorz = sz;
+	else
+		m_sizeVert = sz;
+
+	return sz;
 }
 
 CSize CCoolDialogBar::CalcDynamicLayout(int nLength, DWORD dwMode)
@@ -203,6 +288,18 @@ CSize CCoolDialogBar::CalcDynamicLayout(int nLength, DWORD dwMode)
         return CSize(max(m_sizeMin.cx, nLength), m_sizeFloat.cy);
 }
 
+void CCoolDialogBar::OnWindowPosChanging(WINDOWPOS FAR* lpwndpos) 
+{
+    CControlBar::OnWindowPosChanging(lpwndpos);
+
+	if(!::IsWindow(m_hWnd) )
+		return;
+
+	if (IsFloating())
+		return;
+    
+}
+
 void CCoolDialogBar::OnWindowPosChanged(WINDOWPOS FAR* lpwndpos) 
 {
 //    MessageBox("winposchanged", "JMC", MB_OK | MB_ICONSTOP);
@@ -224,23 +321,23 @@ void CCoolDialogBar::OnWindowPosChanged(WINDOWPOS FAR* lpwndpos)
     if (nDockBarID == m_nDockBarID // no docking side change
         && (lpwndpos->flags & SWP_NOSIZE) // no size change
         && ((m_dwStyle & CBRS_BORDER_ANY) != CBRS_BORDER_ANY))
-        return; 
+        return;
 
-    m_nDockBarID = nDockBarID;
+	m_nDockBarID = nDockBarID;
 
     // Force recalc the non-client area
-    m_bInRecalcNC = TRUE;
-    SetWindowPos(NULL, 0,0,0,0,
-        SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
-    m_bInRecalcNC = FALSE;
+	m_bInRecalcNC = TRUE;
+	SetWindowPos(NULL, 0,0,0,0,
+		SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	m_bInRecalcNC = FALSE;
 }
 
 BOOL CCoolDialogBar::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message) 
 {
-    if ((nHitTest != HTSIZE) || m_bTracking)
+    if ((nHitTest != HTRIGHT && nHitTest != HTBOTTOM) || m_bTracking)
         return CControlBar::OnSetCursor(pWnd, nHitTest, message);
 
-    if (IsHorz())
+	if (nHitTest == HTBOTTOM)
         SetCursor(LoadCursor(NULL, IDC_SIZENS));
     else
         SetCursor(LoadCursor(NULL, IDC_SIZEWE));
@@ -253,7 +350,7 @@ BOOL CCoolDialogBar::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 void CCoolDialogBar::OnLButtonUp(UINT nFlags, CPoint point) 
 {
     //MessageBox("lup", "JMC", MB_OK | MB_ICONSTOP);
-    if (!m_bTracking && !false_move)
+    if (!m_bTracking /*&& !false_move*/)
         CControlBar::OnLButtonUp(nFlags, point);
     else
     {
@@ -265,7 +362,7 @@ void CCoolDialogBar::OnLButtonUp(UINT nFlags, CPoint point)
 void CCoolDialogBar::OnMouseMove(UINT nFlags, CPoint point) 
 {
     //MessageBox("mmove", "JMC", MB_OK | MB_ICONSTOP);
-    if(!false_move)
+    //if(!false_move)
 	if (IsFloating() || !m_bTracking)
     {
         CControlBar::OnMouseMove(nFlags, point);
@@ -276,7 +373,7 @@ void CCoolDialogBar::OnMouseMove(UINT nFlags, CPoint point)
 
     ClientToWnd(point);
 
-    if (IsHorz())
+	if (m_bTrackHorz)
     {
         if (cpt.y != point.y)
         {
@@ -299,47 +396,59 @@ void CCoolDialogBar::OnMouseMove(UINT nFlags, CPoint point)
 void CCoolDialogBar::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS FAR* lpncsp) 
 {
     // Compute the rectangle of the mobile edge
-    GetWindowRect(m_rectBorder);
-    m_rectBorder = CRect(0, 0, m_rectBorder.Width(), m_rectBorder.Height());
+	CRect tmpRect;
+    GetWindowRect(tmpRect);
+    m_rectBorderHorz = m_rectBorderVert = CRect(0, 0, tmpRect.Width(), tmpRect.Height());
     
     DWORD dwBorderStyle = m_dwStyle | CBRS_BORDER_ANY;
 
     switch(m_nDockBarID)
     {
+		
     case AFX_IDW_DOCKBAR_TOP:
         dwBorderStyle &= ~CBRS_BORDER_BOTTOM;
+		dwBorderStyle &= ~CBRS_BORDER_RIGHT;
         lpncsp->rgrc[0].left += m_cxGripper;
         lpncsp->rgrc[0].bottom += -m_cxEdge;
         lpncsp->rgrc[0].top += m_cxBorder;
         lpncsp->rgrc[0].right += -m_cxBorder;
-	    m_rectBorder.top = m_rectBorder.bottom - m_cxEdge;
+	    m_rectBorderHorz.top = m_rectBorderHorz.bottom - m_cxEdge;
+		m_rectBorderVert.left = m_rectBorderVert.right - m_cxEdge;
         break;
     case AFX_IDW_DOCKBAR_BOTTOM:
         dwBorderStyle &= ~CBRS_BORDER_TOP;
+		dwBorderStyle &= ~CBRS_BORDER_RIGHT;
         lpncsp->rgrc[0].left += m_cxGripper;
         lpncsp->rgrc[0].top += m_cxEdge;
         lpncsp->rgrc[0].bottom += -m_cxBorder;
         lpncsp->rgrc[0].right += -m_cxBorder;
-        m_rectBorder.bottom = m_rectBorder.top + m_cxEdge;
+        m_rectBorderHorz.bottom = m_rectBorderHorz.top + m_cxEdge;
+		m_rectBorderVert.left = m_rectBorderVert.right - m_cxEdge;
         break;
     case AFX_IDW_DOCKBAR_LEFT:
         dwBorderStyle &= ~CBRS_BORDER_RIGHT;
+		dwBorderStyle &= ~CBRS_BORDER_BOTTOM;
         lpncsp->rgrc[0].right += -m_cxEdge;
         lpncsp->rgrc[0].left += m_cxBorder;
         lpncsp->rgrc[0].bottom += -m_cxBorder;
         lpncsp->rgrc[0].top += m_cxGripper;
-        m_rectBorder.left = m_rectBorder.right - m_cxEdge;
+		m_rectBorderHorz.top = m_rectBorderHorz.bottom - m_cxEdge;
+        m_rectBorderVert.left = m_rectBorderVert.right - m_cxEdge;
         break;
     case AFX_IDW_DOCKBAR_RIGHT:
         dwBorderStyle &= ~CBRS_BORDER_LEFT;
+		dwBorderStyle &= ~CBRS_BORDER_BOTTOM;
         lpncsp->rgrc[0].left += m_cxEdge;
         lpncsp->rgrc[0].right += -m_cxBorder;
         lpncsp->rgrc[0].bottom += -m_cxBorder;
         lpncsp->rgrc[0].top += m_cxGripper;
-        m_rectBorder.right = m_rectBorder.left + m_cxEdge;
+		m_rectBorderHorz.top = m_rectBorderHorz.bottom - m_cxEdge;
+        m_rectBorderVert.right = m_rectBorderVert.left + m_cxEdge;
         break;
+		
     default:
-        m_rectBorder.SetRectEmpty();
+        m_rectBorderHorz.SetRectEmpty();
+		m_rectBorderVert.SetRectEmpty();
         break;
     }
 
@@ -351,7 +460,9 @@ void CCoolDialogBar::OnNcPaint()
     EraseNonClient();
 
 	CWindowDC dc(this);
-    dc.Draw3dRect(m_rectBorder, GetSysColor(COLOR_BTNHIGHLIGHT),
+    dc.Draw3dRect(m_rectBorderVert, GetSysColor(COLOR_BTNHIGHLIGHT),
+                    GetSysColor(COLOR_BTNSHADOW));
+	dc.Draw3dRect(m_rectBorderHorz, GetSysColor(COLOR_BTNHIGHLIGHT),
                     GetSysColor(COLOR_BTNSHADOW));
 
 	DrawGripper(dc);
@@ -376,13 +487,13 @@ void CCoolDialogBar::OnNcLButtonDown(UINT nHitTest, CPoint point)
         ASSERT(m_pDockContext != NULL);
         m_pDockContext->StartDrag(point);
     }
-    else if ((nHitTest == HTSIZE) && !IsFloating())
-        StartTracking();
-    else    
+    else if ((nHitTest == HTRIGHT || nHitTest == HTBOTTOM) && !IsFloating())
+		StartTracking(nHitTest == HTBOTTOM);
+	else    
         CControlBar::OnNcLButtonDown(nHitTest, point);
 }
 
-UINT CCoolDialogBar::OnNcHitTest(CPoint point) 
+LRESULT CCoolDialogBar::OnNcHitTest(CPoint point) 
 {
     if (IsFloating())
         return CControlBar::OnNcHitTest(point);
@@ -396,19 +507,17 @@ UINT CCoolDialogBar::OnNcHitTest(CPoint point)
 		return HTMINBUTTON;
 	else if (m_rectGripper.PtInRect(point))
 		return HTCAPTION;
-    else if (m_rectBorder.PtInRect(point))
-        return HTSIZE;
+    else if (m_rectBorderVert.PtInRect(point))
+		return HTRIGHT;
+	else if (m_rectBorderHorz.PtInRect(point))
+        return HTBOTTOM;
     else
         return CControlBar::OnNcHitTest(point);
 }
 
 void CCoolDialogBar::OnLButtonDown(UINT nFlags, CPoint point) 
 {
-    // only start dragging if clicked in "void" space
-//	char bf[BUFFER_SIZE];
-//	sprintf(bf,"at %d %d|%d %d|%d %d|%d",m_wndCode, m_sizeFloat.cx,m_sizeFloat.cy,m_sizeHorz.cx,m_sizeHorz.cy,m_sizeVert.cx,m_sizeVert.cy);
-    //MessageBox("ldown", "JMC", MB_OK | MB_ICONSTOP);
-    if (m_pDockBar != NULL || false_move)
+    if (m_pDockBar != NULL/* || false_move*/)
     {
         // start the drag
         //ASSERT(m_pDockContext != NULL);
@@ -438,7 +547,7 @@ void CCoolDialogBar::OnLButtonDblClk(UINT nFlags, CPoint point)
     }
 }
 
-void CCoolDialogBar::StartTracking()
+void CCoolDialogBar::StartTracking(BOOL bHorz)
 {
     SetCapture();
 
@@ -446,11 +555,10 @@ void CCoolDialogBar::StartTracking()
     RedrawWindow(NULL, NULL, RDW_ALLCHILDREN | RDW_UPDATENOW);
     m_pDockSite->LockWindowUpdate();
 
-    m_ptOld = m_rectBorder.CenterPoint();
+	m_rectTracker = (bHorz ? m_rectBorderHorz : m_rectBorderVert);
+    m_ptOld = m_rectTracker.CenterPoint();
     m_bTracking = TRUE;
-    
-    m_rectTracker = m_rectBorder;
-    if (!IsHorz()) m_rectTracker.bottom -= 4;
+	m_bTrackHorz = bHorz;
 
     OnInvertTracker(m_rectTracker);
 }
@@ -474,31 +582,95 @@ void CCoolDialogBar::StopTracking(BOOL bAccept)
 
     int maxsize, minsize, newsize;
     CRect rcc;
+	GetWindowRect(rcc);
     m_pDockSite->GetWindowRect(rcc);
 
-    newsize = IsHorz() ? m_sizeHorz.cy : m_sizeVert.cx;
-    maxsize = newsize + (IsHorz() ? rcc.Height() : rcc.Width());
-    minsize = IsHorz() ? m_sizeMin.cy : m_sizeMin.cx;
+	CSize sz = IsHorz() ? m_sizeHorz : m_sizeVert;
+	newsize = m_bTrackHorz ? sz.cy : sz.cx;
+    maxsize = newsize + (m_bTrackHorz ? rcc.Height() : rcc.Width());
+    minsize = m_bTrackHorz ? m_sizeMin.cy : m_sizeMin.cx;
 
     CPoint point = m_rectTracker.CenterPoint();
+	int dsize = 0;
     switch (m_nDockBarID)
     {
     case AFX_IDW_DOCKBAR_TOP:
-        newsize += point.y - m_ptOld.y; break;
+		if (m_bTrackHorz)
+			dsize = point.y - m_ptOld.y; 
+		else
+			dsize = point.x - m_ptOld.x; 
+		break;
     case AFX_IDW_DOCKBAR_BOTTOM:
-        newsize += -point.y + m_ptOld.y; break;
+		if (m_bTrackHorz)
+			dsize = -point.y + m_ptOld.y; 
+		else
+			dsize = point.x - m_ptOld.x; 
+		break;
     case AFX_IDW_DOCKBAR_LEFT:
-        newsize += point.x - m_ptOld.x; break;
+		if (!m_bTrackHorz)
+			dsize = point.x - m_ptOld.x; 
+		else 
+			dsize = point.y - m_ptOld.y;  
+		break;
     case AFX_IDW_DOCKBAR_RIGHT:
-        newsize += -point.x + m_ptOld.x; break;
+		if (!m_bTrackHorz)
+			dsize = -point.x + m_ptOld.x; 
+		else
+			dsize = point.y - m_ptOld.y;  
+		break;
     }
 
+	newsize += dsize;
     newsize = max(minsize, min(maxsize, newsize));
 
+	if (m_bTrackHorz) {
+		dsize = newsize - sz.cy;
+		sz.cy = newsize;
+	} else {
+		dsize = newsize - sz.cx;
+		sz.cx = newsize;
+	}
+
+	sz.cx = max(sz.cx, m_sizeMin.cx);
+	sz.cy = max(sz.cy, m_sizeMin.cy);
+
     if (IsHorz())
-        m_sizeHorz.cy = newsize;
+        m_sizeHorz = sz;
     else
-        m_sizeVert.cx = newsize;
+        m_sizeVert = sz;
+
+	int own;
+	vector <CCoolDialogBar *> row = AllVisibleNeighbours(&own);
+	if (IsHorz() == m_bTrackHorz) { //just copy new size
+		for (int i = 0; i < row.size(); i++)
+			if (i != own) {
+				if (IsHorz())
+					row[i]->m_sizeHorz.cy = m_sizeHorz.cy;
+				else
+					row[i]->m_sizeVert.cx = m_sizeVert.cx;
+			}
+	} else { // resize neightbour
+		int other = own + 1;
+		if (other >= row.size())
+			other -= 2;
+		if (other >= 0) {
+			if (IsHorz()) {
+				CRect rc;
+				row[other]->GetWindowRect(rc);
+				row[other]->m_sizeHorz.cx = max(row[other]->m_sizeHorz.cx - dsize, m_sizeMin.cx);
+				rc.left += dsize;
+				GetParent()->ScreenToClient(rc);
+				row[other]->MoveWindow(rc);
+			} else {
+				CRect rc;
+				row[other]->GetWindowRect(rc);
+				row[other]->m_sizeVert.cy = max(row[other]->m_sizeVert.cy - dsize, m_sizeMin.cy);
+				rc.top += dsize;
+				GetParent()->ScreenToClient(rc);
+				row[other]->MoveWindow(rc);
+			}
+		}
+	}
 
     m_pDockSite->RecalcLayout();
 }
@@ -540,11 +712,24 @@ BOOL CCoolDialogBar::IsHorz() const
 
 CPoint& CCoolDialogBar::ClientToWnd(CPoint& point)
 {
-    if (m_nDockBarID == AFX_IDW_DOCKBAR_BOTTOM)
-        point.y += m_cxEdge;
-    else if (m_nDockBarID == AFX_IDW_DOCKBAR_RIGHT)
-        point.x += m_cxEdge;
-   
+	switch (m_nDockBarID) {
+	case AFX_IDW_DOCKBAR_LEFT:
+		point.x += m_cxEdge;
+		point.y += m_cxGripper;
+		break;
+	case AFX_IDW_DOCKBAR_TOP:
+		point.y += m_cxEdge;
+		point.x += m_cxGripper;
+		break;
+	case AFX_IDW_DOCKBAR_RIGHT:
+		point.y += m_cxGripper;
+		point.x += m_cxEdge;
+		break;
+	case AFX_IDW_DOCKBAR_BOTTOM:
+		point.y += m_cxEdge;
+		point.x += m_cxGripper;
+		break;
+	}    
 
     return point;
 }
@@ -657,39 +842,39 @@ void CCoolDialogBar::Save()
 	CString strSection("Docbar");
 //vls-begin// multiple output
     if (m_wndCode > 0)
-        strSection.Format("Docbar%d", m_wndCode+1);
+        strSection.Format(L"Docbar%d", m_wndCode+1);
 //vls-end//
 //	char bf[BUFFER_SIZE];
 //	sprintf(bf,"at %d %d|%d %d|%d %d|%d",m_wndCode, m_sizeFloat.cx,m_sizeFloat.cy,m_sizeHorz.cx,m_sizeHorz.cy,m_sizeVert.cx,m_sizeVert.cy);
 //	MessageBox(bf,"jmc",MB_OK|MB_ICONSTOP);
 
 	///////////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CXFloat", m_sizeFloat.cx, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"CXFloat", m_sizeFloat.cx, szGLOBAL_PROFILE);
 	///////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CYFloat", m_sizeFloat.cy, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"CYFloat", m_sizeFloat.cy, szGLOBAL_PROFILE);
 
 	///////////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CXHorz", m_sizeHorz.cx, szGLOBAL_PROFILE);
-	///////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CYHorz", m_sizeHorz.cy,szGLOBAL_PROFILE);
-
-	///////////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CXVert", m_sizeVert.cx,szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"CXHorz", m_sizeHorz.cx, szGLOBAL_PROFILE);
 	///////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////
-    ::WritePrivateProfileInt(strSection, "CYVert", m_sizeVert.cy, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"CYHorz", m_sizeHorz.cy,szGLOBAL_PROFILE);
+
+	///////////////////////////////////////////////////////////////////////////
+    ::WritePrivateProfileInt(strSection, L"CXVert", m_sizeVert.cx,szGLOBAL_PROFILE);
+	///////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////
+    ::WritePrivateProfileInt(strSection, L"CYVert", m_sizeVert.cy, szGLOBAL_PROFILE);
 
 //vls-begin// multiple output
-    ::WritePrivateProfileInt(strSection, "Visible", m_bFlag, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt(strSection, "Docking", m_Dock, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt(strSection, "posX", m_mX, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt(strSection, "posY", m_mY, szGLOBAL_PROFILE);
-    ::WritePrivateProfileString(strSection, "Title", m_sTitle, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"Visible", m_bFlag, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"Docking", m_Dock, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"posX", m_mX, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(strSection, L"posY", m_mY, szGLOBAL_PROFILE);
+    ::WritePrivateProfileString(strSection, L"Title", m_sTitle, szGLOBAL_PROFILE);
 //vls-end//
 }
 
@@ -704,48 +889,48 @@ void CCoolDialogBar::Load()
 	CString strSection("Docbar");
 //vls-begin// multiple output
     if (m_wndCode > 0)
-        strSection.Format("Docbar%d", m_wndCode+1);
+        strSection.Format(L"Docbar%d", m_wndCode+1);
 //vls-end//
 
 	//////////////////////////////////////////////////////////////////////
-    m_sizeFloat.cx = ::GetPrivateProfileInt(strSection, "CXFloat", m_sizeFloat.cx, szGLOBAL_PROFILE);
+    m_sizeFloat.cx = ::GetPrivateProfileInt(strSection, L"CXFloat", m_sizeFloat.cx, szGLOBAL_PROFILE);
 	//////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////
-    m_sizeFloat.cy = ::GetPrivateProfileInt(strSection, "CYFloat", m_sizeFloat.cy,szGLOBAL_PROFILE);
+    m_sizeFloat.cy = ::GetPrivateProfileInt(strSection, L"CYFloat", m_sizeFloat.cy,szGLOBAL_PROFILE);
 
 	//////////////////////////////////////////////////////////////////////
-    m_sizeHorz.cx = ::GetPrivateProfileInt(strSection, "CXHorz", m_sizeHorz.cx,szGLOBAL_PROFILE);
-	//////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////
-    m_sizeHorz.cy = ::GetPrivateProfileInt(strSection, "CYHorz", m_sizeHorz.cy, szGLOBAL_PROFILE);
-
-	//////////////////////////////////////////////////////////////////////
-    m_sizeVert.cx = ::GetPrivateProfileInt(strSection, "CXVert", m_sizeVert.cx, szGLOBAL_PROFILE);
+    m_sizeHorz.cx = ::GetPrivateProfileInt(strSection, L"CXHorz", m_sizeHorz.cx,szGLOBAL_PROFILE);
 	//////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////
-    m_sizeVert.cy = ::GetPrivateProfileInt(strSection, "CYVert", m_sizeVert.cy, szGLOBAL_PROFILE);
+    m_sizeHorz.cy = ::GetPrivateProfileInt(strSection, L"CYHorz", m_sizeHorz.cy, szGLOBAL_PROFILE);
+
+	//////////////////////////////////////////////////////////////////////
+    m_sizeVert.cx = ::GetPrivateProfileInt(strSection, L"CXVert", m_sizeVert.cx, szGLOBAL_PROFILE);
+	//////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////
+    m_sizeVert.cy = ::GetPrivateProfileInt(strSection, L"CYVert", m_sizeVert.cy, szGLOBAL_PROFILE);
 
 //vls-begin// multiple output
-    m_bFlag = ::GetPrivateProfileInt(strSection, "Visible", FALSE, szGLOBAL_PROFILE);
-    m_Dock = ::GetPrivateProfileInt(strSection, "Docking", 0xF000L, szGLOBAL_PROFILE);
+    m_bFlag = ::GetPrivateProfileInt(strSection, L"Visible", FALSE, szGLOBAL_PROFILE);
+    m_Dock = ::GetPrivateProfileInt(strSection, L"Docking", CBRS_FLOAT_MULTI, szGLOBAL_PROFILE);
 	EnableDocking(m_Dock);
     ShowWindow(m_bFlag ? SW_SHOW : SW_HIDE);
     // ShowWindow(m_bVisible ? SW_SHOW : SW_HIDE);
 
     CString t, sDefault;
-    CHAR sTitle[4096] = "";
+    wchar_t sTitle[4096] = L"";
     t.LoadString(IDS_OUTPUT);
     sDefault.Format(t, m_wndCode);
-    ::GetPrivateProfileString(strSection, "Title", sDefault, sTitle, 4096, szGLOBAL_PROFILE);
+    ::GetPrivateProfileString(strSection, L"Title", sDefault, sTitle, 4096, szGLOBAL_PROFILE);
     m_sTitle = sTitle;
     SetWindowText(sTitle);
 //vls-end//
 //* en
-	m_mX = ::GetPrivateProfileInt(strSection, "posX", 0, szGLOBAL_PROFILE);
-	m_mY = ::GetPrivateProfileInt(strSection, "posY", 0, szGLOBAL_PROFILE);
+	m_mX = ::GetPrivateProfileInt(strSection, L"posX", 0, szGLOBAL_PROFILE);
+	m_mY = ::GetPrivateProfileInt(strSection, L"posY", 0, szGLOBAL_PROFILE);
 //*/en
 }
 
@@ -764,3 +949,58 @@ void CCoolDialogBar::SetTitle(LPCTSTR sTitle)
     }
 }
 //vls-end//
+
+void CCoolDialogBar::Resize(int Width, int Height)
+{
+	Width += m_cxBorder * 2 + m_cxEdge * 2;
+	Height += m_cyBorder * 2 + m_cxEdge * 2;
+
+	if (IsFloating()) {
+		m_sizeFloat.cx = Width;
+		m_sizeFloat.cy = Height;
+	} else {
+		int dsize;
+		if (IsHorz()) {
+			dsize = Width - m_sizeHorz.cx;
+			m_sizeHorz.cx = Width;
+			m_sizeHorz.cy = Height;
+		} else {
+			dsize = Height - m_sizeVert.cy;
+			m_sizeVert.cx = Width;
+			m_sizeVert.cy = Height;
+		}
+
+		int own;
+		vector <CCoolDialogBar *> row = AllVisibleNeighbours(&own);
+		for (int i = 0; i < row.size(); i++)
+			if (i != own) {
+				if (IsHorz())
+					row[i]->m_sizeHorz.cy = m_sizeHorz.cy;
+				else
+					row[i]->m_sizeVert.cx = m_sizeVert.cx;
+			}
+		
+		int other = own + 1;
+		if (other >= row.size())
+			other -= 2;
+		if (other >= 0) {
+			if (IsHorz()) {
+				CRect rc;
+				row[other]->GetWindowRect(rc);
+				row[other]->m_sizeHorz.cx = max(row[other]->m_sizeHorz.cx - dsize, m_sizeMin.cx);
+				rc.left += dsize;
+				GetParent()->ScreenToClient(rc);
+				row[other]->MoveWindow(rc);
+			} else {
+				CRect rc;
+				row[other]->GetWindowRect(rc);
+				row[other]->m_sizeVert.cy = max(row[other]->m_sizeVert.cy - dsize, m_sizeMin.cy);
+				rc.top += dsize;
+				GetParent()->ScreenToClient(rc);
+				row[other]->MoveWindow(rc);
+			}
+		}
+
+		m_pDockSite->RecalcLayout();
+	}
+}

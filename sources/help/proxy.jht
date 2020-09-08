@@ -1,0 +1,16 @@
+#proxy
+  show current proxy settings
+#proxy disable
+  disable proxy (reconnection needed)
+#proxy {socks4|socks5} {ip}[:{port}] [username] [password]
+  set proxy to ip:port (default port is 1080)
+  authorization use given username and password
+  reconnection needed
+#proxy list {filename} [line]
+  takes proxy settings from file filename
+  if line not specified then next from previous
+  call line is taken
+  lines in file are numbered circular
+  format of lines is identical to the proxy command
+  arguments i.e. "socks4 127.0.0.1:9150 tor"
+  

@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "RECORE_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MT /w /W0 /GX /O1 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "RECORE_EXPORTS" /D "HAVE_MEMMOVE" /YX /FD /c
+# ADD CPP /nologo /MT /w /W0 /GX /O1 /I ".\\" /D "SUPPORT_PCRE16" /D "HAVE_CONFIG_H" /D "PCRE_STATIC" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_USRDLL" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x419 /d "NDEBUG"
@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "RECORE_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "RECORE_EXPORTS" /D "HAVE_MEMOVE" /YX /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I ".\\" /D "HAVE_CONFIG_H" /D "PCRE_STATIC" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_USRDLL" /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x419 /d "_DEBUG"
@@ -92,23 +92,7 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=.\chartables.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\GET.C
-# End Source File
-# Begin Source File
-
 SOURCE=.\main.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\maketables.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\PCRE.C
 # End Source File
 # Begin Source File
 
@@ -116,11 +100,175 @@ SOURCE=.\PCRE.DEF
 # End Source File
 # Begin Source File
 
-SOURCE=.\pcreposix.c
+SOURCE=.\pcre16_byte_order.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\STUDY.C
+SOURCE=.\pcre16_chartables.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_compile.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_config.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_dfa_exec.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_exec.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_fullinfo.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_get.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_globals.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_jit_compile.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_maketables.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_newline.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_ord2utf16.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_refcount.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_string_utils.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_study.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_tables.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_ucd.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_utf16_utils.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_valid_utf16.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_version.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre16_xclass.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_byte_order.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_chartables.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_compile.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_config.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_dfa_exec.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_exec.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_fullinfo.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_get.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_globals.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_jit_compile.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_maketables.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_newline.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_ord2utf8.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_refcount.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_string_utils.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_study.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_tables.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_ucd.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_valid_utf8.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_version.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_xclass.c
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -132,15 +280,31 @@ SOURCE=.\Config.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\INTERNAL.H
-# End Source File
-# Begin Source File
-
 SOURCE=.\Pcre.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\pcre_internal.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcre_scanner.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcrecpp.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\pcrecpp_internal.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\pcreposix.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ucp.h
 # End Source File
 # End Group
 # Begin Group "Resource Files"

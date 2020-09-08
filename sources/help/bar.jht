@@ -1,0 +1,4 @@
+#bar <varname> <length> <fill-left> <fill-right> <value> <maximum>
+  constructs ASCII-bar, example:
+  #bar hpbar 20 : - 540 789
+  now $hpbar value is  :::::::::::::-------

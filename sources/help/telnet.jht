@@ -1,0 +1,13 @@
+#telnet
+  shows telnet options (sub-protocols) currently enabled
+#telnet <option>
+  shows status of specified telnet option
+  options can be decimal numbers in range 1..254 or one of the following aliases:
+    EOR, ECHO, NAWS, MTTS, MSDP, MSSP, MCCP, MCCP1, MCCP2, MSP, MXP, ATCP, GMCP, AYT, CHARSET
+#telnet <option> on|off
+  turns on/off specified telnet option
+  for options turned on JMC will automatically respond to WILL/DO requests with DO/WILL responses
+  for options turned off JMC will automatically respond to WILL/DO requests with DONT/WONT responses
+#telnet debug [on|off]
+  turns on/off or switches telnet debugging messages
+  also messages from telnet should be enabled (#message telnet on)

@@ -15,19 +15,19 @@ extern struct listnode *searchnode_list();
 /**********************/
 /* the #alias command */
 /**********************/
-BOOL show_aliases(char* left, CGROUP* pGroup)
+BOOL show_aliases(wchar_t* left, CGROUP* pGroup)
 {
     BOOL bFound = FALSE;
 
     if ( !left || !*left ) 
-        left = "*";
+        left = L"*";
     
     ALIAS_INDEX ind = AliasList.begin();
     while (ind  != AliasList.end() ) {
-        if ( (!pGroup || (pGroup == ind->second->m_pGroup) ) && match(left, (char*)ind->first.data() ) ){
+        if ( (!pGroup || (pGroup == ind->second->m_pGroup) ) && match(left, ind->first.c_str() ) ){
             ALIAS* pal = ind->second;
-            char temp[BUFFER_SIZE];
-            sprintf(temp, rs::rs(1009), (char*)ind->first.data(), (char*)(pal->m_strRight.data()), (char*)pal->m_pGroup->m_strName.data()  );
+            wchar_t temp[BUFFER_SIZE];
+            swprintf(temp, rs::rs(1009), ind->first.c_str(), pal->m_strRight.c_str(), pal->m_pGroup->m_strName.c_str()  );
             tintin_puts2(temp);
             bFound = TRUE;
         }
@@ -36,12 +36,12 @@ BOOL show_aliases(char* left, CGROUP* pGroup)
     return bFound;
 }
 
-void alias_command(char *arg)
+void alias_command(wchar_t *arg)
 {
-    char left[BUFFER_SIZE], right[BUFFER_SIZE], arg2[BUFFER_SIZE], group[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE], arg2[BUFFER_SIZE], group[BUFFER_SIZE];
 
-    arg=get_arg_in_braces(arg, left,  STOP_SPACES);
-    arg=get_arg_in_braces(arg, right, WITH_SPACES);
+    arg=get_arg_in_braces(arg,left,STOP_SPACES,sizeof(left)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
 
     if(!*left) {
         tintin_puts2(rs::rs(1010));
@@ -54,30 +54,39 @@ void alias_command(char *arg)
         return;
     }
     // now create alias
-    arg=get_arg_in_braces(arg, group, STOP_SPACES);
+    arg=get_arg_in_braces(arg,group,STOP_SPACES,sizeof(group)/sizeof(wchar_t)-1);
 
     // check for ' ' in left side
-    char* ptr = left;
-    while ( *ptr && *ptr != ' ') 
-        ptr++;
-    *ptr = 0;
+	if (*left != L'/') {
+		wchar_t* ptr = left;
+		while ( *ptr && *ptr != L' ') 
+			ptr++;
+		*ptr = 0;
+	}
 
     ALIAS_INDEX ind = AliasList.find(left);
     ALIAS* pal;
+	BOOL bNew = FALSE;
     if ( ind == AliasList.end() ) {
-        pal= new ALIAS;
+        pal= new ALIAS();
+		bNew = TRUE;
     } else {
         pal = ind->second;
     }
 
+	if ( !pal->SetLeft (left) ) {
+        if ( bNew ) {
+            delete pal;
+        }
+        return;
+    }
+    pal->m_strRight = right;
     pal->SetGroup(group);
 
-    pal->m_strRight = right;
-    pal->m_strLeft = left;
     AliasList[left] = pal;
 
     if (mesvar[MSG_ALIAS]) {
-        sprintf(arg2, rs::rs(1012), left, right, pal->m_pGroup->m_strName.data());
+        swprintf(arg2, rs::rs(1012), left, right, pal->m_pGroup->m_strName.c_str());
         tintin_puts2(arg2);
     }
 }
@@ -85,20 +94,21 @@ void alias_command(char *arg)
 /************************/
 /* the #unalias command */
 /************************/
-void unalias_command(char *arg)
+void unalias_command(wchar_t *arg)
 {
-    char left[BUFFER_SIZE], result[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], result[BUFFER_SIZE];
     BOOL bFound = FALSE;
   
-    arg=get_arg_in_braces(arg, left, WITH_SPACES);
+    arg=get_arg_in_braces(arg,left,WITH_SPACES,sizeof(left)/sizeof(wchar_t)-1);
 
     ALIAS_INDEX ind = AliasList.begin();
 
     while (ind  != AliasList.end() ) {
-        if ( match(left, (char*)ind->first.data()) ){
-            ALIAS* pal = ind->second;
+		ALIAS* pal = ind->second;
+		if ( (pal->m_PCRE.m_pPcre && !wcscmp(left, pal->m_strLeft.c_str())) ||
+             (match(left, ind->first.c_str())) ) {
             if (mesvar[MSG_ALIAS]) {
-                sprintf(result, rs::rs(1013), (char*)ind->first.data());
+                swprintf(result, rs::rs(1013), ind->first.c_str());
                 tintin_puts2(result);
             }
             bFound = TRUE;
@@ -110,13 +120,13 @@ void unalias_command(char *arg)
     }
   
     if (!bFound && mesvar[MSG_ALIAS]) {
-        sprintf(result, rs::rs(1007), left);
+        swprintf(result, rs::rs(1007), left);
         tintin_puts2(result);
     }    
 }
 
 
-void DLLEXPORT RemoveAlias(char* name) 
+void DLLEXPORT RemoveAlias(const wchar_t* name) 
 {
     ALIAS_INDEX ind = AliasList.find(name);
     if ( ind != AliasList.end() ) {
@@ -125,13 +135,15 @@ void DLLEXPORT RemoveAlias(char* name)
     }
 }
 
-PALIAS DLLEXPORT SetAlias(char* name, char* text, char* group) 
+PALIAS DLLEXPORT SetAlias(const wchar_t* name, const wchar_t* text, const wchar_t* group) 
 {
     ALIAS_INDEX ind = AliasList.find(name);
     ALIAS* pal;
     if ( ind == AliasList.end() ) {
-        pal= new ALIAS;
-        pal->m_strLeft = name;
+        pal= new ALIAS();
+		if ( !pal->SetLeft (name) ) {
+			pal->m_strLeft = name;
+		}
     } else {
         pal = ind->second;
     }
@@ -156,7 +168,7 @@ PPALIAS DLLEXPORT GetAliasList(int* size)
     return (PPALIAS)JMCObjRet;
 }
 
-PALIAS DLLEXPORT GetAlias(char* name)
+PALIAS DLLEXPORT GetAlias(const wchar_t* name)
 {
     ALIAS_INDEX ind = AliasList.find(name);
     if ( ind == AliasList.end() ) 

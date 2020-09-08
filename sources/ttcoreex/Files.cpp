@@ -4,113 +4,312 @@
 #include <time.h>
 #include <io.h>
 #include <string>
+#include <vector>
+#include <map>
+
+#include "Proxy.h"
 
 //vls-begin// base dir
-char DLLEXPORT szBASE_DIR[MAX_PATH];
-char DLLEXPORT szSETTINGS_DIR[MAX_PATH];
+wchar_t DLLEXPORT szBASE_DIR[MAX_PATH];
+wchar_t DLLEXPORT szSETTINGS_DIR[MAX_PATH];
 
 struct completenode *complete_head;
-void prepare_for_write(char *command, char *left, char *right, char *pr, char* group, char *result);
+void prepare_for_write(const wchar_t *command, const wchar_t *type, const wchar_t *left, const wchar_t *right, const wchar_t *pr, const wchar_t* group, wchar_t *result);
+void prepare_for_write(const wchar_t *command, const wchar_t *left, const wchar_t *right, const wchar_t *pr, const wchar_t* group, wchar_t *result);
+
+std::vector<std::wstring> processed_fnames;
 
 //* en
 BOOL bSosExact = FALSE;
 //*/en
 
+void DLLEXPORT utf16le_to_utf16be(wchar_t *dst, const wchar_t *src, int count)
+{
+	const unsigned char *psrc = (const unsigned char*)src;
+	unsigned char *pdst = (unsigned char*)dst;
+	for (int i = 0; i < count*sizeof(wchar_t); i += sizeof(wchar_t)) {
+		pdst[i + 1] = *psrc++;
+		pdst[i] = *psrc++;
+	}
+}
+
+// filename -> codepage preservation
+static std::map<std::wstring, DWORD> file_codepage;
+/*
+	Simple codepage detection:
+	1) if contents can be decoded as UTF-8 - its UTF-8
+	2) if contents has UTF-16 BOM (starts from FEFF or FFFE) - its UTF-16
+	3) otherwise its system default ANSI (1251, 1252 etc.)
+ */
+int DLLEXPORT read_file_contents(const wchar_t *FilePath, wchar_t *Buffer, int Capacity)
+{
+	FILE *fin = _wfopen(FilePath, L"rb");
+	
+	if (!fin)
+		return 0;
+	
+	fseek(fin, 0, SEEK_END);
+	int size = ftell(fin);
+
+	if (size == 0) {
+		fclose(fin);
+		if (Buffer)
+			Buffer[0] = '\0';
+		return 0;
+	}
+
+	unsigned char *tmpBuf = new unsigned char[size + 1];
+	fseek(fin, 0, SEEK_SET);
+	fread(tmpBuf, 1, size, fin);
+	tmpBuf[size++] = '\0';
+	fclose(fin);
+
+	int req_cap = (Capacity ? Capacity - 1 : 0);
+
+	int ret;
+	if ( (ret = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, (const char*)tmpBuf, size, Buffer, req_cap)) > 0 ) {
+		delete[] tmpBuf;
+		file_codepage[std::wstring(FilePath)] = CP_UTF8;
+		if (Buffer)
+			Buffer[ret] = L'\0';
+		return ret + 1;
+	}
+	if (size >= 2 && tmpBuf[0] == 0xFF && tmpBuf[1] == 0xFE) {
+		//if ( (ret = MultiByteToWideChar(1200, MB_ERR_INVALID_CHARS, (const char*)tmpBuf + 2, size - 2, Buffer, Capacity)) > 0 ) {
+		{ //1200 stands for UTF-16LE which is available only for managed apps, so just copy-paste contents as if it is UCS-2LE
+			if (req_cap > 0) {
+				ret = min(req_cap, (size-2) / 2);
+				memcpy(Buffer, tmpBuf + 2, ret * 2);
+			} else {
+				ret = (size - 2) / 2;
+			}
+			delete[] tmpBuf;
+			file_codepage[std::wstring(FilePath)] = 1200;
+			if (Buffer)
+				Buffer[ret] = L'\0';
+			return ret + 1;
+		}
+	}
+	if (size >= 2 && tmpBuf[0] == 0xFE && tmpBuf[1] == 0xFF) {
+		//if ( (ret = MultiByteToWideChar(1201, MB_ERR_INVALID_CHARS, (const char*)tmpBuf + 2, size - 2, Buffer, Capacity)) > 0 ) {
+		{ //1201 stands for UTF-16BE which is available only for managed apps, so assume UCS-2LE compatibility and swap bytes in each pair
+			if (req_cap) {
+				ret = min(req_cap, (size-2) / 2);
+				utf16le_to_utf16be((wchar_t*)(tmpBuf + 2), Buffer, ret);
+			} else {
+				ret = (size - 2) / 2;
+			}
+			delete[] tmpBuf;
+			file_codepage[std::wstring(FilePath)] = 1201;
+			if (Buffer)
+				Buffer[ret] = L'\0';
+			return ret + 1;
+		}
+	}
+	if ( (ret = MultiByteToWideChar(CP_ACP, 0, (const char*)tmpBuf, size, Buffer, req_cap)) > 0 ) {
+		delete[] tmpBuf;
+		file_codepage[std::wstring(FilePath)] = CP_ACP;
+		if (Buffer)
+			Buffer[ret] = L'\0';
+		return ret + 1;
+	}
+	//something went completely wrong
+	delete[] tmpBuf;
+	return 0;
+}
+
+int DLLEXPORT write_file_contents(const wchar_t *FilePath, const wchar_t *Buffer, int Length)
+{
+	FILE *fout;
+	
+	std::map< std::wstring, DWORD >::iterator it = file_codepage.find(std::wstring(FilePath));
+
+	DWORD codepage;
+	if (it == file_codepage.end())
+		codepage = CP_UTF8;
+	else
+		codepage = it->second;
+	
+	fout = _wfopen(FilePath, L"wb");
+	if (!fout)
+		return -1;
+
+	char *buf;
+	int len;
+
+	if (codepage == 1200) {
+		fwrite("\xFF\xFE", 1, 2, fout);
+		len = Length * 2;
+		buf = new char[len];
+		memcpy(buf, Buffer, len);
+	} else if (codepage == 1201) {
+		fwrite("\xFE\xFF", 1, 2, fout);
+		len = Length * 2;
+		buf = new char[len];
+		utf16le_to_utf16be((wchar_t*)buf, Buffer, Length);
+	} else {
+		len = WideCharToMultiByte(codepage, 0, Buffer, Length, NULL, 0, NULL, NULL);
+		buf = new char[len];
+		WideCharToMultiByte(codepage, 0, Buffer, Length, buf, len, NULL, NULL);
+	}
+
+	int ret = fwrite(buf, 1, len, fout);
+	fclose(fout);
+
+	delete[] buf;
+
+	file_codepage[std::wstring(FilePath)] = codepage;
+
+	return ret;
+}
 
 /***********************************/
 /* read and execute a command file */
 /***********************************/
-static void process_file(FILE* pfile)
+static void process_file(const wchar_t*FilePath, int Size)
 {
-    char buffer[BUFFER_SIZE], *cptr;
+    wchar_t *buffer, *command;
 
-//vls-begin// script files
+
     EnterCriticalSection(&secReadingConfig);
     ResetEvent(eventReadingHasUse);
     SetEvent(eventReadingConfig);
-//vls-end//
-    while(fgets(buffer, sizeof(buffer), pfile)) {
-        for(cptr=buffer; *cptr && *cptr!='\n'; cptr++);
-        *cptr='\0';
-        if ( *buffer  ) 
-            parse_input(buffer); 
+
+	buffer = new wchar_t[Size + 1];
+	command = new wchar_t[Size + 1];
+	read_file_contents(FilePath, buffer, Size);
+
+	buffer[Size] = L'\0';
+
+	wchar_t *src = buffer;
+	wchar_t *dst = command;
+	wchar_t* cptr = buffer;
+	while(Size > 0) {
+		wchar_t *start = cptr;
+
+		int nested = 0;
+		dst = command;
+        for(; *cptr && Size > 0; cptr++, Size--) {
+			if (*cptr == DEFAULT_OPEN)
+				nested++;
+			else if (*cptr == DEFAULT_CLOSE)
+				nested--;
+			else if (*cptr == L'\r' || *cptr == L'\n') {
+				bool skip_newline = false;
+				if (nested > 0) {
+					skip_newline = true;
+				} else {
+					wchar_t *nextch = space_out(cptr);
+					skip_newline = (*nextch == DEFAULT_OPEN || *nextch == DEFAULT_CLOSE);
+				}
+
+				if (!skip_newline) 
+					break;
+				
+				int spaces = space_out(cptr) - cptr - 1;
+				cptr += spaces;
+				Size -= spaces;
+				*(cptr) = L' ';
+			}
+			*(dst++) = *cptr;
+		}
+
+        *cptr=L'\0';
+		*(dst++) = L'\0';
+		//for(; iswspace(*start); start++); //skip empty lines
+		start = space_out(command);
+        if ( *start && wcslen(start) ) 
+            parse_input(start, TRUE);
+
+		cptr++;
+		Size--;
     }
-//vls-begin// script files
+	/*
+	wchar_t* cptr = buffer;
+    while(Size > 0) {
+		wchar_t *start = cptr;
+        for(; *cptr && *cptr!=L'\n' && *cptr!=L'\r' && Size > 0; cptr++, Size--);
+        *cptr=L'\0';
+		for(; iswspace(*start); start++); //skip empty lines
+        if ( *start && wcslen(start) ) 
+            parse_input(start, TRUE);
+		cptr++;
+		Size--;
+    }
+	*/
+		
+	delete[] command;
+	delete[] buffer;
+
     ResetEvent(eventReadingConfig);
-    if (WaitForSingleObject(eventReadingHasUse, 0) == WAIT_OBJECT_0)
+    if (WaitForSingleObject(eventReadingHasUse, 0) == WAIT_OBJECT_0) {
         PostMessage(hwndMAIN, WM_USER+300, 0, 0);
-    else if(WaitForSingleObject(eventReadingFirst, 0) != WAIT_OBJECT_0)
-        PostMessage(hwndMAIN, WM_USER+300, 0, 0);
-    SetEvent(eventReadingFirst);
+    } else if(WaitForSingleObject(eventReadingFirst, 0) != WAIT_OBJECT_0) {
+		//scripts are reloaded on opening profile (OnNewDocument())
+		//so we don't need to reload them once again immediately
+        //PostMessage(hwndMAIN, WM_USER+300, 0, 0);
+    } SetEvent(eventReadingFirst);
     LeaveCriticalSection(&secReadingConfig);
-//vls-end//
 }
 
-//vls-begin// bugifx
-//void read_command(char *filename)
-void read_command(char *arg)
-//vls-end//
+void variable_value_filename(wchar_t *arg)
 {
-    FILE *myfile ;
-    char message[BUFFER_SIZE];
-    // int flag = TRUE;
+	int sz = processed_fnames.size();
+	if (sz > 0)
+		wcscpy(arg, processed_fnames[sz - 1].c_str());
+}
 
-//vls-begin// bugifx
-//    get_arg_in_braces(filename,filename, 1);
-    char filename[BUFFER_SIZE];
-    get_arg_in_braces(arg, filename, WITH_SPACES);
-//vls-end//
+void read_command(wchar_t *arg)
+{
+    wchar_t message[BUFFER_SIZE];
 
-//vls-begin// bugfix
+    wchar_t filename[BUFFER_SIZE], temp[BUFFER_SIZE];
+    get_arg_in_braces(arg,temp,WITH_SPACES,sizeof(temp)/sizeof(wchar_t)-1);
+	prepare_actionalias(temp, filename,sizeof(filename)/sizeof(wchar_t)-1);
+
     if ( *filename == 0 ) {
         tintin_puts2(rs::rs(1238));
         return;
     }
-//vls-end//
 
-//vls-begin// base dir
-//    if((myfile=fopen(filename, "r"))==NULL) {
-//        sprintf(message,rs::rs(1031),filename);
-    char fn[MAX_PATH+2];
+    wchar_t fn[MAX_PATH+2];
+	int size;
 
     MakeAbsolutePath(fn, filename, szBASE_DIR);
-    if((myfile=fopen(fn, "r"))==NULL) {
-        sprintf(message,rs::rs(1031), fn);
-//vls-end//
+    if((size = read_file_contents(fn, NULL, 0)) <= 0) {
+        swprintf(message,rs::rs(1031), fn);
         tintin_puts2(message);
     } else {
-        process_file(myfile);
-        fclose(myfile);
+		processed_fnames.push_back(filename);
+        process_file(fn, size);
+		processed_fnames.pop_back();
     }
 
-//vls-begin// base dir
-//    if((myfile=fopen("global.set", "r"))==NULL) {
-    MakeAbsolutePath(fn, "global.set", szBASE_DIR);
-    if((myfile=fopen(fn, "r"))==NULL) {
-//vls-end//
-        sprintf(message,rs::rs(1032));
+    MakeAbsolutePath(fn, L"global.set", szBASE_DIR);
+    if((size = read_file_contents(fn, NULL, 0)) <= 0) {
+        swprintf(message,rs::rs(1032));
         tintin_puts2(message);
     } else {
-        process_file(myfile);
-        fclose(myfile);
+		processed_fnames.push_back(L"global.set");
+        process_file(fn, size);
+		processed_fnames.pop_back();
     }
-
     
     if (!verbose) {
         tintin_puts2(rs::rs(1033));
-        sprintf(message,rs::rs(1034), AliasList.size());
+        swprintf(message,rs::rs(1034), AliasList.size());
         tintin_puts2(message);
-        sprintf(message,rs::rs(1035),ActionList.size());
+        swprintf(message,rs::rs(1035),ActionList.size());
         tintin_puts2(message);
-        sprintf(message,rs::rs(1036),antisubnum);
+        swprintf(message,rs::rs(1036),antisubnum);
         tintin_puts2(message);
-        sprintf(message,rs::rs(1037),subnum);
+        swprintf(message,rs::rs(1037),subnum);
         tintin_puts2(message);
-        sprintf(message,rs::rs(1038),VarList.size ());
+        swprintf(message,rs::rs(1038),VarList.size ());
         tintin_puts2(message);
-        sprintf(message,rs::rs(1039),HlightList.size());
+        swprintf(message,rs::rs(1039),HlightList.size());
         tintin_puts2(message);
-        sprintf(message,rs::rs(1040),GroupList.size());
+        swprintf(message,rs::rs(1040),GroupList.size());
         tintin_puts2(message);
     }
 
@@ -122,18 +321,22 @@ void read_command(char *arg)
 /************************/
 /* write a command file */
 /************************/
-void write_command(char *arg)
+void write_command(wchar_t *arg)
 {
-    FILE *myfile, *globfile;
-    char buffer[BUFFER_SIZE], filename[BUFFER_SIZE], group[BUFFER_SIZE];
+	USES_CONVERSION;
+
+	std::wstring set_lines, glob_lines;
+	wchar_t set_fn[MAX_PATH+2], glob_fn[MAX_PATH+2];
+
+    wchar_t buffer[BUFFER_SIZE*10], filename[BUFFER_SIZE], group[BUFFER_SIZE];
     struct listnode *nodeptr;
     int i;
     CGROUP* grp ;
 
-    arg=get_arg_in_braces(arg, filename, WITH_SPACES);
-    arg=get_arg_in_braces(arg, group, STOP_SPACES);
+    arg=get_arg_in_braces(arg,filename,WITH_SPACES,sizeof(filename)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,group,STOP_SPACES,sizeof(group)/sizeof(wchar_t)-1);
 
-    if (*filename=='\0') {
+    if (*filename==L'\0') {
         tintin_puts2(rs::rs(1041));
         return;
     }
@@ -141,149 +344,256 @@ void write_command(char *arg)
     if ( *group ) {
         GROUP_INDEX ind = GroupList.find(group);
         if ( ind == GroupList .end() ) {
-            char result[BUFFER_SIZE];
-            sprintf ( result, rs::rs(1042), group);
+            wchar_t result[BUFFER_SIZE];
+            swprintf ( result, rs::rs(1042), group);
             tintin_puts2(result);
             return;
         }
         grp = ind->second;
     }
 
-
     if ( *group == 0 ) {
-//vls-begin// base dir
-//        if((myfile=fopen(filename, "w"))==NULL) {
-//            char buff[128];
-//            sprintf(buff,rs::rs(1043),filename);
-        char fn[MAX_PATH+2];
-        MakeAbsolutePath(fn, filename, szBASE_DIR);
-        if((myfile=fopen(fn, "w"))==NULL) {
-            char buff[BUFFER_SIZE];
-            sprintf(buff,rs::rs(1043), fn);
-//vls-end//
-            tintin_puts2(buff);
-            return; 
-        }
-//vls-begin// base dir
-//        if((globfile=fopen("global.set", "w"))==NULL) {
-        MakeAbsolutePath(fn, "global.set", szBASE_DIR);
-        if((globfile=fopen(fn, "w"))==NULL) {
-//vls-end//
-            tintin_puts2(rs::rs(1044));
-            fclose(myfile);
-            return; 
-        }
+        MakeAbsolutePath(set_fn, filename, szBASE_DIR);
+		set_lines = L"";
+
+        MakeAbsolutePath(glob_fn, L"global.set", szBASE_DIR);
+		glob_lines = L"";
 
         // save messages state
         if ( !mesvar[MSG_ALIAS] ) {
             buffer[0] = cCommandChar ;
-            strcpy(buffer+1, "message alias OFF\n");
-            fputs(buffer, myfile);
+            wcscpy(buffer+1, L"message alias OFF\n");
+            set_lines += buffer;
         }
         if ( !mesvar[MSG_ACTION] ) {
             buffer[0] = cCommandChar ;
-            strcpy(buffer+1, "message action OFF\n");
-            fputs(buffer, myfile);
+            wcscpy(buffer+1, L"message action OFF\n");
+            set_lines += buffer;
         }
         if ( !mesvar[MSG_SUB] ) {
             buffer[0] = cCommandChar ;
-            strcpy(buffer+1, "message subst OFF\n");
-            fputs(buffer, myfile);
+            wcscpy(buffer+1, L"message subst OFF\n");
+            set_lines += buffer;
         }
         if ( !mesvar[MSG_ANTISUB] ) {
             buffer[0] = cCommandChar ;
-            strcpy(buffer+1, "message antisub OFF\n");
-            fputs(buffer, myfile);
+            wcscpy(buffer+1, L"message antisub OFF\n");
+            set_lines += buffer;
         }
         if ( !mesvar[MSG_HIGH] ) {
             buffer[0] = cCommandChar ;
-            strcpy(buffer+1, "message high OFF\n");
-            fputs(buffer, myfile);
+            wcscpy(buffer+1, L"message high OFF\n");
+            set_lines += buffer;
         }
         if ( !mesvar[MSG_VAR] ) {
             buffer[0] = cCommandChar ;
-            strcpy(buffer+1, "message variable OFF\n");
-            fputs(buffer, myfile);
+            wcscpy(buffer+1, L"message variable OFF\n");
+            set_lines += buffer;
         }
         if ( !mesvar[MSG_GRP] ) {
             buffer[0] = cCommandChar ;
-            strcpy(buffer+1, "message group OFF\n");
-            fputs(buffer, myfile);
+            wcscpy(buffer+1, L"message group OFF\n");
+            set_lines += buffer;
         }
         if ( !mesvar[MSG_HOT] ) {
             buffer[0] = cCommandChar ;
-            strcpy(buffer+1, "message hotkey OFF\n");
-            fputs(buffer, myfile);
+            wcscpy(buffer+1, L"message hotkey OFF\n");
+            set_lines += buffer;
         }
-//vls-begin// script files
         if ( !mesvar[MSG_SF] ) {
             buffer[0] = cCommandChar ;
-            strcpy(buffer+1, "message uses OFF\n");
-            fputs(buffer, myfile);
+            wcscpy(buffer+1, L"message uses OFF\n");
+            set_lines += buffer;
         }
-//vls-end//
-//* en
         if ( !mesvar[MSG_LOG] ) {
             buffer[0] = cCommandChar ;
-            strcpy(buffer+1, "message logs OFF\n");
-            fputs(buffer, myfile);
+            wcscpy(buffer+1, L"message logs OFF\n");
+            set_lines += buffer;
         }
-//*/en
+		if ( mesvar[MSG_TELNET] ) {
+            buffer[0] = cCommandChar ;
+            wcscpy(buffer+1, L"message telnet ON\n");
+            set_lines += buffer;
+        }
+		if ( !mesvar[MSG_MUD_OOB] ) {
+            buffer[0] = cCommandChar ;
+            wcscpy(buffer+1, L"message oob OFF\n");
+            set_lines += buffer;
+        }
+		if ( !mesvar[MSG_MAPPER] ) {
+            buffer[0] = cCommandChar ;
+            wcscpy(buffer+1, L"message mapper OFF\n");
+            set_lines += buffer;
+        }
 
         // save togglesub/echo/multiaction etc states 
         buffer[0] = cCommandChar ;
 
-        strcpy(buffer+1, "multiaction ");
-        strcat (buffer, bMultiAction ? "on\n" : "off\n" );
-        fputs(buffer, myfile);
+        wcscpy(buffer+1, L"multiaction ");
+        wcscat (buffer, bMultiAction ? L"on\n" : L"off\n" );
+        set_lines += buffer;
 
-        strcpy(buffer+1, "multihighlight ");
-        strcat (buffer, bMultiHighlight ? "on\n" : "off\n" );
-        fputs(buffer, myfile);
+        wcscpy(buffer+1, L"multihighlight ");
+        wcscat (buffer, bMultiHighlight ? L"on\n" : L"off\n" );
+        set_lines += buffer;
 
-        strcpy(buffer+1, "presub ");
-        strcat (buffer, presub ? "on\n" : "off\n" );
-        fputs(buffer, myfile);
+        wcscpy(buffer+1, L"presub ");
+        wcscat (buffer, presub ? L"on\n" : L"off\n" );
+        set_lines += buffer;
 
-        strcpy(buffer+1, "echo ");
-        strcat (buffer, echo ? "on\n" : "off\n" );
-        fputs(buffer, myfile);
+        wcscpy(buffer+1, L"echo ");
+        wcscat (buffer, echo ? L"on\n" : L"off\n" );
+        set_lines += buffer;
 
-        strcpy(buffer+1, "ignore ");
-        strcat (buffer, ignore? "on\n" : "off\n" );
-        fputs(buffer, myfile);
+        wcscpy(buffer+1, L"ignore ");
+        wcscat (buffer, ignore? L"on\n" : L"off\n" );
+        set_lines += buffer;
 
-        strcpy(buffer+1, "speedwalk ");
-        strcat (buffer, speedwalk ? "on\n" : "off\n" );
-        fputs(buffer, myfile);
+        wcscpy(buffer+1, L"speedwalk ");
+        wcscat (buffer, speedwalk ? L"on\n" : L"off\n" );
+        set_lines += buffer;
 
-        strcpy(buffer+1, "togglesubs ");
-        strcat (buffer, togglesubs ? "on\n" : "off\n" );
-        fputs(buffer, myfile);
+        wcscpy(buffer+1, L"togglesubs ");
+        wcscat (buffer, togglesubs ? L"on\n" : L"off\n" );
+        set_lines += buffer;
 
-        strcpy(buffer+1, "verbat ");
-        strcat (buffer, verbatim ? "on\n" : "off\n" );
-        fputs(buffer, myfile);
+        wcscpy(buffer+1, L"verbat ");
+        wcscat (buffer, verbatim ? L"on\n" : L"off\n" );
+        set_lines += buffer;
 
 //* en:colon
-        strcpy(buffer+1, "colon ");
-        strcat (buffer, bColon ? "replace\n" : "leave\n" );
-        fputs(buffer, myfile);
+        wcscpy(buffer+1, L"colon ");
+        wcscat (buffer, bColon ? L"replace\n" : L"leave\n" );
+        set_lines += buffer;
 //* en:comment
-        sprintf(buffer, "%ccomment %c\n",cCommandChar,cCommentChar);
-        fputs(buffer, myfile);
+        swprintf(buffer, L"%lccomment %lc\n",cCommandChar,cCommentChar);
+        set_lines += buffer;
 //* en:race
-        sprintf(buffer, "%crace format %s\n",cCommandChar,race_format);
-        fputs(buffer, myfile);
+        swprintf(buffer, L"%lcrace format %ls\n",cCommandChar,race_format);
+        set_lines += buffer;
 //*/en
+
+		//save proxy settings
+		if (!ulProxyAddress) {
+			prepare_for_write(L"proxy", L"disable", L"", L"", L"", buffer);
+		} else {
+			wchar_t addr[BUFFER_SIZE];
+			if (dwProxyPort)
+				swprintf(addr, L"%d.%d.%d.%d:%d", 
+					(ulProxyAddress >> 24) & 0xff, 
+					(ulProxyAddress >> 16) & 0xff, 
+					(ulProxyAddress >>  8) & 0xff, 
+					(ulProxyAddress >>  0) & 0xff,
+					dwProxyPort);
+			else
+				swprintf(addr, L"%d.%d.%d.%d", 
+					(ulProxyAddress >> 24) & 0xff, 
+					(ulProxyAddress >> 16) & 0xff, 
+					(ulProxyAddress >>  8) & 0xff, 
+					(ulProxyAddress >>  0) & 0xff);
+			prepare_for_write(L"proxy", 
+				(dwProxyType == PROXY_SOCKS4) ? L"socks4" : L"socks5",
+				addr,
+				A2W(sProxyUserName),
+				A2W(sProxyUserPassword),
+				buffer);
+		}
+		set_lines += buffer;
+
+		//save secure settings
+		switch (lTLSType) {
+		default:
+		case TLS_DISABLED:
+			prepare_for_write(L"secure", L"disable", L"", L"", L"", buffer);
+			break;
+		case TLS_SSL3:
+			prepare_for_write(L"secure", L"ssl3", L"ca", 
+				(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
+			break;
+		case TLS_TLS1:
+			prepare_for_write(L"secure", L"tls1", L"ca", 
+				(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
+			break;
+		case TLS_TLS1_1:
+			prepare_for_write(L"secure", L"tls1.1", L"ca", 
+				(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
+			break;
+		case TLS_TLS1_2:
+			prepare_for_write(L"secure", L"tls1.2", L"ca", 
+				(strCAFile.size() ? strCAFile.c_str() : L"clear"), L"", buffer);
+			break;
+		}
+		set_lines += buffer;
+
+		//save codepage settings
+		prepare_for_write(L"codepage", CPNames[MudCodePage].c_str(), L"", L"", L"", buffer);
+		set_lines += buffer;
+
+		//save telnet options
+		for(int opt = 0; opt < vEnabledTelnetOptions.size(); opt++) {
+			wchar_t optname[64];
+			get_telnet_option_name(vEnabledTelnetOptions[opt], optname);
+			prepare_for_write(L"telnet", optname, L"on", L"", L"", buffer);
+			set_lines += buffer;
+		}
+		if (bTelnetDebugEnabled)
+			prepare_for_write(L"telnet", L"debug", L"on", L"", L"", buffer);
+		else
+			prepare_for_write(L"telnet", L"debug", L"off", L"", L"", buffer);
+		set_lines += buffer;
+
+		//save oob (out-of-band) settings
+		map< wstring, oob_module_info >::const_iterator oob_it;
+		for (oob_it = oob_modules.begin(); oob_it != oob_modules.end(); oob_it++) {
+			set <wstring>::const_iterator oob_sub_it;
+			set <wstring> submods = oob_it->second.submodules;
+			wstring all_mods = L"";
+
+			for (oob_sub_it = submods.begin(); oob_sub_it != submods.end(); oob_sub_it++) {
+				if (all_mods.length() > 0)
+					all_mods += L' ';
+				all_mods += (*oob_sub_it);
+			}
+
+			if (all_mods.length() == 0)
+				prepare_for_write(L"oob", oob_it->first.c_str(), L"disable", L"", L"", buffer);
+			else
+				prepare_for_write(L"oob", oob_it->first.c_str(), L"add", all_mods.c_str(), L"", buffer);
+
+			set_lines += buffer;
+		}
+
+		//save broadcast settings
+		prepare_for_write(L"broadcast", L"filterip", bBCastFilterIP ? L"on" : L"off", L"", L"", buffer);
+		set_lines += buffer;
+		
+		prepare_for_write(L"broadcast", L"filterport", bBCastFilterPort ? L"on" : L"off", L"", L"", buffer);
+		set_lines += buffer;
+
+		wchar_t portnum[BUFFER_SIZE];
+		swprintf(portnum, L"%d", wBCastUdpPort);
+		prepare_for_write(L"broadcast", L"port", portnum, L"", L"", buffer);
+		set_lines += buffer;
+		
+		prepare_for_write(L"broadcast", bBCastEnabled ? L"enable" : L"disable", L"", L"", L"", buffer);
+		set_lines += buffer;
+		
+
+		//save end-of-prompt char settings
+		if (!bPromptEndEnabled) {
+			prepare_for_write(L"promptend", L"disable", L"", L"", L"", buffer);
+		} else {
+			prepare_for_write(L"promptend", strPromptEndSequence, strPromptEndReplace, L"", L"", buffer);
+		}
+		set_lines += buffer;
 
 
         ALIAS_INDEX ind = AliasList.begin();
         while (ind  != AliasList.end() ) {
             ALIAS* pal = ind->second;
-            prepare_for_write("alias", (char*)ind->first.data(), (char*)pal->m_strRight.data(), 
-                "\0", (char*)pal->m_pGroup->m_strName.data () , buffer);
-            fputs(buffer, pal->m_pGroup->m_bGlobal ? globfile : myfile);
+            prepare_for_write(L"alias", ind->first.c_str(), pal->m_strRight.c_str(), 
+                L"\0", pal->m_pGroup->m_strName.c_str () , buffer);
+			(pal->m_pGroup->m_bGlobal ? glob_lines : set_lines) += buffer;
             ind++;
         }
 
@@ -292,10 +602,15 @@ void write_command(char *arg)
             // CActionPtr pac = *aind;
             ACTION* pac = *aind;
             if ( !pac->m_bDeleted ) {
-                char buff[32];
-                prepare_for_write("action", (char*)pac->m_strLeft.data(), (char*)pac->m_strRight.data(), 
-                    itoa(pac->m_nPriority, buff, 10) , (char*)pac->m_pGroup->m_strName.data() , buffer);
-                fputs(buffer, pac->m_pGroup->m_bGlobal ? globfile : myfile);
+                wchar_t buff[32];
+                prepare_for_write(L"action", 
+					act_type_to_str((int)pac->m_InputType),
+					pac->m_strLeft.c_str(), 
+					pac->m_strRight.c_str(), 
+                    _itow(pac->m_nPriority, buff, 10) , 
+					pac->m_pGroup->m_strName.c_str() , 
+					buffer);
+                (pac->m_pGroup->m_bGlobal ? glob_lines : set_lines) += buffer;
             }
             aind++;
         }
@@ -304,18 +619,18 @@ void write_command(char *arg)
         VAR_INDEX vind = VarList.begin();
         while ( vind != VarList.end() ) {
             VAR* pvar = vind->second;
-            prepare_for_write("variable", (char*)vind->first.data(), (char*)pvar->m_strVal.data(), pvar->m_bGlobal ? "global" : "\0",  "\0", buffer);
-            fputs(buffer, pvar->m_bGlobal ? globfile : myfile);
+            prepare_for_write(L"variable", vind->first.c_str(), pvar->m_strVal.c_str(), pvar->m_bGlobal ? L"global" : L"\0",  L"\0", buffer);
+            (pvar->m_bGlobal ? glob_lines : set_lines) += buffer;
             vind++;
         }
 
         HLIGHT_INDEX hind = HlightList.begin();
         while ( hind != HlightList.end() ) {
             HLIGHT* ph = hind->second;
-            prepare_for_write("highlight", (char*)ph->m_strColor.data(), (char*)hind->first.data(), 
-                "\0", (char*)ph->m_pGroup->m_strName.data () , buffer);
+            prepare_for_write(L"highlight", ph->m_strColor.c_str(), hind->first.c_str(), 
+                L"\0", ph->m_pGroup->m_strName.c_str () , buffer);
 
-            fputs(buffer, ph->m_pGroup->m_bGlobal ? globfile : myfile);
+            (ph->m_pGroup->m_bGlobal ? glob_lines : set_lines) += buffer;
             hind++;
         }
     
@@ -323,15 +638,15 @@ void write_command(char *arg)
 
       nodeptr=common_antisubs;
       while((nodeptr=nodeptr->next)) {
-        prepare_for_write("antisubstitute", nodeptr->left,
-        nodeptr->right, "\0",  "\0",buffer);
-        fputs(buffer, myfile);
+        prepare_for_write(L"antisubstitute", nodeptr->left,
+        nodeptr->right, L"\0",  L"\0",buffer);
+        set_lines += buffer;
       } 
   
       nodeptr=common_subs;
       while((nodeptr=nodeptr->next)) {
-        prepare_for_write("substitute", nodeptr->left, nodeptr->right, "\0",  "\0", buffer);
-        fputs(buffer, myfile);
+        prepare_for_write(L"substitute", nodeptr->left, nodeptr->right, L"\0",  L"\0", buffer);
+        set_lines += buffer;
       }
 
       nodeptr=common_pathdirs;
@@ -343,8 +658,8 @@ void write_command(char *arg)
       } while ( nodeptr && i < 7 );
 
       while(nodeptr) {
-        prepare_for_write("pathdir", nodeptr->right, nodeptr->left, "\0",  "\0",buffer);
-        fputs(buffer, myfile);
+        prepare_for_write(L"pathdir", nodeptr->right, nodeptr->left, L"\0",  L"\0",buffer);
+        set_lines += buffer;
         nodeptr=nodeptr->next;
       }
 
@@ -353,10 +668,10 @@ void write_command(char *arg)
         HOTKEY_INDEX hotind = HotkeyList.begin();
         while ( hotind != HotkeyList.end() ) {
             CHotKey* pHotKey= hotind->second;
-            prepare_for_write("hot", (char*)pHotKey->m_strKey.data() ,
-                (char*)pHotKey->m_strAction.data() , "\0",
-                (char*)pHotKey->m_pGroup->m_strName.data(),  buffer);
-            fputs(buffer, myfile);
+            prepare_for_write(L"hot", pHotKey->m_strKey.c_str() ,
+                pHotKey->m_strAction.c_str() , L"\0",
+                pHotKey->m_pGroup->m_strName.c_str(),  buffer);
+            set_lines += buffer;
             hotind++;
         }
 //vls-end//
@@ -365,8 +680,8 @@ void write_command(char *arg)
         SCRIPTFILE_INDEX sfind = ScriptFileList.begin();
         while ( sfind != ScriptFileList.end() ) {
             PCScriptFile psf = *sfind;
-            prepare_for_write("use", (char*)psf->m_strName.data(), "\0", "\0", "\0", buffer);
-            fputs(buffer, myfile);
+            prepare_for_write(L"use", psf->m_strName.c_str(), L"\0", L"\0", L"\0", buffer);
+            set_lines += buffer;
             sfind++;
         }
 //vls-end//
@@ -376,15 +691,15 @@ void write_command(char *arg)
         while ( gind != GroupList.end() ) {
             CGROUP* pg = gind->second;
             if ( !pg->m_bEnabled ) {
-                sprintf( buffer, "%cgroup disable %s\n", cCommandChar , (char*)pg->m_strName.data());
-                fputs(buffer, pg->m_bGlobal ? globfile : myfile);
+                swprintf( buffer, L"%cgroup disable %s\n", cCommandChar , pg->m_strName.c_str());
+                (pg->m_bGlobal ? glob_lines : set_lines) += buffer;
             } 
             if ( pg->m_bGlobal ) {
-                sprintf( buffer, "%cgroup global %s\n", cCommandChar , (char*)pg->m_strName.data());
-                fputs(buffer, globfile );
+                swprintf( buffer, L"%cgroup global %s\n", cCommandChar , pg->m_strName.c_str());
+                glob_lines += buffer;
             } else {
-                sprintf( buffer, "%cgroup local %s\n", cCommandChar , (char*)pg->m_strName.data());
-                fputs(buffer, pg->m_bGlobal ? globfile : myfile);
+                swprintf( buffer, L"%cgroup local %s\n", cCommandChar , pg->m_strName.c_str());
+                set_lines += buffer;
             }
 
             gind++;
@@ -397,34 +712,22 @@ void write_command(char *arg)
 //            CHotKey* pHotKey= hotind->second;
 //            prepare_for_write("hot", (char*)pHotKey->m_strKey.data() ,
 //                (char*)pHotKey->m_strAction.data() , "\0",  "\0",buffer);
-//            fputs(buffer, myfile);
+//            fputws(buffer, myfile);
 //            hotind++;
 //        }
 //vls-end//
 
         // write ticksize now 
-        sprintf(buffer , "%cticksize %d\n" , cCommandChar , tick_size );
-        fputs(buffer, myfile);
-
-
-        fclose(myfile);
-        fclose(globfile);
-        
+        swprintf(buffer , L"%cticksize %d\n" , cCommandChar , tick_size );
+        set_lines += buffer;
     } else {
-        if((myfile=fopen(filename, "a"))==NULL) {
-            char buff[128];
-            sprintf(buff,rs::rs(1045),filename);
-            tintin_puts2(buff);
-            return; 
-        }
-        fseek(myfile, 0 , SEEK_END);
         ALIAS_INDEX ind = AliasList.begin();
         while (ind  != AliasList.end() ) {
             ALIAS* pal = ind->second;
             if ( pal->m_pGroup == grp ) {
-                prepare_for_write("alias", (char*)ind->first.data(), (char*)pal->m_strRight.data(), 
-                    "\0", (char*)pal->m_pGroup->m_strName.data () , buffer);
-                fputs(buffer, myfile);
+                prepare_for_write(L"alias", ind->first.c_str(), pal->m_strRight.c_str(), 
+                    L"\0", pal->m_pGroup->m_strName.c_str() , buffer);
+                set_lines += buffer;
             }
             ind++;
         }
@@ -433,11 +736,16 @@ void write_command(char *arg)
         while (aind  != ActionList.end() ) {
             // CActionPtr pac = *aind;
             ACTION* pac = *aind;
-            char buff[32];
+            wchar_t buff[32];
             if ( pac->m_pGroup == grp && !pac->m_bDeleted ) {
-                prepare_for_write("action", (char*)pac->m_strLeft.data(), (char*)pac->m_strRight.data(), 
-                    itoa(pac->m_nPriority, buff, 10) , (char*)pac->m_pGroup->m_strName.data() , buffer);
-                fputs(buffer, myfile);
+                prepare_for_write(L"action", 
+					act_type_to_str((int)pac->m_InputType),
+					pac->m_strLeft.data(), 
+					pac->m_strRight.data(), 
+                    _itow(pac->m_nPriority, buff, 10) , 
+					pac->m_pGroup->m_strName.c_str() , 
+					buffer);
+                set_lines += buffer;
             }
             aind++;
         }
@@ -447,10 +755,10 @@ void write_command(char *arg)
         while ( hind != HlightList.end() ) {
             HLIGHT* ph = hind->second;
             if ( ph->m_pGroup == grp ) {
-                prepare_for_write("highlight", (char*)ph->m_strColor.data(), (char*)hind->first.data(), 
-                    "\0", (char*)ph->m_pGroup->m_strName.data () , buffer);
+                prepare_for_write(L"highlight", ph->m_strColor.c_str(), hind->first.c_str(), 
+                    L"\0", ph->m_pGroup->m_strName.c_str () , buffer);
 
-                fputs(buffer, myfile);
+                set_lines += buffer;
             }
             hind++;
         }
@@ -459,70 +767,89 @@ void write_command(char *arg)
         HOTKEY_INDEX hotind = HotkeyList.begin();
         while ( hotind != HotkeyList.end() ) {
             CHotKey* pHotKey= hotind->second;
-            prepare_for_write("hot", (char*)pHotKey->m_strKey.data() ,
-                (char*)pHotKey->m_strAction.data() , "\0",
-                (char*)pHotKey->m_pGroup->m_strName.data(),  buffer);
-            fputs(buffer, myfile);
+            prepare_for_write(L"hot", pHotKey->m_strKey.c_str() ,
+                pHotKey->m_strAction.c_str() , L"\0",
+                pHotKey->m_pGroup->m_strName.c_str(),  buffer);
+            set_lines += buffer;
             hotind++;
         }
 //vls-end//
-
-        fclose(myfile);
     }
+
+	if(set_lines.length() > 0 && write_file_contents(set_fn, set_lines.c_str(), set_lines.length()) <= 0) {
+		wchar_t buff[BUFFER_SIZE];
+        swprintf(buff,rs::rs(1043), set_fn);
+        tintin_puts2(buff);
+    }
+
+	if(glob_lines.length() > 0 && write_file_contents(glob_fn, glob_lines.c_str(), glob_lines.length()) <= 0) {
+		wchar_t buff[BUFFER_SIZE];
+        swprintf(buff,rs::rs(1043), glob_fn);
+        tintin_puts2(buff);
+    }
+
     tintin_puts2(rs::rs(1046));
 }
 
-void prepare_for_write(char *command, char *left, char *right, char *pr, char* group, char *result)
+void prepare_for_write(const wchar_t *command, const wchar_t *type, const wchar_t *left, const wchar_t *right, const wchar_t *pr, const wchar_t* group, wchar_t *result)
 {
-  /* char tmpbuf[BUFFER_SIZE]; */
   *result=cCommandChar;
-  *(result+1)='\0';
-  strcat(result, command);
-  strcat(result, " {");
-  strcat(result, left);
-  strcat(result, "}");
-  if (strlen(right)!=0) {
-    strcat(result, " {");
-    strcat(result, right);
-    strcat(result, "}");
+  *(result+1)=L'\0';
+  wcscat(result, command);
+  if (type) {
+	  wcscat(result, L" ");
+	  wcscat(result, type);
   }
-  if (strlen(pr)!=0) {
-    strcat(result, " {");
-    strcat(result, pr);
-    strcat(result, "}");
+  wcscat(result, L" {");
+  wcscat(result, left);
+  wcscat(result, L"}");
+  if (wcslen(right)!=0) {
+    wcscat(result, L" {");
+    wcscat(result, right);
+    wcscat(result, L"}");
   }
-  if (strlen(group)!=0) {
-    strcat(result, " {");
-    strcat(result, group);
-    strcat(result, "}");
+  if (wcslen(pr)!=0) {
+    wcscat(result, L" {");
+    wcscat(result, pr);
+    wcscat(result, L"}");
   }
-  strcat(result,"\n");
+  if (wcslen(group)!=0) {
+    wcscat(result, L" {");
+    wcscat(result, group);
+    wcscat(result, L"}");
+  }
+  wcscat(result,L"\n");
 }
 
-void prepare_quotes(char *string)
+void prepare_for_write(const wchar_t *command, const wchar_t *left, const wchar_t *right, const wchar_t *pr, const wchar_t* group, wchar_t *result)
 {
-  char s[BUFFER_SIZE], *cpsource, *cpdest;
+  prepare_for_write(command, NULL, left, right, pr, group, result);
+}
+
+void prepare_quotes(wchar_t *string)
+{
+  wchar_t s[BUFFER_SIZE], *cpsource, *cpdest;
   int nest=FALSE;
-  strcpy(s, string);
+  wcscpy(s, string);
 
   cpsource=s;
   cpdest=string;
 
  while(*cpsource) {
-    if(*cpsource=='\\') {
+    if(*cpsource==L'\\') {
       *cpdest++=*cpsource++;
       if(*cpsource)
         *cpdest++=*cpsource++;
     }
-    else if(*cpsource=='\"' && nest==FALSE) {
-      *cpdest++='\\';
+    else if(*cpsource==L'\"' && nest==FALSE) {
+      *cpdest++=L'\\';
       *cpdest++=*cpsource++;
     }
-    else if(*cpsource=='{') {
+    else if(*cpsource==L'{') {
       nest=TRUE;
       *cpdest++=*cpsource++;
     }
-    else if(*cpsource=='}') {
+    else if(*cpsource==L'}') {
       nest=FALSE;
       *cpdest++=*cpsource++;
     }
@@ -543,36 +870,36 @@ void prepare_quotes(char *string)
 // 3. abs = "C:\mud\jmc\dir1\dir2\file3";
 //    loc = "dir1\dir2\file3";
 
-int MakeLocalPath(char *loc, const char *abs, const char *base)
+int MakeLocalPath(wchar_t *loc, const wchar_t *abs, const wchar_t *base)
 {
-    std::string sLoc;
-    std::string sAbs(abs);
-    std::string sBase(base);
+    std::wstring sLoc;
+    std::wstring sAbs(abs);
+    std::wstring sBase(base);
     int iBase = 0;
 
     int nAbs = sAbs.length();
     int iAbs = 0;
-    while ((iAbs = sAbs.find('/', iAbs)) != std::string::npos) sAbs[iAbs] = '\\';
+    while ((iAbs = sAbs.find(L'/', iAbs)) != std::wstring::npos) sAbs[iAbs] = L'\\';
 
-    if (sAbs.length() < 4 || sAbs[1] != ':' || sAbs[2] != '\\') {
-        strcpy(loc, sAbs.data());
+    if (sAbs.length() < 4 || sAbs[1] != L':' || sAbs[2] != L'\\') {
+        wcscpy(loc, sAbs.c_str());
         return nAbs;
     }
 
     int nBaseDirs = 0;
-    sBase += '\\';
+    sBase += L'\\';
     for (iBase = 0; iBase < sBase.length(); iBase++) {
-        if (sBase[iBase] == '\\') nBaseDirs++;
+        if (sBase[iBase] == L'\\') nBaseDirs++;
     }
 
     int nMatchDirs = 0;
     int nMin = min(sAbs.length(), sBase.length());
     iAbs = 0;
     for (iBase = 0; iBase < nMin; iBase++) {
-        if (tolower(sBase[iBase]) != tolower(sAbs[iBase]))
+        if (towlower(sBase[iBase]) != towlower(sAbs[iBase]))
             break;
 
-        if (sAbs[iBase] == '\\') {
+        if (sAbs[iBase] == L'\\') {
             iAbs = iBase + 1;
             nMatchDirs++;
         }
@@ -580,65 +907,65 @@ int MakeLocalPath(char *loc, const char *abs, const char *base)
 
     if (nMatchDirs > 0) {
         for (; nMatchDirs < nBaseDirs; nMatchDirs++) {
-            sLoc += "..\\";
+            sLoc += L"..\\";
         }
     }
     sLoc.append(sAbs, iAbs, sAbs.length() - iAbs);
     if (sLoc.length() >= MAX_PATH) {
-        strncpy(loc, sLoc.data(), MAX_PATH-1);
-        loc[MAX_PATH-1] = '\0';
+        wcsncpy(loc, sLoc.c_str(), MAX_PATH-1);
+        loc[MAX_PATH-1] = L'\0';
         return MAX_PATH-1;
     }
-    strcpy(loc, sLoc.data());
+    wcscpy(loc, sLoc.c_str());
     return sLoc.length();
 }
 
-int MakeAbsolutePath(char *abs, const char *loc, const char *base)
+int MakeAbsolutePath(wchar_t *abs, const wchar_t *loc, const wchar_t *base)
 {
-    std::string sAbs(base);
-    std::string sLoc(loc);
+    std::wstring sAbs(base);
+    std::wstring sLoc(loc);
 
     int nLoc = sLoc.length();
     int iLoc = 0;
-    while ((iLoc = sLoc.find('/', iLoc)) != std::string::npos) sLoc[iLoc] = '\\';
+    while ((iLoc = sLoc.find(L'/', iLoc)) != std::wstring::npos) sLoc[iLoc] = L'\\';
 
-    if (sLoc.length() > 3 && sLoc[1] == ':' && sLoc[2] == '\\') {
-        strcpy(abs, sLoc.data());
+    if (sLoc.length() > 3 && sLoc[1] == L':' && sLoc[2] == L'\\') {
+        wcscpy(abs, sLoc.c_str());
         return nLoc;
     }
 
     iLoc = 0;
     int nCurDir = 0;
     while (iLoc < nLoc) {
-        if (sLoc[iLoc] == '.' && nCurDir == 0) {
-            if (iLoc + 2 < nLoc && sLoc[iLoc+1] == '.' && sLoc[iLoc+2] == '\\') {
-                int iAbs = sAbs.rfind('\\');
-                if (iAbs != std::string::npos) {
+        if (sLoc[iLoc] == L'.' && nCurDir == 0) {
+            if (iLoc + 2 < nLoc && sLoc[iLoc+1] == L'.' && sLoc[iLoc+2] == L'\\') {
+                int iAbs = sAbs.rfind(L'\\');
+                if (iAbs != std::wstring::npos) {
                     sAbs.resize(iAbs);
                 }
                 iLoc += 2;
                 continue;
             }
         }
-        if (sLoc[iLoc] == '\\') {
+        if (sLoc[iLoc] == L'\\') {
             nCurDir = 0;
             iLoc++;
             continue;
         }
 
         if (nCurDir == 0) {
-            sAbs += '\\';
+            sAbs += L'\\';
         }
         sAbs += sLoc[iLoc];
         nCurDir++;
         iLoc++;
     }
     if (sAbs.length() >= MAX_PATH) {
-        strncpy(abs, sAbs.data(), MAX_PATH-1);
-        abs[MAX_PATH-1] = '\0';
+        wcsncpy(abs, sAbs.c_str(), MAX_PATH-1);
+        abs[MAX_PATH-1] = L'\0';
         return MAX_PATH-1;
     }
-    strcpy(abs, sAbs.data());
+    wcscpy(abs, sAbs.c_str());
     return sAbs.length();
 }
 //vls-end//
@@ -647,36 +974,35 @@ int MakeAbsolutePath(char *abs, const char *loc, const char *base)
 //* en
 
 
-void sos_command(char *arg)
+void sos_command(wchar_t *arg)
 {
-	char command[BUFFER_SIZE],
-		 paramet[BUFFER_SIZE];
+	wchar_t command[BUFFER_SIZE], paramet[BUFFER_SIZE];
 
-	arg = get_arg_in_braces(arg, command, STOP_SPACES);
-	arg = get_arg_in_braces(arg, paramet, WITH_SPACES);
+	arg = get_arg_in_braces(arg,command,STOP_SPACES,sizeof(command)/sizeof(wchar_t)-1);
+	arg = get_arg_in_braces(arg,paramet,WITH_SPACES,sizeof(paramet)/sizeof(wchar_t)-1);
 
     int i;
-    char buffer[BUFFER_SIZE];
+    wchar_t buffer[BUFFER_SIZE];
 
-    if(command[0]=='m' && is_abrev(command,"mode"))
+    if(is_abrev(command,L"mode"))
 	{
-		if(is_abrev(paramet,"exact"))
+		if(is_abrev(paramet,L"exact"))
 			bSosExact = TRUE;
 		else
 			bSosExact = FALSE;
 		return;
 	}
 
-    if(command[0]=='l' && is_abrev(command,"list"))
+    if(is_abrev(command,L"list"))
 	{
 		for(i=0;soski[i].name[0];i++)
 		{
-			sprintf(buffer,"¹%2d group=%10s;entity=%40s",i,soski[i].group,soski[i].name);
+			swprintf(buffer,L"¹%2d group=%10s;entity=%40s",i,soski[i].group,soski[i].name);
 			tintin_puts2(buffer);
 		}
 	}
 
-    if(command[0]=='c' && is_abrev(command,"clear"))
+    if(is_abrev(command,L"clear"))
 	{
 		for(i=0;soski[i].name[0];i++)
 		{
@@ -687,36 +1013,30 @@ void sos_command(char *arg)
 		return;
 	}
 	
-	if(command[0]=='s' && is_abrev(command,"save"))
+	if(is_abrev(command,L"save"))
 	{//save soski
 
-    FILE *myfile;
-        char fn[MAX_PATH+2];
+		std::wstring lines = L"";
+        wchar_t fn[MAX_PATH+2];
         MakeAbsolutePath(fn, paramet, szBASE_DIR);
-        if((myfile=fopen(fn, "w"))==NULL) {
-            char buff[BUFFER_SIZE];
-            sprintf(buff,rs::rs(1043), fn);
-            tintin_puts2(buff);
-            return; 
-        }
 
-		sprintf(buffer,"%c%c%c JMC Save Our Vars dump\n",cCommandChar,cCommandChar,cCommandChar);
-		fputs(buffer,myfile);
-
+		swprintf(buffer,L"%lc%lc%lc JMC Save Our Vars dump\n",cCommandChar,cCommandChar,cCommandChar);
+		lines += buffer;
+		
 		ALIAS_INDEX ind = AliasList.begin();
         while (ind  != AliasList.end() ) 
 		{
             ALIAS* pal = ind->second;
 			for(i=0;soski[i].name[0];i++)
 			{
-              if((is_abrev(soski[i].group,"alias") && (
+              if((is_abrev(soski[i].group,L"alias") && (
 				  (soski[i].name[0] == '*')||
-				 (!bSosExact && is_abrev(soski[i].name,(char*)ind->first.data()))||
-				  (bSosExact && !strcmpi(soski[i].name,(char*)ind->first.data())))))
+				 (!bSosExact && is_abrev(soski[i].name,ind->first.c_str()))||
+				  (bSosExact && !_wcsicmp(soski[i].name,ind->first.c_str())))))
 			  {
-                prepare_for_write("alias", (char*)ind->first.data(), (char*)pal->m_strRight.data(), 
-                  "\0", (char*)pal->m_pGroup->m_strName.data () , buffer);
-                fputs(buffer, myfile);
+                prepare_for_write(L"alias", ind->first.c_str(), pal->m_strRight.c_str(), 
+                  L"\0", pal->m_pGroup->m_strName.c_str() , buffer);
+                lines += buffer;
 			  }
 			}
             ind++;
@@ -731,15 +1051,20 @@ void sos_command(char *arg)
 			{
 			  for(i=0;soski[i].name[0];i++)
 			  {
-              if(is_abrev(soski[i].group,"action") && (
-				  (soski[i].name[0] == '*')||
-				  (!bSosExact && is_abrev(soski[i].name,(char*)pac->m_strLeft.data()))||
-				  (bSosExact && !strcmpi(soski[i].name,(char*)pac->m_strLeft.data()))))
+              if(is_abrev(soski[i].group,L"action") && (
+				  (soski[i].name[0] == L'*')||
+				  (!bSosExact && is_abrev(soski[i].name,pac->m_strLeft.c_str()))||
+				  (bSosExact && !_wcsicmp(soski[i].name,pac->m_strLeft.c_str()))))
 			  {
-				  char buff[32];
-                  prepare_for_write("action", (char*)pac->m_strLeft.data(), (char*)pac->m_strRight.data(), 
-                      itoa(pac->m_nPriority, buff, 10) , (char*)pac->m_pGroup->m_strName.data() , buffer);
-                  fputs(buffer, myfile);
+				  wchar_t buff[32];
+				  prepare_for_write(L"action", 
+					act_type_to_str((int)pac->m_InputType),
+					pac->m_strLeft.c_str(), 
+					pac->m_strRight.c_str(), 
+                    _itow(pac->m_nPriority, buff, 10) , 
+					pac->m_pGroup->m_strName.c_str() , 
+					buffer);
+                  lines += buffer;
 				}
 			  }
 			}
@@ -753,14 +1078,14 @@ void sos_command(char *arg)
             VAR* pvar = vind->second;
 			for(i=0;soski[i].name[0];i++)
 			{
-              if(is_abrev(soski[i].group,"variable") && (
-				  (soski[i].name[0] == '*')||
-				  (!bSosExact && is_abrev(soski[i].name,(char*)vind->first.data()))||
-				  (bSosExact && !strcmpi(soski[i].name,(char*)vind->first.data()))))
+              if(is_abrev(soski[i].group,L"variable") && (
+				  (soski[i].name[0] == L'*')||
+				  (!bSosExact && is_abrev(soski[i].name,vind->first.c_str()))||
+				  (bSosExact && !_wcsicmp(soski[i].name,vind->first.c_str()))))
 			  {
-				prepare_for_write("variable", (char*)vind->first.data(), (char*)pvar->m_strVal.data(), 
-					pvar->m_bGlobal ? "global" : "\0",  "\0", buffer);
-				fputs(buffer, myfile);
+				prepare_for_write(L"variable", vind->first.c_str(), pvar->m_strVal.c_str(), 
+					pvar->m_bGlobal ? L"global" : L"\0",  L"\0", buffer);
+				lines += buffer;
 			  }  
 			} 
             vind++;
@@ -771,21 +1096,27 @@ void sos_command(char *arg)
             CHotKey* pHotKey= hotind->second;
 			for(i=0;soski[i].name[0];i++)
 			{
-            if(is_abrev(soski[i].group,"hotkey") && (
-				(soski[i].name[0] == '*')||
-				(!bSosExact && is_abrev(soski[i].name,(char*)pHotKey->m_strKey.data()))||
-				(bSosExact && !strcmpi(soski[i].name,(char*)pHotKey->m_strKey.data()))))
+            if(is_abrev(soski[i].group,L"hotkey") && (
+				(soski[i].name[0] == L'*')||
+				(!bSosExact && is_abrev(soski[i].name,pHotKey->m_strKey.c_str()))||
+				(bSosExact && !_wcsicmp(soski[i].name,pHotKey->m_strKey.c_str()))))
 			{
-            prepare_for_write("hot", (char*)pHotKey->m_strKey.data() ,
-                (char*)pHotKey->m_strAction.data() , "\0",
-                (char*)pHotKey->m_pGroup->m_strName.data(),  buffer);
-            fputs(buffer, myfile);
+            prepare_for_write(L"hot", pHotKey->m_strKey.c_str() ,
+                pHotKey->m_strAction.c_str() , L"\0",
+                pHotKey->m_pGroup->m_strName.c_str(),  buffer);
+            lines += buffer;
 			}
 			}
             hotind++;
         }
 
-        fclose(myfile);
+		if (lines.length() > 0 && write_file_contents(fn, lines.c_str(), lines.length()) <= 0) {
+		    wchar_t buff[BUFFER_SIZE];
+            swprintf(buff,rs::rs(1043), fn);
+            tintin_puts2(buff);
+            return; 
+        }
+        
 		return;
 	}
 	
@@ -794,17 +1125,17 @@ void sos_command(char *arg)
 				return;
 		
         for(i=0;soski[i].name[0];i++);
-		if(is_abrev(command,"hotkey") || 
-			is_abrev(command,"alias") || 
-			is_abrev(command,"action") || 
-			is_abrev(command,"variable"))
-			strcpy(buffer,command);
+		if(is_abrev(command,L"hotkey") || 
+			is_abrev(command,L"alias") || 
+			is_abrev(command,L"action") || 
+			is_abrev(command,L"variable"))
+			wcscpy(buffer,command);
 		if(buffer[0] && paramet[0])
-            strcpy(buffer,command);
+            wcscpy(buffer,command);
 		else 
 			return;
-		strcpy(soski[i].group,buffer);
-		strcpy(soski[i].name,paramet);
+		wcscpy(soski[i].group,buffer);
+		wcscpy(soski[i].name,paramet);
 
 
 	;//new soska

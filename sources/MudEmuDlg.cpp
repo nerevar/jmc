@@ -63,11 +63,11 @@ void CMudEmuDlg::OnStartStopLog()
 	UpdateData();
 
 	if (m_pBuff != NULL) {
+		KillTimer(1);
 		ResetEvent(eventMudEmuTextArrives);
-		delete m_pBuff;
+		delete[] m_pBuff;
 		m_pBuff = NULL;
-        KillTimer(1);
-		m_StartStopButton.SetWindowText("Start");
+		m_StartStopButton.SetWindowText(L"Start");
 		m_SendButton.EnableWindow(TRUE);
 		m_SendLineButton.EnableWindow(TRUE);
 		m_HandleRMAButton.EnableWindow(TRUE);
@@ -76,15 +76,15 @@ void CMudEmuDlg::OnStartStopLog()
 
     m_hLogFile  = CreateFile(m_strLogPath, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL );
     if ( m_hLogFile != INVALID_HANDLE_VALUE ) { 
-		m_StartStopButton.SetWindowText("Stop");
+		m_StartStopButton.SetWindowText(L"Stop");
 		m_SendButton.EnableWindow(FALSE);
 		m_SendLineButton.EnableWindow(FALSE);
 		m_HandleRMAButton.EnableWindow(FALSE);
 
 		DWORD dwSize = GetFileSize(m_hLogFile, NULL);
         m_pBuff = new char[dwSize+2];
-        m_pBuff[dwSize] = 0;
 		ReadFile(m_hLogFile, m_pBuff, dwSize, &dwSize, NULL);
+		m_pBuff[dwSize] = 0;
 		CloseHandle(m_hLogFile);
 
 		m_nOffset = 0;
@@ -113,10 +113,10 @@ void CMudEmuDlg::OnSend()
         return;
     }
 
-    m_nBufSize = m_strText.GetLength ();
+    m_nBufSize = m_strText.GetLength ()*sizeof(wchar_t);
     m_nOffset = 0;
-    m_pBuff = new char[m_nBufSize+2];
-    strcpy(m_pBuff, (LPCSTR)m_strText);
+    m_pBuff = new char[m_nBufSize+2*sizeof(wchar_t)];
+    wcscpy((wchar_t*)m_pBuff, m_strText);
     m_strText.Empty ();
     UpdateData(FALSE);
     
@@ -151,10 +151,10 @@ void CMudEmuDlg::OnSendLine()
 
     UpdateData(FALSE);
 
-    m_nBufSize = line.GetLength ();
+    m_nBufSize = line.GetLength ()*sizeof(wchar_t);
     m_nOffset = 0;
-    m_pBuff = new char[m_nBufSize+2];
-    strcpy(m_pBuff, (LPCSTR)line);
+    m_pBuff = new char[m_nBufSize+2*sizeof(wchar_t)];
+    wcscpy((wchar_t*)m_pBuff, line);
     
     SendData();
 }
@@ -177,10 +177,10 @@ void CMudEmuDlg::OnTimer(UINT nIDEvent)
 
     if ( IsConnected() ) {
         ResetEvent(eventMudEmuTextArrives);
-        delete m_pBuff;
+        delete[] m_pBuff;
         m_pBuff = NULL;
         KillTimer(1);
-		m_StartStopButton.SetWindowText("Start");
+		m_StartStopButton.SetWindowText(L"Start");
 		m_SendButton.EnableWindow(TRUE);
 		m_SendLineButton.EnableWindow(TRUE);
 		m_HandleRMAButton.EnableWindow(TRUE);
@@ -190,7 +190,7 @@ void CMudEmuDlg::OnTimer(UINT nIDEvent)
 
     if ( WaitForSingleObject (eventMudEmuTextArrives, 0 ) == WAIT_TIMEOUT ) {
         // now fill buffer
-		int max_length = sizeof(strMudEmuText) - 1;
+		int max_length = sizeof(strMudEmuText) - 1 - nMudEmuTextSize;
 
 		if ( m_bHandleRMA ) {
 			int max_time = (GetTickCount() - m_dwTickStarted) - m_dwTickPlayed;
@@ -217,12 +217,12 @@ void CMudEmuDlg::OnTimer(UINT nIDEvent)
 
 		if ( max_length > 0 ) {
 			if ( m_nBufSize - m_nOffset <= max_length ) {
-				memcpy(strMudEmuText, m_pBuff+m_nOffset, m_nBufSize - m_nOffset);
-				nMudEmuTextSize = m_nBufSize - m_nOffset;
+				memcpy(&strMudEmuText[nMudEmuTextSize], m_pBuff+m_nOffset, m_nBufSize - m_nOffset);
+				nMudEmuTextSize += m_nBufSize - m_nOffset;
 				m_nOffset = m_nBufSize;
 			} else {
-				memcpy(strMudEmuText, m_pBuff+m_nOffset, max_length);
-				nMudEmuTextSize = max_length;
+				memcpy(&strMudEmuText[nMudEmuTextSize], m_pBuff+m_nOffset, max_length);
+				nMudEmuTextSize += max_length;
 				m_nOffset += max_length;
 			}
 			SetEvent(eventMudEmuTextArrives);
@@ -230,9 +230,9 @@ void CMudEmuDlg::OnTimer(UINT nIDEvent)
 
         if ( m_nOffset >= m_nBufSize ) {
             KillTimer(1);
-            delete m_pBuff;
+            delete[] m_pBuff;
             m_pBuff= NULL;
-			m_StartStopButton.SetWindowText("Start");
+			m_StartStopButton.SetWindowText(L"Start");
 			m_SendButton.EnableWindow(TRUE);
 			m_SendLineButton.EnableWindow(TRUE);
 			m_HandleRMAButton.EnableWindow(TRUE);

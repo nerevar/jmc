@@ -19,9 +19,47 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
+// CAboutDlg dialog used for App About
+
+class CAboutDlg : public CDialog
+{
+public:
+	CAboutDlg();
+
+// Dialog Data
+	//{{AFX_DATA(CAboutDlg)
+	enum { IDD = IDD_ABOUTBOX };
+	CHyperLink	m_cWww2;
+	CHyperLink	m_cWww1;
+	CHyperLink	m_cWww;
+	CHyperLink	m_cEmail;
+	CHyperLink	m_cEmail2;
+	CHyperLink	m_cEmail3;
+	CString	m_strCopyright;
+	CString	m_strProductName;
+	CString	m_strVersion;
+	//}}AFX_DATA
+
+	// ClassWizard generated virtual function overrides
+	//{{AFX_VIRTUAL(CAboutDlg)
+	protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	//}}AFX_VIRTUAL
+
+// Implementation
+protected:
+	//{{AFX_MSG(CAboutDlg)
+	virtual BOOL OnInitDialog();
+	//}}AFX_MSG
+	DECLARE_MESSAGE_MAP()
+};
+
+CAboutDlg aboutDlg;
+
+/////////////////////////////////////////////////////////////////////////////
 // CSmcApp
 
-char szGLOBAL_PROFILE[MAX_PATH] = "jmc.ini";
+wchar_t szGLOBAL_PROFILE[MAX_PATH] = L"jmc.ini";
 
 
 BEGIN_MESSAGE_MAP(CSmcApp, CWinApp)
@@ -62,14 +100,42 @@ BOOL CSmcApp::InitInstance()
 {
     CoInitialize (NULL);
 
+	/*
+	  It's possible to select language for UI available in resources (ru/en), though it will be
+	  platform-dependent.
+      Example:
+
+		LANGID Language = MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT); //MAKELANGID(LANG_RUSSIAN, SUBLANG_DEFAULT);
+		// (selection can be done depending on "LangSect" section of profile settings
+		//  so UI language can be changed on-the-fly)
+
+
+		OSVERSIONINFOEX osver;
+		ZeroMemory(&osver, sizeof(osver));
+		osver.dwOSVersionInfoSize = sizeof(osver);
+		GetVersionEx((OSVERSIONINFO *)&osver); 
+
+		if ( (osver.dwMajorVersion > 5)) { // >= Vista
+			typedef LANGID (WINAPI *FMSetThreadUILanguage)(LANGID wReserved);
+			FMSetThreadUILanguage fnPtr = (FMSetThreadUILanguage)GetProcAddress(GetModuleHandle(_T("kernel32.dll")),"SetThreadUILanguage"); 
+			if(fnPtr)
+				(*fnPtr)(Language);
+			else
+				SetThreadLocale(MAKELCID(Language, SORT_DEFAULT));
+		} else { // <= XP
+			SetThreadLocale(MAKELCID(Language, SORT_DEFAULT));
+		}
+	*/
+
+
 //vls-begin// base dir
 //    GetCurrentDirectory(MAX_PATH, szGLOBAL_PROFILE );
-    strcpy(szGLOBAL_PROFILE, szBASE_DIR);
+    wcscpy(szGLOBAL_PROFILE, szBASE_DIR);
 //vls-end//
-    if ( szGLOBAL_PROFILE[strlen(szGLOBAL_PROFILE) -1] != '\\'  ) 
-        strcat(szGLOBAL_PROFILE, "\\jmc.ini");
+    if ( szGLOBAL_PROFILE[wcslen(szGLOBAL_PROFILE) -1] != L'\\'  ) 
+        wcscat(szGLOBAL_PROFILE, L"\\jmc.ini");
     else
-        strcat(szGLOBAL_PROFILE, "jmc.ini");
+        wcscat(szGLOBAL_PROFILE, L"jmc.ini");
 
     //  check JMC.ini exist in the windows directory 
 /*    char fname[MAX_PATH];
@@ -91,7 +157,7 @@ BOOL CSmcApp::InitInstance()
     UINT  nSize;
     LPBYTE pData;
 	// Font initialization
-    if ( !::GetPrivateProfileBinary ("Script" , "LANGGUID" ,&pData, &nSize, szGLOBAL_PROFILE) ) {
+    if ( !::GetPrivateProfileBinary (L"Script" , L"LANGGUID" ,&pData, &nSize, szGLOBAL_PROFILE) ) {
         m_guidScriptLang = CLSID_JScript;
     }
     else {
@@ -139,21 +205,32 @@ BOOL CSmcApp::InitInstance()
 	CCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);
 
-    char buff[4096] = "";
-    DWORD ret =  ::GetPrivateProfileString("Main", "LangFile", "language.ini", buff, 4096 , szGLOBAL_PROFILE);
-	strcpy(langfile,buff);
-    ret =  ::GetPrivateProfileString("Main", "LangSect", "English", buff, 4096 , szGLOBAL_PROFILE);
-	strcpy(langsect,buff);
-	if ( strlen(m_lpCmdLine) ) 
+    wchar_t buff[4096] = L"";
+    DWORD ret =  ::GetPrivateProfileString(L"Main", L"LangFile", L"language.ini", buff, 4096 , szGLOBAL_PROFILE);
+	wcscpy(langfile,buff);
+    ret =  ::GetPrivateProfileString(L"Main", L"LangSect", L"", buff, 4096 , szGLOBAL_PROFILE);
+	if ( !buff[0] ) {
+		LANGID lang = GetThreadLocale() & 0xFF;
+		if ( lang == LANG_RUSSIAN )
+			wcscpy(buff, L"Russian");
+		else if ( lang == LANG_UKRAINIAN )
+			wcscpy(buff, L"Ukrainian");
+		else if ( lang == LANG_RUSSIAN )
+			wcscpy(buff, L"English");
+		else
+			wcscpy(buff, L"English");
+	}
+	wcscpy(langsect,buff);
+	if ( wcslen(m_lpCmdLine) ) 
         m_strCurrentProfile = m_lpCmdLine;
     else {
-		ret =  ::GetPrivateProfileString("Main", "LastProfile", "Default", buff, 4096 , szGLOBAL_PROFILE);
+		ret =  ::GetPrivateProfileString(L"Main", L"LastProfile", L"Default", buff, 4096 , szGLOBAL_PROFILE);
         m_strCurrentProfile = buff;
     }
 
 //vls-begin// script files
     MakeLocalPath(szPROFILESCRIPT, m_strCurrentProfile, szSETTINGS_DIR);
-    strcat(szPROFILESCRIPT, ".scr");
+    wcscat(szPROFILESCRIPT, L".scr");
 //vls-end//
 
     cmdInfo.m_nShellCommand = CCommandLineInfo::FileNew;
@@ -165,44 +242,64 @@ BOOL CSmcApp::InitInstance()
 	ASSERT(AfxGetMainWnd());
 	((CMainFrame*)AfxGetMainWnd())->RestorePosition();
 
+		// load version info 
+    wchar_t ModuleName[MAX_PATH];
+    GetModuleFileName(AfxGetInstanceHandle(), ModuleName, MAX_PATH);
+
+    // Get the version information size for allocate the buffer
+    DWORD dwHandle;     
+    DWORD dwDataSize = ::GetFileVersionInfoSize(ModuleName, &dwHandle); 
+    if ( dwDataSize > 0 ) {
+		// Allocate buffer and retrieve version information
+		LPBYTE lpVersionData = new BYTE[dwDataSize]; 
+		if (::GetFileVersionInfo(ModuleName, dwHandle, dwDataSize, (void**)lpVersionData) ) {
+			// Retrieve the first language and character-set identifier
+			UINT nQuerySize;    
+			DWORD* pTransTable;
+			if (::VerQueryValue(lpVersionData, _T("\\VarFileInfo\\Translation"),(void **)&pTransTable, &nQuerySize) ) {
+				// Swap the words to have lang-charset in the correct format
+				DWORD dwLangCharset = MAKELONG(HIWORD(pTransTable[0]), LOWORD(pTransTable[0]));
+
+				LPVOID lpData;    
+				CString strBlockName;
+
+				strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%ls"), 
+									 dwLangCharset, L"ProductName");
+				if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) ) {
+					aboutDlg.m_strProductName = (LPCTSTR)lpData;
+				} else {
+					aboutDlg.m_strProductName = L"JMC";
+				}
+				wcscpy(strProductName, aboutDlg.m_strProductName);
+				
+				strBlockName.ReleaseBuffer();
+
+
+				strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%ls"), 
+									 dwLangCharset, L"ProductVersion");
+				if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) )  {
+					aboutDlg.m_strVersion = (LPCTSTR)lpData;
+				} else {
+					aboutDlg.m_strVersion = L"0";
+				}
+				wcscpy(strProductVersion, aboutDlg.m_strVersion);
+				aboutDlg.m_strVersion = "Version " + aboutDlg.m_strVersion;
+				strBlockName.ReleaseBuffer();
+
+				strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%ls"), 
+									 dwLangCharset, L"LegalCopyright");
+
+				if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) )        
+					aboutDlg.m_strCopyright = (LPCTSTR)lpData;
+				strBlockName.ReleaseBuffer();
+    
+				aboutDlg.m_strCopyright += L"\nAll rights reserved.";
+			}
+		}
+		delete[] lpVersionData;
+	}
 	return TRUE;
 }
-
-/////////////////////////////////////////////////////////////////////////////
-// CAboutDlg dialog used for App About
-
-class CAboutDlg : public CDialog
-{
-public:
-	CAboutDlg();
-
-// Dialog Data
-	//{{AFX_DATA(CAboutDlg)
-	enum { IDD = IDD_ABOUTBOX };
-	CHyperLink	m_cWww2;
-	CHyperLink	m_cWww1;
-	CHyperLink	m_cWww;
-	CHyperLink	m_cEmail;
-	CHyperLink	m_cEmail2;
-	CHyperLink	m_cEmail3;
-	CString	m_strCopyright;
-	CString	m_strProductName;
-	CString	m_strVersion;
-	//}}AFX_DATA
-
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CAboutDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
-
-// Implementation
-protected:
-	//{{AFX_MSG(CAboutDlg)
-	virtual BOOL OnInitDialog();
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
-};
 
 CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
 {
@@ -238,7 +335,6 @@ END_MESSAGE_MAP()
 // App command to run the dialog
 void CSmcApp::OnAppAbout()
 {
-	CAboutDlg aboutDlg;
 	aboutDlg.DoModal();
 }
 
@@ -257,19 +353,19 @@ BOOL GetPrivateProfileBinary(LPCTSTR lpszSection, LPCTSTR lpszEntry,
 
     ASSERT(lpszFile != NULL);
 
-    char buff[4096] = "";
-    DWORD ret =  ::GetPrivateProfileString(lpszSection, lpszEntry, "", buff, 4096 , lpszFile);
+    wchar_t buff[4096] = L"";
+    DWORD ret =  ::GetPrivateProfileString(lpszSection, lpszEntry, L"", buff, 4096 , lpszFile);
 
     if ( ret <= 0 ) 
         return FALSE;
 
-	int nLen = strlen(buff);
+	int nLen = wcslen(buff);
 	*pBytes = nLen/2;
 	*ppData = new BYTE[*pBytes];
 	for (int i=0;i<nLen;i+=2)
 	{
 		(*ppData)[i/2] = (BYTE)
-			(((buff[i+1] - 'A') << 4) + (buff[i] - 'A'));
+			(((buff[i+1] - L'A') << 4) + (buff[i] - L'A'));
 	}
 	return TRUE;
 }
@@ -279,11 +375,12 @@ BOOL WritePrivateProfileBinary(LPCTSTR lpszSection, LPCTSTR lpszEntry,
 {
 	ASSERT(lpszSection != NULL);
 	// convert to string and write out
-	LPTSTR lpsz = new TCHAR[nBytes*2+1];
-	for (UINT i = 0; i < nBytes; i++)
+	LPTSTR lpsz = new wchar_t[(nBytes+1)*sizeof(wchar_t)];
+	UINT i;
+	for (i = 0; i < nBytes; i++)
 	{
-		lpsz[i*2] = (TCHAR)((pData[i] & 0x0F) + 'A'); //low nibble
-		lpsz[i*2+1] = (TCHAR)(((pData[i] >> 4) & 0x0F) + 'A'); //high nibble
+		lpsz[i*2] = (wchar_t)((pData[i] & 0x0F) + L'A'); //low nibble
+		lpsz[i*2+1] = (wchar_t)(((pData[i] >> 4) & 0x0F) + L'A'); //high nibble
 	}
 	lpsz[i*2] = 0;
 
@@ -299,8 +396,8 @@ BOOL WritePrivateProfileInt(LPCTSTR lpszSection, LPCTSTR lpszEntry, int nValue,L
     ASSERT(lpszEntry);
     ASSERT(lpszFile);
 
-    char buff[32] = "";
-    itoa(nValue, buff , 10 );
+    wchar_t buff[32] = L"";
+    _itow(nValue, buff , 10 );
     
     WritePrivateProfileString(lpszSection, lpszEntry , buff, lpszFile);
     return TRUE;
@@ -320,7 +417,7 @@ void CSmcApp::OnFileNewProfile()
 //vls-begin// base dir
 //    CString strProfileIni = dlg.m_strName + ".opt";
     CString strProfileIni(szSETTINGS_DIR);
-	strProfileIni += "\\" + dlg.m_strName + ".opt";
+	strProfileIni += L"\\" + dlg.m_strName + L".opt";
 //vls-end//
 	CString t1,t2;
     t1.LoadString(IDS_QUES_NEW_PROFILE);
@@ -349,7 +446,7 @@ void CSmcApp::OnFileNewProfile()
         CopyFile(strCurrHotkeysFile, strNewProfileHotkeys, FALSE);
         
         // Try to copy macro file
-        CString strCurrStartFile = GetProfileString("Options" , "AutoLoadFile" , "" );
+        CString strCurrStartFile = GetProfileString(L"Options" , L"AutoLoadFile" , L"" );
         if ( strCurrStartFile.GetLength() && dlg.m_strStartFile.GetLength() ) 
             CopyFile(strCurrStartFile, dlg.m_strStartFile, FALSE);
     }
@@ -357,18 +454,18 @@ void CSmcApp::OnFileNewProfile()
 //vls-begin// base dir
 //	::WritePrivateProfileString("Options" , "AutoLoadFile" , dlg.m_strStartFile, strProfileIni);
 //	::WritePrivateProfileString("Options" , "AutoSaveFile" , dlg.m_strSaveFile, strProfileIni);
-    char p[MAX_PATH+2];
+    wchar_t p[MAX_PATH+2];
     MakeLocalPath(p, dlg.m_strStartFile, szBASE_DIR);
-	::WritePrivateProfileString("Options" , "AutoLoadFile" , p, strProfileIni);
+	::WritePrivateProfileString(L"Options" , L"AutoLoadFile" , p, strProfileIni);
     MakeLocalPath(p, dlg.m_strSaveFile, szBASE_DIR);
-	::WritePrivateProfileString("Options" , "AutoSaveFile" , p, strProfileIni);
+	::WritePrivateProfileString(L"Options" , L"AutoSaveFile" , p, strProfileIni);
 //vls-end//
-	::WritePrivateProfileString("Options" , "AutoSaveCommand" , dlg.m_strCommand, strProfileIni);
+	::WritePrivateProfileString(L"Options" , L"AutoSaveCommand" , dlg.m_strCommand, strProfileIni);
 
     m_strCurrentProfile = dlg.m_strName;
 //vls-begin// script files
     MakeLocalPath(szPROFILESCRIPT, m_strCurrentProfile, szSETTINGS_DIR);
-    strcat(szPROFILESCRIPT, ".scr");
+    wcscat(szPROFILESCRIPT, L".scr");
 //vls-end//
 
 	OnFileNew();
@@ -402,17 +499,17 @@ void CSmcApp::OnFileLoadprofile()
 	m_strCurrentProfile = dlg.m_strProfile;
 //vls-begin// script files
     MakeLocalPath(szPROFILESCRIPT, m_strCurrentProfile, szSETTINGS_DIR);
-    strcat(szPROFILESCRIPT, ".scr");
+    wcscat(szPROFILESCRIPT, L".scr");
 //vls-end//
 	OnFileNew();
 }
 
 int CSmcApp::ExitInstance() 
 {
-	::WritePrivateProfileString("Main", "LastProfile", (LPCSTR)m_strCurrentProfile , szGLOBAL_PROFILE);
-	::WritePrivateProfileString("Main", "LangFile", langfile, szGLOBAL_PROFILE);
-	::WritePrivateProfileString("Main", "LangSect", langsect, szGLOBAL_PROFILE);
-    ::WritePrivateProfileBinary("Script" , "LANGGUID", (LPBYTE)&m_guidScriptLang, sizeof(m_guidScriptLang), szGLOBAL_PROFILE);
+	::WritePrivateProfileString(L"Main", L"LastProfile", (const wchar_t*)m_strCurrentProfile , szGLOBAL_PROFILE);
+	::WritePrivateProfileString(L"Main", L"LangFile", langfile, szGLOBAL_PROFILE);
+	::WritePrivateProfileString(L"Main", L"LangSect", langsect, szGLOBAL_PROFILE);
+    ::WritePrivateProfileBinary(L"Script" , L"LANGGUID", (LPBYTE)&m_guidScriptLang, sizeof(m_guidScriptLang), szGLOBAL_PROFILE);
 	return CWinApp::ExitInstance();
 }
 
@@ -425,61 +522,6 @@ void CSmcApp::OnHelpContents()
 BOOL CAboutDlg::OnInitDialog() 
 {
 	CDialog::OnInitDialog();
-	
-	// load version info 
-    char ModuleName[MAX_PATH];
-    GetModuleFileName(AfxGetInstanceHandle(), ModuleName, MAX_PATH);
-
-
-    // Get the version information size for allocate the buffer
-    DWORD dwHandle;     
-    DWORD dwDataSize = ::GetFileVersionInfoSize(ModuleName, &dwHandle); 
-    if ( dwDataSize == 0 )         
-        return TRUE;
-    // Allocate buffer and retrieve version information
-    LPBYTE lpVersionData = new BYTE[dwDataSize]; 
-    if (!::GetFileVersionInfo(ModuleName, dwHandle, dwDataSize, (void**)lpVersionData) ) { 
-        delete[] lpVersionData;
-        return TRUE;    
-    }
-    // Retrieve the first language and character-set identifier
-    UINT nQuerySize;    
-    DWORD* pTransTable;
-    if (!::VerQueryValue(lpVersionData, _T("\\VarFileInfo\\Translation"),(void **)&pTransTable, &nQuerySize) ) {
-        delete[] lpVersionData;
-        return TRUE;    
-    }
-    // Swap the words to have lang-charset in the correct format
-    DWORD dwLangCharset = MAKELONG(HIWORD(pTransTable[0]), LOWORD(pTransTable[0]));
-
-
-    LPVOID lpData;    
-    CString strBlockName;
-
-    strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%s"), 
-	                     dwLangCharset, "ProductName");
-    if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) )        
-        m_strProductName = (LPCTSTR)lpData;
-    strBlockName.ReleaseBuffer();
-
-
-    strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%s"), 
-	                     dwLangCharset, "ProductVersion");
-    m_strVersion = "Version ";
-    if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) )        
-        m_strVersion += (LPCTSTR)lpData;
-    strBlockName.ReleaseBuffer();
-
-    strBlockName.Format(_T("\\StringFileInfo\\%08lx\\%s"), 
-	                     dwLangCharset, "LegalCopyright");
-
-    if ( ::VerQueryValue((void **)lpVersionData, strBlockName.GetBuffer(0), &lpData, &nQuerySize) )        
-        m_strCopyright = (LPCTSTR)lpData;
-    strBlockName.ReleaseBuffer();
-    
-    CString t;
-    m_strCopyright += "\nAll rights reserved.";
-
     UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE

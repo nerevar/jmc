@@ -6,7 +6,7 @@
 #include "resource.h"       // main symbols
 #include "ttcoreexCP.h"
 
-#define PARAMS_MAXCOUNT 1
+#define PARAMS_MAXCOUNT 3
 
     enum {
         ID_Connected = 0, 
@@ -17,7 +17,9 @@
 		ID_PreTimer, 
 		ID_Disconnected, 
 		ID_Load, 
-		ID_Unload
+		ID_Unload,
+		ID_Prompt,
+		ID_Telnet
 
     };
 
@@ -97,6 +99,15 @@ public:
     STDMETHOD(Play)(/*[in]*/ BSTR bstrFileName);
 //vls-end//
 	STDMETHOD(wOutput)(/*[in]*/ LONG wndNum, /*[in]*/ BSTR bstrText, /*[in, optional]*/ BSTR bstrColor);
+	STDMETHOD(wGetWidth)(/*[in]*/ LONG wndNum, /*[out, retval]*/ LONG *nWidth);
+	STDMETHOD(wGetHeight)(/*[in]*/ LONG wndNum, /*[out, retval]*/ LONG *nHeight);
+	STDMETHOD(DoTelnet)(/*[in]*/LONG Command, /*[in, optional]*/ LONG Option, /*[in, optional]*/ BSTR bstrData);
+	STDMETHOD(ToText)(/*[in]*/ BSTR bstrANSI, /*[out, retval]*/ BSTR *bstrText);
+	STDMETHOD(ToColored)(/*[in]*/ BSTR bstrANSI, /*[out, retval]*/ BSTR *bstrColored);
+	STDMETHOD(FromColored)(/*[in]*/ BSTR bstrColored, /*[out, retval]*/ BSTR *bstrANSI);
+	STDMETHOD(MSDP2GMCP)(/*[in]*/ BSTR bstrMSDP, /*[out, retval]*/ BSTR *bstrGMCP);
+	STDMETHOD(GMCP2MSDP)(/*[in]*/ BSTR bstrGMCP, /*[out, retval]*/ BSTR *bstrMSDP);
+	STDMETHOD(MSSP2GMCP)(/*[in]*/ BSTR bstrMSSP, /*[out, retval]*/ BSTR *bstrGMCP);
 };
 
 extern CComObject<CJmcObj>* pJmcObj;

@@ -39,6 +39,7 @@ public:
 	CString	m_strText;
 	CString	m_strGroup;
 	int		m_nPriority;
+	int		m_nInputType;
 	//}}AFX_DATA
 
 
@@ -62,6 +63,7 @@ protected:
 	afx_msg void OnRemove();
 	afx_msg void OnKillfocusName();
 	afx_msg void OnSelchangePriority();
+	afx_msg void OnSelchangeInputType();
 	afx_msg void OnChangeName();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

@@ -1,0 +1,20 @@
+OOB stands for Out-Of-Band
+#oob
+  lists known OOB modules (gmcp/msdp/mssp)
+#oob <module>
+  list enabled submodules of <module>
+#oob <module> enable|disable
+  adds all well-known or clear all submodules
+#oob <module> add|del <submodule>
+  adds/deletes specific submodule
+#oob <module> request <submodule>
+  requests specific submodule
+When JMC receives enabled submodule, it displays
+triggerable text formatted as follows:
+  #oob <module> <submobule>
+  (or string 1298 from language.ini)
+Parsed values available through pseudo-variables, which can't be
+rewritten or saved to profile. They are named in the following manner:
+  tables: $GmcpCharBaseVitalsHp, $MsdpRoomName, $MsspPlayers...
+  arrays: $MsdpReportableVariablesLength, $MsdpReportableVariablesValue1, $MsspPortLength...
+  tables as arrays: $GmcpRoomExitsLength, $GmcpRoomExitsKey1 (direction), $GmcpRoomExitsValue1 (vnum in that direction)

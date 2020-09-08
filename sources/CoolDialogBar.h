@@ -7,6 +7,8 @@
 // CoolDialogBar.h : header file
 //
 
+
+#include <vector>
 /////////////////////////////////////////////////////////////////////////////
 // CCoolDialogBar window
 
@@ -39,6 +41,8 @@ public:
 	int  m_mY;
 //vls-end//
 
+	void Resize(int Width, int Height);
+
 // Operations
 public:
 
@@ -50,7 +54,7 @@ public:
     // ClassWizard generated virtual function overrides
     //{{AFX_VIRTUAL(CCoolDialogBar)
     public:
-    virtual BOOL Create(CWnd* pParentWnd, LPCSTR &pTitle, CSize& InitialSize, UINT nID, DWORD dwStyle = WS_CHILD | WS_VISIBLE | CBRS_LEFT);
+    virtual BOOL Create(CWnd* pParentWnd, LPWSTR &pTitle, CSize& InitialSize, UINT nID, DWORD dwStyle = WS_CHILD | WS_VISIBLE | CBRS_LEFT);
     virtual CSize CalcFixedLayout( BOOL bStretch, BOOL bHorz );
     virtual CSize CalcDynamicLayout( int nLength, DWORD dwMode );
     //}}AFX_VIRTUAL
@@ -58,26 +62,30 @@ public:
 // Implementation
 public:
     virtual ~CCoolDialogBar();
-    void StartTracking();
+    void StartTracking(BOOL bHorz);
     void StopTracking(BOOL bAccept);
     void OnInvertTracker(const CRect& rect);
     
     // implementation helpers
     CPoint& ClientToWnd(CPoint& point);
 
+	CSize       m_sizeHorz;
+    CSize       m_sizeVert;
+    CSize       m_sizeFloat;
+	UINT        m_nDockBarID;
+	BOOL        m_bInRecalcNC;
+	std::vector <CCoolDialogBar *> AllVisibleNeighbours (int *OwnIndex = NULL);
+
 protected:
 	void		DrawGripper(CDC &dc);
 
     CSize       m_sizeMin;
-    CSize       m_sizeHorz;
-    CSize       m_sizeVert;
-    CSize       m_sizeFloat;
-    CRect       m_rectBorder;
+    CRect       m_rectBorderVert;
+	CRect       m_rectBorderHorz;
     CRect       m_rectTracker;
-    UINT        m_nDockBarID;
     CPoint      m_ptOld;
     BOOL        m_bTracking;
-    BOOL        m_bInRecalcNC;
+	BOOL		m_bTrackHorz;
     int         m_cxEdge;
 	CRect		m_rectUndock;
 	CRect		m_rectClose;
@@ -101,10 +109,11 @@ public:
     afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
     afx_msg void OnMouseMove(UINT nFlags, CPoint point);
     afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
+	afx_msg void OnWindowPosChanging(WINDOWPOS FAR* lpwndpos);
     afx_msg void OnWindowPosChanged(WINDOWPOS FAR* lpwndpos);
     afx_msg void OnNcPaint();
     afx_msg void OnNcLButtonDown(UINT nHitTest, CPoint point);
-    afx_msg UINT OnNcHitTest(CPoint point);
+    afx_msg LRESULT OnNcHitTest(CPoint point);
     afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS FAR* lpncsp);
     afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
     afx_msg void OnCaptureChanged(CWnd *pWnd);

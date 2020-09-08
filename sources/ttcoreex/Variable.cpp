@@ -9,34 +9,36 @@
 #include "tintin.h"
 #include "variables.h"
 
-extern char *get_arg_in_braces();
+extern wchar_t *get_arg_in_braces();
 extern struct listnode *search_node_with_wild();
 extern struct listnode *searchnode_list();
-
-bool is_allowed_symbol(char arg);
 
 /*************************/
 /* the #variable command */
 /*************************/
-void var_command(char *arg)
+void var_command(wchar_t *arg)
 {
-    char left[BUFFER_SIZE], right[BUFFER_SIZE], temp[BUFFER_SIZE], gname[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE], temp[BUFFER_SIZE], gname[BUFFER_SIZE];
 
-    arg=get_arg_in_braces(arg, left,  STOP_SPACES);
-    arg=get_arg_in_braces(arg, right, WITH_SPACES);
+    arg=get_arg_in_braces(arg,left,STOP_SPACES,sizeof(left)/sizeof(wchar_t)-1);
+    arg=get_arg_in_braces(arg,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
     if(!*left) {
         tintin_puts2(rs::rs(1212));
-        strcpy(left, "*");
+        wcscpy(left, L"*");
     }
 
     if(*left && !*right) {
         VAR_INDEX ind = VarList.begin();
         while (ind  != VarList.end() ) {
-            if ( match(left, (char*)ind->first.data() ) ){
+            if ( match(left, ind->first.c_str() ) ){
                 VAR* pvar = ind->second;
-                sprintf(temp, rs::rs(1213), (char*)ind->first.data(), (char*)pvar->m_strVal.data() );
+				int maxlen = sizeof(temp)/sizeof(wchar_t) - ( pvar->m_bGlobal ? wcslen(rs::rs(1050)) : 0 ) - 1;
+				int len = _snwprintf(temp, maxlen, rs::rs(1213), ind->first.c_str(), pvar->m_strVal.c_str() );
+				if( len < 0 )
+					len = maxlen;
+				temp[len] = L'\0';
                 if ( pvar->m_bGlobal ) 
-                    strcat(temp, rs::rs(1050));
+                    wcscat(temp, rs::rs(1050));
                 tintin_puts2(temp);
             }
             ind++;
@@ -45,45 +47,68 @@ void var_command(char *arg)
     }
 
     // check group 
-    get_arg_in_braces(arg, gname, STOP_SPACES);
+    get_arg_in_braces(arg,gname,STOP_SPACES,sizeof(gname)/sizeof(wchar_t)-1);
     VAR_INDEX ind = VarList.find(left);
     VAR* pvar;
 
-    char strVal[BUFFER_SIZE];
-    substitute_myvars(right, strVal);
+    wchar_t strVal[BUFFER_SIZE - MAX_VARNAME_LENGTH - 32];
+    substitute_myvars(right, strVal, sizeof(strVal)/sizeof(wchar_t));
 
+	bool changed = false;
     if ( ind != VarList.end() ) {
         pvar = ind->second;
-        pvar->m_strVal = strVal;
+		if (pvar->m_strVal != strVal) {
+			changed = true;
+			pvar->m_strVal = strVal;
+		}
     }
     else {
+		changed = true;
         pvar = new VAR(strVal);
         VarList[left] = pvar;
     }
-    if ( !strcmp(gname, "global" ) ) 
-        pvar->m_bGlobal = TRUE;
+
+	BOOL glob;
+    if ( !wcscmp(gname, L"global" ) ) 
+        glob = TRUE;
     else 
-        pvar->m_bGlobal = FALSE;
+        glob = FALSE;
+	
+	if (pvar->m_bGlobal != glob) {
+		pvar->m_bGlobal = glob;
+		changed = true;
+	}
 
+	if (changed) {
+		VARTOPCRE::iterator pcres = VarPcreDeps.find(left);
+		if (pcres != VarPcreDeps.end())
+			for (std::set<CPCRE*>::iterator ind = pcres->second.begin(); ind != pcres->second.end(); ind++) {
+				CPCRE* p = *ind;
+				p->Recompile();
+			}
+	}
 
-    if (mesvar[MSG_VAR]) {
-        sprintf(temp, rs::rs(1215),left, strVal, gname);
-        if ( pvar->m_bGlobal  ) 
-            strcat (temp , rs::rs(1216));
-        else 
-            strcat (temp , rs::rs(1217));
+    if (changed && mesvar[MSG_VAR]) {
+		int maxlen = sizeof(temp)/sizeof(wchar_t) - wcslen(pvar->m_bGlobal ? rs::rs(1216) : rs::rs(1217)) - 1;
+		int len = _snwprintf(temp, maxlen, rs::rs(1215), left, strVal);
+		if( len < 0 )
+			len = maxlen;
+		temp[len] = L'\0';
+		//swprintf(temp, rs::rs(1215),left, strVal, gname);
+        wcscat(temp, pvar->m_bGlobal ? rs::rs(1216) : rs::rs(1217));
+        
         tintin_puts2(temp);
     }
 }
 /************************/
 /* the #unvar   command */
 /************************/
-void unvar_command(char *arg)
+void unvar_command(wchar_t *arg)
 {
-    char left[BUFFER_SIZE] ,result[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE] ,result[BUFFER_SIZE];
     BOOL bFound = FALSE;
 
-    arg=get_arg_in_braces(arg,left, WITH_SPACES);
+    arg=get_arg_in_braces(arg,left,WITH_SPACES,sizeof(left)/sizeof(wchar_t)-1);
     if ( !*left ) {
         tintin_puts2(rs::rs(1218));
         return;
@@ -91,10 +116,10 @@ void unvar_command(char *arg)
 
     VAR_INDEX ind = VarList.begin();
     while (ind  != VarList.end() ) {
-        if ( match(left, (char*)ind->first.data() ) ){
+        if ( match(left, ind->first.c_str() ) ){
             VAR* pvar = ind->second;
             if (mesvar[MSG_VAR]) {
-                sprintf(result, rs::rs(1219), left);
+                swprintf(result, rs::rs(1219), left);
                 tintin_puts2(result);
             }
             bFound = TRUE;
@@ -112,89 +137,136 @@ void unvar_command(char *arg)
 /* copy the arg text into the result-space, but substitute the variables */
 /* $<string> with the values they stand for                              */
 /*************************************************************************/
-void substitute_myvars(char *arg, char *result)
+void substitute_myvars(const wchar_t *arg, wchar_t *result, int maxlength)
 {
-	char varname[20];
+	wchar_t varname[MAX_VARNAME_LENGTH+1];
 	int nest=0,counter,varlen;
 
-	while(*arg) {
+	maxlength--; //reserve for null-terminator
+	while(*arg && maxlength > 0) {
 
-		if(*arg=='$') { /* substitute variable */
+		if(*arg==L'$') { /* substitute variable */
 			counter=0;
-			while (*(arg+counter)=='$')
+			while (*(arg+counter)==L'$')
 				counter++;
 			varlen=0;
 						
 			while (is_allowed_symbol(*(arg+varlen+counter)))
 				varlen++;
-				
-			if (varlen>0)
-				strncpy(varname,arg+counter,varlen);
-			*(varname+varlen)='\0';
 			
-			if (counter==nest+1 && !isdigit(*(arg+counter+1))) {
+			if (varlen > MAX_VARNAME_LENGTH)
+				varlen = MAX_VARNAME_LENGTH;
+			if (varlen>0)
+				wcsncpy(varname,arg+counter,varlen);
+			*(varname+varlen)=L'\0';
+			
+			if (counter==nest+1 && !iswdigit(*(arg+counter))) {
 				// check for date/time variable here !
 				
-				char specialVariableValue[BUFFER_SIZE];
-				specialVariableValue[0] = '\0';
+				wchar_t specialVariableValue[BUFFER_SIZE];
+				specialVariableValue[0] = L'\0';
 				
 				// find special variables
 				for(int i=0;i<JMC_SPECIAL_VARIABLES_NUM;i++)
-					if (!strcmp(varname, jmc_vars[i].name)) {
+					if (!wcscmp(varname, jmc_vars[i].name)) {
 						(*(jmc_vars[i].jmcfn))(specialVariableValue);
 						break;
 					}				
 
-				if (strlen(specialVariableValue) > 0) {
+				if (wcslen(specialVariableValue) > 0) {
 					// add value of special variable to "result"
-					strcpy(result, specialVariableValue);
-					result += strlen(specialVariableValue);
+
+					int len = wcslen(specialVariableValue);
+					if (len > maxlength)
+						len = maxlength;
+					wcsncpy(result, specialVariableValue, len);
+					result += len;
+					maxlength -= len;
+				
+					arg+=counter+varlen;
+				} else if (get_oob_variable(varname, specialVariableValue, sizeof(specialVariableValue) / sizeof(wchar_t) - 1) > 0) {
+					int len = wcslen(specialVariableValue);
+					if (len > maxlength)
+						len = maxlength;
+					wcsncpy(result, specialVariableValue, len);
+					result += len;
+					maxlength -= len;
 				
 					arg+=counter+varlen;
 				} else {
 					VAR_INDEX ind = VarList.find(varname);
 					if( ind != VarList.end() ) {
 						VAR* pvar = ind->second;
-						strcpy(result, (char*)pvar->m_strVal.data());
-						result+=pvar->m_strVal.length();
+
+						int len = wcslen(pvar->m_strVal.c_str());
+						if (len > maxlength)
+							len = maxlength;
+						wcsncpy(result, pvar->m_strVal.c_str(), len);
+						result += len;
+						maxlength -= len;
+
 						arg+=counter+varlen;
 					} else {
-						strncpy(result,arg,counter+varlen);
-						result+=varlen+counter;
+						int len = counter+varlen;
+						if (len > maxlength)
+							len = maxlength;
+						wcsncpy(result, arg, len);
+						result += len;
+						maxlength -= len;
+
 						arg+=varlen+counter;
 					}
 				}
-			} else {  
-				strncpy(result,arg,counter+varlen);
-				result+=varlen+counter;
+			} else {
+				int len = counter+varlen;
+				if (len > maxlength)
+					len = maxlength;
+				wcsncpy(result, arg, len);
+				result += len;
+				maxlength -= len;
+
 				arg+=varlen+counter;
 			}
 		} else if (*arg==DEFAULT_OPEN) {
 			nest++;
-			*result++= *arg++;
+			if (maxlength > 0) {
+				*result++= *arg++;
+				--maxlength;
+			} else
+				arg++;
 		} else if (*arg==DEFAULT_CLOSE) {
 			nest--;
-			*result++= *arg++;
-		} else if (*arg=='\\' && *(arg+1)=='$' && nest==0) {
+			if (maxlength > 0) {
+				*result++= *arg++;
+				--maxlength;
+			} else
+				arg++;
+		} else if (*arg==L'\\' && *(arg+1)==L'$' && nest==0) {
 			arg++;
-			*result++= *arg++;
-		} else {
+			if (maxlength > 0) {
+				*result++= *arg++;
+				--maxlength;
+			} else
+				arg++;
+		} else if (maxlength > 0) {
 		  *result++= *arg++;
-		}
+		  --maxlength;
+		} else
+		  arg++;
 	}
 	
-	*result='\0';
+	*result=L'\0';
 }
 
 /*************************/
 /* the #tolower command */
 /*************************/
-void tolower_command(char *arg)
+void tolower_command(wchar_t *arg)
 {
-    char left[BUFFER_SIZE], right[BUFFER_SIZE], arg2[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE], arg2[BUFFER_SIZE];
 
-    arg = get_arg_in_braces(arg, left,  STOP_SPACES);
-    arg = get_arg_in_braces(arg, right, WITH_SPACES);
+    arg = get_arg_in_braces(arg,left,STOP_SPACES,sizeof(left)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
     if (!*left || !*right) {
         tintin_puts2(rs::rs(1221));
     } else {
@@ -208,7 +280,7 @@ void tolower_command(char *arg)
             VarList[left] = pvar;
         }
         if (mesvar[MSG_VAR]) {
-          sprintf(arg2, rs::rs(1222),left, right);
+          swprintf(arg2, rs::rs(1222),left, right);
           tintin_puts2(arg2);
         }
     }
@@ -217,12 +289,12 @@ void tolower_command(char *arg)
 /*************************/
 /* the #toupper command */
 /*************************/
-void toupper_command(char *arg)
+void toupper_command(wchar_t *arg)
 {
-    char left[BUFFER_SIZE], right[BUFFER_SIZE], arg2[BUFFER_SIZE];
+    wchar_t left[BUFFER_SIZE], right[BUFFER_SIZE], arg2[BUFFER_SIZE];
 
-    arg = get_arg_in_braces(arg, left,  STOP_SPACES);
-    arg = get_arg_in_braces(arg, right, WITH_SPACES);
+    arg = get_arg_in_braces(arg,left,STOP_SPACES,sizeof(left)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,right,WITH_SPACES,sizeof(right)/sizeof(wchar_t)-1);
     if (!*left || !*right) {
         tintin_puts2(rs::rs(1223));
     } else {
@@ -236,7 +308,7 @@ void toupper_command(char *arg)
             VarList[left] = pvar;
         }
         if (mesvar[MSG_VAR]) {
-          sprintf(arg2, rs::rs(1222),left, right);
+          swprintf(arg2, rs::rs(1222),left, right);
           tintin_puts2(arg2);
         }
     }
@@ -245,92 +317,92 @@ void toupper_command(char *arg)
 /********************************************/
 /* check symbol in variable name is allowed */
 /********************************************/
-bool is_allowed_symbol(char arg)
+bool is_allowed_symbol(wchar_t arg)
 {
-	return isalpha(arg) || isdigit(arg); 
+	return iswalpha(arg) || iswdigit(arg); 
 }
 
 
 // current user input
-void variable_value_input(char *arg)
+void variable_value_input(wchar_t *arg)
 {
-	strcpy(arg, editStr);
+	wcscpy(arg, editStr);
 }
 
 // DATE AND TIME:
-void variable_value_date(char *arg)
+void variable_value_date(wchar_t *arg)
 {
 	SYSTEMTIME st;
 	GetLocalTime(&st); 
     
-	sprintf(arg, "%02d-%02d-%d", st.wDay, st.wMonth, st.wYear);
+	swprintf(arg, L"%02d-%02d-%d", st.wDay, st.wMonth, st.wYear);
 }
 
-void variable_value_year(char *arg)
+void variable_value_year(wchar_t *arg)
 {
 	SYSTEMTIME st;
 	GetLocalTime(&st); 
     
-	sprintf(arg, "%d", st.wYear);
+	swprintf(arg, L"%d", st.wYear);
 }
 
-void variable_value_month(char *arg)
+void variable_value_month(wchar_t *arg)
 {
 	SYSTEMTIME st;
 	GetLocalTime(&st); 
     
-	sprintf(arg, "%02d", st.wMonth);
+	swprintf(arg, L"%02d", st.wMonth);
 }
 
-void variable_value_day(char *arg)
+void variable_value_day(wchar_t *arg)
 {
 	SYSTEMTIME st;
 	GetLocalTime(&st); 
  
-	sprintf(arg, "%02d", st.wDay);
+	swprintf(arg, L"%02d", st.wDay);
 }
 
-void variable_value_time(char *arg)
+void variable_value_time(wchar_t *arg)
 {
 	SYSTEMTIME st;
 	GetLocalTime(&st); 
     
-	sprintf(arg, "%02d:%02d:%02d", st.wHour, st.wMinute, st.wSecond);
+	swprintf(arg, L"%02d:%02d:%02d", st.wHour, st.wMinute, st.wSecond);
 }
 
-void variable_value_hour(char *arg)
+void variable_value_hour(wchar_t *arg)
 {
 	SYSTEMTIME st;
 	GetLocalTime(&st); 
 
-    sprintf(arg, "%02d", st.wHour);
+    swprintf(arg, L"%02d", st.wHour);
 }
 
-void variable_value_minute(char *arg)
-{
-	SYSTEMTIME st;
-	GetLocalTime(&st); 
-    
-	sprintf(arg, "%02d", st.wMinute);
-}
-
-void variable_value_second(char *arg)
+void variable_value_minute(wchar_t *arg)
 {
 	SYSTEMTIME st;
 	GetLocalTime(&st); 
     
-	sprintf(arg, "%02d", st.wSecond);
+	swprintf(arg, L"%02d", st.wMinute);
 }
 
-void variable_value_millisecond(char *arg)
+void variable_value_second(wchar_t *arg)
+{
+	SYSTEMTIME st;
+	GetLocalTime(&st); 
+    
+	swprintf(arg, L"%02d", st.wSecond);
+}
+
+void variable_value_millisecond(wchar_t *arg)
 {
 	SYSTEMTIME st;
 	GetLocalTime(&st); 
  
-	sprintf(arg, "%03d", st.wMilliseconds);
+	swprintf(arg, L"%03d", st.wMilliseconds);
 }
 
-void variable_value_timestamp(char *arg)
+void variable_value_timestamp(wchar_t *arg)
 {
 	SYSTEMTIME st;
 	FILETIME ft;
@@ -343,10 +415,102 @@ void variable_value_timestamp(char *arg)
 	ularge.HighPart = ft.dwHighDateTime;
 
 	// convert filetime to unix timestamp
-	sprintf(arg, "%I64d", ularge.QuadPart / 10000000 - 11644473600);
+	swprintf(arg, L"%I64d", ularge.QuadPart / 10000000 - 11644473600);
 }
 
-void variable_value_color_default(char *arg)
+void variable_value_clock(wchar_t *arg)
 {
-	sprintf(arg, "%s", DEFAULT_END_COLOR);
+	swprintf(arg, L"%u", GetTickCount() / 100);
+}
+
+void variable_value_clockms(wchar_t *arg)
+{
+	swprintf(arg, L"%u", GetTickCount());
+}
+
+void variable_value_color_default(wchar_t *arg)
+{
+	swprintf(arg, L"%ls", DEFAULT_END_COLOR);
+}
+
+void variable_value_random(wchar_t *arg)
+{
+	//number of bits generated by single rand() should be calculated using RAND_MAX value
+	unsigned long tmp = ((unsigned long)(rand() & 0xFF) << 24) |
+		                ((unsigned long)(rand() & 0xFF) << 16) |
+					    ((unsigned long)(rand() & 0xFF) <<  8) |
+					    ((unsigned long)(rand() & 0xFF) <<  0) ;
+	swprintf(arg, L"%u", tmp);
+}
+
+extern wchar_t MUDHostName[256];
+void variable_value_hostname(wchar_t *arg)
+{
+	if (!MUDAddress.sin_addr.s_addr) {
+		*arg = L'\0';
+		return;
+	}
+	wcscpy(arg, MUDHostName);
+}
+
+void variable_value_hostip(wchar_t *arg)
+{
+	if (!MUDAddress.sin_addr.s_addr) {
+		*arg = L'\0';
+		return;
+	}
+	swprintf(arg, L"%d.%d.%d.%d",
+		(MUDAddress.sin_addr.s_addr >>  0) & 0xff,
+		(MUDAddress.sin_addr.s_addr >>  8) & 0xff,
+		(MUDAddress.sin_addr.s_addr >> 16) & 0xff,
+		(MUDAddress.sin_addr.s_addr >> 24) & 0xff);
+}
+
+void variable_value_hostport(wchar_t *arg)
+{
+	if (!MUDAddress.sin_addr.s_addr) {
+		*arg = L'\0';
+		return;
+	}
+	swprintf(arg, L"%d", htons(MUDAddress.sin_port));
+}
+
+void variable_value_eop(wchar_t *arg)
+{
+	swprintf(arg, L"%lc", END_OF_PROMPT_MARK);
+}
+
+void variable_value_eol(wchar_t *arg)
+{
+	swprintf(arg, L"%lc", L'\n');
+}
+
+void variable_value_esc(wchar_t *arg)
+{
+	swprintf(arg, L"%lc", ESC_SEQUENCE_MARK);
+}
+
+void variable_value_ping(wchar_t *arg)
+{
+	swprintf(arg, L"%d", lPingMUD);
+}
+
+void variable_value_ping_proxy(wchar_t *arg)
+{
+	swprintf(arg, L"%d", lPingProxy);
+}
+
+void variable_value_product_name(wchar_t *arg)
+{
+	swprintf(arg, L"%ls", strProductName);
+}
+
+void variable_value_product_version(wchar_t *arg)
+{
+	swprintf(arg, L"%ls", strProductVersion);
+}
+
+void variable_value_command(wchar_t *arg)
+{
+	swprintf(arg, L"%ls", strLastCommand);
 }

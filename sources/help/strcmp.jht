@@ -1,0 +1,6 @@
+#strcmp {str1} {str2} {true-expr} [false-expr]
+  compares str1 and str2 (including variables substitution)
+  if string are equal, then true-expr is evaluated
+  otherwise false-expr is evaluated, if present
+  (comparsion is case-sensitive)
+  

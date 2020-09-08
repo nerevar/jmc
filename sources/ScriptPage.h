@@ -28,7 +28,7 @@ public:
 	//}}AFX_DATA
 
     GUID m_guidLang;
-    CLSID m_clsIDs[10];
+    CLSID m_clsIDs[20];
 
 // Overrides
 	// ClassWizard generate virtual function overrides

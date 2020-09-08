@@ -17,7 +17,6 @@
 #include "ScriptPage.h"
 #include "JmcObjectsDlg.h"
 
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -64,8 +63,10 @@ CJMCStatus::CJMCStatus()
     m_bmpMarked.LoadBitmap (IDB_MARKED);
 }
 
+extern int LengthWithoutANSI(const wchar_t* str);
+
 //vls-begin// multiple output
-static void __stdcall GetOutputName(int wnd, char *name, int maxlen)
+static void __stdcall GetOutputName(int wnd, wchar_t *name, int maxlen)
 {
     if (wnd >= 0 && wnd < MAX_OUTPUT && name)
     {
@@ -73,14 +74,42 @@ static void __stdcall GetOutputName(int wnd, char *name, int maxlen)
         CString cs;
         CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
         cs = pMainFrm->m_coolBar[wnd].m_sTitle;
-        len = min(maxlen-1, cs.GetLength());
-        strncpy(name, cs, len);
-        name[len] = '\0';
+        len = min(maxlen, cs.GetLength()) - 1;
+        wcsncpy(name, cs, len);
+        name[len] = L'\0';
     }
 }
 //vls-end//
 
-static void DrawColoredText(LPDRAWITEMSTRUCT lpDrawItemStruct, LPCSTR strText)
+static void __stdcall GetWindowSizeFunc(int wnd, int &width, int &height)
+{
+	width = height = 0;
+	if (wnd >= 0 && wnd < MAX_OUTPUT) {
+        CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
+		if (pMainFrm) {
+			height = pMainFrm->m_coolBar[wnd].m_wndAnsi.m_nPageSize;
+			width = pMainFrm->m_coolBar[wnd].m_wndAnsi.m_nLineWidth;
+		}
+    } else {
+		CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
+		if (pMainFrm) {
+			CSmcView* pView = (CSmcView*)pMainFrm->GetActiveView();
+			if (pView) {
+				height = pView->m_nPageSize;
+				width = pView->m_nLineWidth;
+			}
+		}
+	}
+}
+static void __stdcall SetWindowSizeFunc(int wnd, int width, int height)
+{
+	if (wnd < 0 || wnd >= MAX_OUTPUT)
+		wnd = MAX_OUTPUT;
+	CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
+	pMainFrm->PostMessage(WM_USER+506, MAKELPARAM(width, height));
+}
+
+static void DrawColoredText(LPDRAWITEMSTRUCT lpDrawItemStruct, const wchar_t* strText)
 {
     CSmcDoc* pDoc = (CSmcDoc*) (((CMainFrame*)AfxGetMainWnd())->GetActiveDocument());
     if ( !pDoc) 
@@ -89,48 +118,70 @@ static void DrawColoredText(LPDRAWITEMSTRUCT lpDrawItemStruct, LPCSTR strText)
 
     int Bg = 0, Fg = 7, bold = 0;
 
-    
-    // parse ANSI colors here 
-    char* ptr = (char*)strText;
-    if ( *ptr == 0x1B ) {
-        ptr += 2; // skip [ symbol
-        while ( *ptr && *ptr != 'm' ) { 
-            char col[32];
-            char* dest = col;
-            while ( isdigit(*ptr) ) 
-                *dest++ = *ptr++;
-            // now set up color 
-            *dest = 0;
-            int value = atoi(col);
-            if ( !value ) {
-                Bg = 0;
-                Fg = 7;
-                bold = 0;
-            }
-            if ( value == 1 ) 
-                bold = 1;
-            if ( value <= 37 && value >= 30) {
-                Fg = value-30;
-            }
-            if ( value <= 47 && value >= 40) {
-                Bg = value-40;
-            }
-            if ( *ptr == ';' ) 
-                ptr++;
-        }
-        if ( *ptr ) 
-            ptr++;
+	SelectObject(lpDrawItemStruct->hDC ,pDoc->m_fntText.GetSafeHandle ());
 
-    }
-    // now set up colors 
-    SetTextColor(lpDrawItemStruct->hDC , pDoc->m_ForeColors[Fg+bold*8]);
-    SetBkColor(lpDrawItemStruct->hDC , pDoc->m_BackColors[Bg+bold*8]);
+	CRect rect = lpDrawItemStruct->rcItem;
+	int shift = 0;
 
-    SelectObject(lpDrawItemStruct->hDC ,pDoc->m_fntText.GetSafeHandle ());
+	wchar_t* ptr = (wchar_t*)strText;
+	while (*ptr) {
+		if (*ptr == L'\x1B') {
+			ptr += 2; // skip [ symbol
+			while ( *ptr && *ptr != L'm' ) { 
+				wchar_t col[32];
+				wchar_t* dest = col;
+				while ( iswdigit(*ptr) ) 
+					*dest++ = *ptr++;
+				// now set up color 
+				*dest = 0;
+				int value = _wtoi(col);
+				if ( !value ) {
+					Bg = 0;
+					Fg = 7;
+					bold = 0;
+				}
+				if ( value == 1 ) 
+					bold = 1;
+				if ( value <= 37 && value >= 30) {
+					Fg = value-30;
+				}
+				if ( value <= 47 && value >= 40) {
+					Bg = value-40;
+				}
+				if ( *ptr == L';' ) 
+					ptr++;
+			}
+			if ( *ptr ) 
+				ptr++;
+		}
+		wchar_t *end = ptr;
+		while (*end && *end != L'\x1B')
+			end++;
 
-    ExtTextOut(lpDrawItemStruct->hDC , 
-        lpDrawItemStruct->rcItem.left , lpDrawItemStruct->rcItem.top, 
-        ETO_OPAQUE, &lpDrawItemStruct->rcItem, ptr, strlen(ptr), NULL);
+		SetTextColor(lpDrawItemStruct->hDC , pDoc->m_ForeColors[Fg+bold*8]);
+		SetBkColor(lpDrawItemStruct->hDC , pDoc->m_BackColors[Bg]);
+
+		if (end > ptr) {
+			int len = end - ptr;
+			CRect rctext(0, 0, 0, 0);
+
+			DrawText(lpDrawItemStruct->hDC, ptr, len, &rctext, DT_LEFT | DT_SINGLELINE | DT_NOCLIP | DT_CALCRECT | DT_NOPREFIX );
+
+			CRect rc = rect;
+			rc.left += shift;
+			ExtTextOut(lpDrawItemStruct->hDC, rc.left , rc.top, ETO_OPAQUE, &rc, ptr, len, NULL);
+
+			shift += rctext.Width();
+		}
+
+		ptr = end;
+	}
+
+	if (shift == 0) {
+		SetTextColor(lpDrawItemStruct->hDC , pDoc->m_ForeColors[Fg+bold*8]);
+		SetBkColor(lpDrawItemStruct->hDC , pDoc->m_BackColors[Bg]);
+		ExtTextOut(lpDrawItemStruct->hDC, rect.left , rect.top, ETO_OPAQUE, &rect, L"", 0, NULL);
+	}
 }
 
 void CJMCStatus::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
@@ -282,6 +333,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_MESSAGE(WM_USER+501, OnNameOutput)
     ON_MESSAGE(WM_USER+502, OnDockOutput)
     ON_MESSAGE(WM_USER+505, OnPosWOutput)
+	ON_MESSAGE(WM_USER+506, OnSizeWOutput)
 //vls-end//
 
     ON_MESSAGE(WM_USER+600, OnCleanInput)
@@ -292,6 +344,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
     ON_MESSAGE(WM_USER+654, OnUpdStat4)
     ON_MESSAGE(WM_USER+655, OnUpdStat5)
 //*/en
+
+	ON_MESSAGE(WM_USER+680, OnUpdPing)
 
 	// sysTray command
     ON_MESSAGE(WM_USER+701, OnTrayMessage)
@@ -304,29 +358,34 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
+
     m_wndSplitter.m_bInited = FALSE;
 	
-    m_wndSplitter.m_nUpSize = ::GetPrivateProfileInt("Main" , "UpSize" , 300, szGLOBAL_PROFILE);
-    m_wndSplitter.m_nDownSize = ::GetPrivateProfileInt("Main" , "DownSize" , 100, szGLOBAL_PROFILE);
-    bDisplayCommands  = ::GetPrivateProfileInt("Options" , "DisplayCommands" , 0, szGLOBAL_PROFILE);
-    bDisplayInput  = ::GetPrivateProfileInt("Options" , "DisplayInput" , 1, szGLOBAL_PROFILE);
-    bMinimizeToTray  = ::GetPrivateProfileInt("Options" , "MinimizeToTray" , 0, szGLOBAL_PROFILE);
-    MoreComingDelay  = ::GetPrivateProfileInt("Options" , "MoreComingDelay" , 100, szGLOBAL_PROFILE);
+    m_wndSplitter.m_nUpSize = ::GetPrivateProfileInt(L"Main" , L"UpSize" , 300, szGLOBAL_PROFILE);
+    m_wndSplitter.m_nDownSize = ::GetPrivateProfileInt(L"Main" , L"DownSize" , 100, szGLOBAL_PROFILE);
+	nScrollSize = ::GetPrivateProfileInt(L"Options" , L"Scroll" , 300, szGLOBAL_PROFILE);
+    bDisplayCommands  = ::GetPrivateProfileInt(L"Options" , L"DisplayCommands" , 0, szGLOBAL_PROFILE);
+    bDisplayInput  = ::GetPrivateProfileInt(L"Options" , L"DisplayInput" , 1, szGLOBAL_PROFILE);
+	bInputOnNewLine  = ::GetPrivateProfileInt(L"Options" , L"InputOnNewLine" , 0, szGLOBAL_PROFILE);
+	bDisplayPing  = ::GetPrivateProfileInt(L"Options" , L"DisplayPing" , 1, szGLOBAL_PROFILE);
+    bMinimizeToTray  = ::GetPrivateProfileInt(L"Options" , L"MinimizeToTray" , 0, szGLOBAL_PROFILE);
+    MoreComingDelay  = ::GetPrivateProfileInt(L"Options" , L"MoreComingDelay" , 100, szGLOBAL_PROFILE);
 }
 
 CMainFrame::~CMainFrame()
 {
-    ::WritePrivateProfileInt("Main" , "UpSize" , m_wndSplitter.m_nUpSize, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Main" , "DownSize" , m_wndSplitter.m_nDownSize, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "DisplayCommands" , bDisplayCommands, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "DisplayInput" , bDisplayInput , szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "MinimizeToTray" , bMinimizeToTray, szGLOBAL_PROFILE);
-    ::WritePrivateProfileInt("Options" , "MoreComingDelay" , MoreComingDelay , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Main" , L"UpSize" , m_wndSplitter.m_nUpSize, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Main" , L"DownSize" , m_wndSplitter.m_nDownSize, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"DisplayCommands" , bDisplayCommands, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"DisplayInput" , bDisplayInput , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"InputOnNewLine" , bInputOnNewLine , szGLOBAL_PROFILE);
+	::WritePrivateProfileInt(L"Options" , L"DisplayPing" , bDisplayPing , szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"MinimizeToTray" , bMinimizeToTray, szGLOBAL_PROFILE);
+    ::WritePrivateProfileInt(L"Options" , L"MoreComingDelay" , MoreComingDelay , szGLOBAL_PROFILE);
 }
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
-
     if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
     
@@ -428,7 +487,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     for (int i = 0; i < MAX_OUTPUT; i++) {
         CString str;
         str.Format(t, i);
-        LPCSTR strTitle = str;
+        LPWSTR strTitle = (LPWSTR)(const wchar_t*)str;
 
         m_coolBar[i].m_wndCode = i;
         m_coolBar[i].m_wndAnsi.m_wndCode = i;
@@ -450,8 +509,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		}
 
     }
-    LoadBarState("JMC");
+    LoadBarState(L"JMC");
     InitOutputNameFunc(GetOutputName);
+	InitWindowSizeFunc(GetWindowSizeFunc, SetWindowSizeFunc);
 	
 //vls-end//
     
@@ -459,19 +519,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
     // Load history here 
     CFile histFile;
-    if ( histFile.Open("history.dat", CFile::modeRead ) ) {
+    if ( histFile.Open(L"history.dat", CFile::modeRead ) ) {
         CArchive ar(&histFile, CArchive::load );
         m_editBar.GetHistory().Serialize (ar);
         m_editBar.m_nCurrItem = m_editBar.GetHistory().GetCount();
     }
 
-	char trayTitle[BUFFER_SIZE] = "";
+	wchar_t trayTitle[BUFFER_SIZE] = L"";
 	
 	CSmcDoc* pDoc = (CSmcDoc*)GetActiveDocument();
 	if ( pDoc ) {
 		CString text;
 		text.Format(IDS_JABA_TITLE, pDoc->m_strProfileName);
-		strcpy(trayTitle, text);
+		wcscpy(trayTitle, text);
 	}
 
 	sysTray = CTray(IDR_MAINFRAME, trayTitle);
@@ -527,7 +587,7 @@ void CMainFrame::OnOptionsOptions()
     pg1.m_strCommandDelimiter = cCommandDelimiter;
     pg1.m_nHistorySize = m_editBar.GetHistorySize();
     pg1.m_bDisplayCommands = bDisplayCommands;
-    pg1.m_bDisplayInput = bDisplayInput;
+	pg1.m_bShowPing = bDisplayPing;
     pg1.m_bClearInput = m_editBar.m_bClearInput;
     pg1.m_bTokenInput = m_editBar.m_bTokenInput;
     pg1.m_bScrollEnd = m_editBar.m_bScrollEnd;
@@ -537,6 +597,20 @@ void CMainFrame::OnOptionsOptions()
     pg1.m_bSplitOnBackscroll = pDoc->m_bSplitOnBackscroll;
 	pg1.m_bMinimizeToTray = bMinimizeToTray;
     pg1.m_nTrigDelay = MoreComingDelay;
+	pg1.m_bLineWrap = pDoc->m_bLineWrap;
+	pg1.m_bShowTimestamps = pDoc->m_bShowTimestamps;
+	pg1.m_bSelectRect = pDoc->m_bRectangleSelection;
+	pg1.m_bRemoveESC = pDoc->m_bRemoveESCSelection;
+	pg1.m_bShowHidden = pDoc->m_bShowHiddenText;
+
+	if (!bDisplayInput)
+		pg1.m_nUserInputHide = 0;
+	else if (!bInputOnNewLine)
+		pg1.m_nUserInputHide = 1;
+	else 
+		pg1.m_nUserInputHide = 2;
+
+	pg1.m_nMudCodePage = MudCodePage;
 
 
     // Fill subst params
@@ -573,6 +647,10 @@ void CMainFrame::OnOptionsOptions()
     pg4.m_bRMASupport = bRMASupport;
     pg4.m_nAppendMode = bDefaultLogMode ? 1 : 0 ;
     pg4.m_bAppendLogTitle = bAppendLogTitle;
+	pg4.m_bHTMLTimestamps = bHTML ? bHTMLTimestamps : FALSE;
+	pg4.m_nLogAs = bLogAsUserSeen ? 1 : 0;
+
+	pg4.m_nLogCodePage = LogCodePage;
 	
     memcpy(&pg5.m_guidLang ,  &theApp.m_guidScriptLang, sizeof(GUID));
     pg5.m_bAllowDebug = bAllowDebug;
@@ -594,7 +672,9 @@ void CMainFrame::OnOptionsOptions()
         cCommandChar = pDoc->m_cCommandChar = pg1.m_strCommandChar[0];
         cCommandDelimiter = pg1.m_strCommandDelimiter[0];
         bDisplayCommands = pg1.m_bDisplayCommands;
-        bDisplayInput = pg1.m_bDisplayInput;
+        bDisplayInput = (pg1.m_nUserInputHide != 0);
+		bInputOnNewLine = (pg1.m_nUserInputHide == 2);
+		bDisplayPing = pg1.m_bShowPing;
 		bMinimizeToTray = pg1.m_bMinimizeToTray;
         m_editBar.m_bClearInput = pg1.m_bClearInput;
         m_editBar.m_bTokenInput = pg1.m_bTokenInput;
@@ -605,8 +685,15 @@ void CMainFrame::OnOptionsOptions()
         pDoc->m_bSplitOnBackscroll = pg1.m_bSplitOnBackscroll;
         if ( !pg1.m_bSplitOnBackscroll ) 
             OnUnsplit();
+		pDoc->m_bLineWrap = pg1.m_bLineWrap;
+		pDoc->m_bShowTimestamps = pg1.m_bShowTimestamps;
+		pDoc->m_bRectangleSelection = pg1.m_bSelectRect;
+		pDoc->m_bRemoveESCSelection = pg1.m_bRemoveESC;
+		pDoc->m_bShowHiddenText = pg1.m_bShowHidden;
 
-         MoreComingDelay =pg1.m_nTrigDelay;
+        MoreComingDelay = pg1.m_nTrigDelay;
+
+		MudCodePage = pg1.m_nMudCodePage;
 
         bSubstitution = pg2.m_bAllowSubst ;
         EnterCriticalSection(&secSubstSection);
@@ -620,15 +707,18 @@ void CMainFrame::OnOptionsOptions()
         pDoc->m_strSaveCommand = pg3.m_strCommand;
 		pDoc->m_strDefSaveFile = pg3.m_strSaveName;
 		pDoc->m_strDefSetFile = pg3.m_strStartFileName;
-		strcpy(langfile, pg3.m_strLangFile);
-		strcpy(langsect, pg3.m_strLangSect);
+		wcscpy(langfile, pg3.m_strLangFile);
+		wcscpy(langsect, pg3.m_strLangSect);
 
         // Log settings save
 		bANSILog = pg4.m_LogType == 2;
         bHTML = pg4.m_LogType == 1; 
+		bHTMLTimestamps = bHTML ? pg4.m_bHTMLTimestamps : FALSE;
         bRMASupport = bANSILog ? pg4.m_bRMASupport : FALSE;
         bDefaultLogMode = pg4.m_nAppendMode ;
+		bLogAsUserSeen = pg4.m_nLogAs;
         bAppendLogTitle = pg4.m_bAppendLogTitle;
+		LogCodePage = pg4.m_nLogCodePage;
 
         if ( memcmp(&theApp.m_guidScriptLang, &pg5.m_guidLang , sizeof(GUID) ) ) {
             memcpy(&theApp.m_guidScriptLang, &pg5.m_guidLang , sizeof(GUID) ) ;
@@ -651,7 +741,7 @@ void CMainFrame::OnUpdateFrameTitle(BOOL)
 
 void CMainFrame::OnUpdateLogged(CCmdUI* pUI)
 {
-    char buff[32];
+    wchar_t buff[32];
     int Data;
     int val  = m_wndStatusBar.GetStatusBarCtrl ().GetText(buff, NUM_INDICATOR_LOGGED, &Data);
 
@@ -659,12 +749,12 @@ void CMainFrame::OnUpdateLogged(CCmdUI* pUI)
     if (  (bLog && val ) || (!bLog && !val)  ) 
         return ;
 
-    m_wndStatusBar.GetStatusBarCtrl ().SetText((char*)bLog, NUM_INDICATOR_LOGGED, SBT_OWNERDRAW );
+    m_wndStatusBar.GetStatusBarCtrl ().SetText((wchar_t*)bLog, NUM_INDICATOR_LOGGED, SBT_OWNERDRAW );
 }
 
 void CMainFrame::OnUpdateConnected(CCmdUI* pUI)
 {
-    char buff[32];
+    wchar_t buff[32];
     int Data;
     int val  = m_wndStatusBar.GetStatusBarCtrl ().GetText(buff, NUM_INDICATOR_CONNECTED, &Data);
 
@@ -672,12 +762,12 @@ void CMainFrame::OnUpdateConnected(CCmdUI* pUI)
     if (  (bLog && val ) || (!bLog && !val)  ) 
         return ;
 
-    m_wndStatusBar.GetStatusBarCtrl ().SetText((char*)bLog, NUM_INDICATOR_CONNECTED, SBT_OWNERDRAW );
+    m_wndStatusBar.GetStatusBarCtrl ().SetText((wchar_t*)bLog, NUM_INDICATOR_CONNECTED, SBT_OWNERDRAW );
 }
 
 void CMainFrame::OnUpdatePath(CCmdUI* pUI)
 {
-    char buff[32];
+    wchar_t buff[32];
     int Data;
     int val  = m_wndStatusBar.GetStatusBarCtrl ().GetText(buff, NUM_PATH_WRITING, &Data);
 
@@ -685,7 +775,7 @@ void CMainFrame::OnUpdatePath(CCmdUI* pUI)
     if (  (bLog && val ) || (!bLog && !val)  ) 
         return ;
 
-    m_wndStatusBar.GetStatusBarCtrl ().SetText((char*)bLog, NUM_PATH_WRITING, SBT_OWNERDRAW );
+    m_wndStatusBar.GetStatusBarCtrl ().SetText((wchar_t*)bLog, NUM_PATH_WRITING, SBT_OWNERDRAW );
 }
 
 void CMainFrame::OnUpdateTicker(CCmdUI* pUI)
@@ -695,11 +785,11 @@ void CMainFrame::OnUpdateTicker(CCmdUI* pUI)
 
     if ( bStatus ) {
         CString str;
-        str.Format("%d", toTick);
+        str.Format(L"%d", toTick);
         pUI->SetText(str);
     }
     else
-        pUI->SetText("OFF");
+        pUI->SetText(L"OFF");
 }
 
 void CMainFrame::OnUpdateInfo1(CCmdUI* pUI)
@@ -707,7 +797,15 @@ void CMainFrame::OnUpdateInfo1(CCmdUI* pUI)
     EnterCriticalSection(&secStatusSection);
     if ( m_strInfo1 != strInfo1  ) {
         m_strInfo1 = strInfo1;
-        m_wndStatusBar.GetStatusBarCtrl ().SetText(strInfo1, NUM_INDICATOR_INFO1, SBT_OWNERDRAW );
+
+		int Width = LengthWithoutANSI(m_strInfo1) * pDoc->m_nCharX;
+		UINT Style, ID;
+		int Size;
+		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO1 , ID, Style, Size);
+		if ( Size < Width )
+			m_wndStatusBar.SetPaneInfo(NUM_INDICATOR_INFO1, ID, Style, Width);
+
+        m_wndStatusBar.GetStatusBarCtrl ().SetText(m_strInfo1, NUM_INDICATOR_INFO1, SBT_OWNERDRAW );
     }
     LeaveCriticalSection(&secStatusSection);
 }
@@ -715,9 +813,18 @@ void CMainFrame::OnUpdateInfo1(CCmdUI* pUI)
 void CMainFrame::OnUpdateInfo2(CCmdUI* pUI)
 {
     EnterCriticalSection(&secStatusSection);
-    if ( m_strInfo2 != strInfo2  ) {
+    if ( m_strInfo2 != strInfo2  ) 
+	{
         m_strInfo2 = strInfo2;
-        m_wndStatusBar.GetStatusBarCtrl ().SetText(strInfo2, NUM_INDICATOR_INFO2, SBT_OWNERDRAW );
+
+		int Width = LengthWithoutANSI(m_strInfo2) * pDoc->m_nCharX;
+		UINT Style, ID;
+		int Size;
+		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO2 , ID, Style, Size);
+		if ( Size < Width )
+			m_wndStatusBar.SetPaneInfo(NUM_INDICATOR_INFO2, ID, Style, Width);
+
+        m_wndStatusBar.GetStatusBarCtrl ().SetText(m_strInfo2, NUM_INDICATOR_INFO2, SBT_OWNERDRAW );
     }
     LeaveCriticalSection(&secStatusSection);
 }
@@ -727,7 +834,15 @@ void CMainFrame::OnUpdateInfo3(CCmdUI* pUI)
     EnterCriticalSection(&secStatusSection);
     if ( m_strInfo3 != strInfo3  ) {
         m_strInfo3 = strInfo3;
-        m_wndStatusBar.GetStatusBarCtrl ().SetText(strInfo3, NUM_INDICATOR_INFO3, SBT_OWNERDRAW );
+
+		int Width = LengthWithoutANSI(m_strInfo3) * pDoc->m_nCharX;
+		UINT Style, ID;
+		int Size;
+		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO3 , ID, Style, Size);
+		if ( Size < Width )
+			m_wndStatusBar.SetPaneInfo(NUM_INDICATOR_INFO3, ID, Style, Width);
+
+        m_wndStatusBar.GetStatusBarCtrl ().SetText(m_strInfo3, NUM_INDICATOR_INFO3, SBT_OWNERDRAW );
     }
     LeaveCriticalSection(&secStatusSection);
 }
@@ -737,7 +852,15 @@ void CMainFrame::OnUpdateInfo4(CCmdUI* pUI)
     EnterCriticalSection(&secStatusSection);
     if ( m_strInfo4 != strInfo4  ) {
         m_strInfo4 = strInfo4;
-        m_wndStatusBar.GetStatusBarCtrl ().SetText(strInfo4, NUM_INDICATOR_INFO4, SBT_OWNERDRAW );
+
+		int Width = LengthWithoutANSI(m_strInfo4) * pDoc->m_nCharX;
+		UINT Style, ID;
+		int Size;
+		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO4 , ID, Style, Size);
+		if ( Size < Width )
+			m_wndStatusBar.SetPaneInfo(NUM_INDICATOR_INFO4, ID, Style, Width);
+
+        m_wndStatusBar.GetStatusBarCtrl ().SetText(m_strInfo4, NUM_INDICATOR_INFO4, SBT_OWNERDRAW );
     }
     LeaveCriticalSection(&secStatusSection);
 }
@@ -747,7 +870,15 @@ void CMainFrame::OnUpdateInfo5(CCmdUI* pUI)
     EnterCriticalSection(&secStatusSection);
     if ( m_strInfo5 != strInfo5  ) {
         m_strInfo5 = strInfo5;
-        m_wndStatusBar.GetStatusBarCtrl ().SetText(strInfo5, NUM_INDICATOR_INFO5, SBT_OWNERDRAW );
+
+		int Width = LengthWithoutANSI(m_strInfo5) * pDoc->m_nCharX;
+		UINT Style, ID;
+		int Size;
+		m_wndStatusBar.GetPaneInfo(NUM_INDICATOR_INFO5 , ID, Style, Size);
+		if ( Size < Width )
+			m_wndStatusBar.SetPaneInfo(NUM_INDICATOR_INFO5, ID, Style, Width);
+
+        m_wndStatusBar.GetStatusBarCtrl ().SetText(m_strInfo5, NUM_INDICATOR_INFO5, SBT_OWNERDRAW );
     }
     LeaveCriticalSection(&secStatusSection);
 }
@@ -762,19 +893,19 @@ void CMainFrame::OnDestroy()
 	GetWindowPlacement(&wp);
 	if ( wp.showCmd == SW_SHOWMINIMIZED ) 
 		wp.showCmd = SW_SHOW;
-    ::WritePrivateProfileBinary("View" , "WindowPlacement" ,(LPBYTE)&wp, sizeof(wp), szGLOBAL_PROFILE);
+    ::WritePrivateProfileBinary(L"View" , L"WindowPlacement" ,(LPBYTE)&wp, sizeof(wp), szGLOBAL_PROFILE);
 
 	CWinApp* pApp = AfxGetApp();
-    const char* pProfSave= pApp->m_pszProfileName;
+    const wchar_t* pProfSave= pApp->m_pszProfileName;
 	pApp->m_pszProfileName = szGLOBAL_PROFILE;
-	SaveBarState("View");
+	SaveBarState(L"View");
 	pApp->m_pszProfileName = pProfSave;
 	
     if ( m_wndSplitter.GetRowCount() > 1 ) {
         m_wndSplitter.SavePosition();
     }
 
-    SaveBarState("JMC");
+    SaveBarState(L"JMC");
 //vls-begin// multiple output
 //    m_coolBar.Save();
     for (int i = 0; i < MAX_OUTPUT; i++)
@@ -786,7 +917,7 @@ void CMainFrame::OnDestroy()
 //vls-begin// base dir
 //    if ( histFile.Open("history.dat", CFile::modeCreate | CFile::modeWrite ) ) {
     CString strFile(szBASE_DIR);
-    strFile += "\\history.dat";
+    strFile += L"\\history.dat";
     if ( histFile.Open(strFile, CFile::modeCreate | CFile::modeWrite ) ) {
 //vls-end//
         CArchive ar(&histFile, CArchive::store);
@@ -801,13 +932,13 @@ void CMainFrame::RestorePosition()
 {
 	// Loading state of control bars
 	CWinApp* pApp = AfxGetApp();
-    const char* pProfSave= pApp->m_pszProfileName;
+    const wchar_t* pProfSave= pApp->m_pszProfileName;
 	pApp->m_pszProfileName = szGLOBAL_PROFILE;
-	LoadBarState("View");
+	LoadBarState(L"View");
 	pApp->m_pszProfileName = pProfSave;
     UINT  nSize;
     LPBYTE pData;
-    if ( ::GetPrivateProfileBinary ("View", "WindowPlacement", &pData, &nSize, szGLOBAL_PROFILE) ) {
+    if ( ::GetPrivateProfileBinary (L"View", L"WindowPlacement", &pData, &nSize, szGLOBAL_PROFILE) ) {
 		WINDOWPLACEMENT wp;
 		memcpy(&wp, pData , nSize);
 		delete pData;
@@ -862,6 +993,7 @@ BOOL CInvertSplit::SplitRow()
     // Copy contents of old view to the new view 
     pMainView->m_strList.RemoveAll();
     pMainView->m_strList.AddHead(&pView->m_strList);
+	pMainView->m_TotalLinesReceived = pView->m_TotalLinesReceived;
     pMainView->m_nCurrentBg  = pView->m_nCurrentBg;
     pMainView->m_nCurrentFg  = pView->m_nCurrentFg;
     pMainView->m_bAnsiBold = pView->m_bAnsiBold;
@@ -885,7 +1017,7 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg)
             {
                 if ( m_wndSplitter.GetRowCount() == 1 ) {
                     CEdit* pEdit = (CEdit*)m_editBar.GetDlgItem(IDC_EDIT);
-                    pEdit->SetWindowText("");
+                    pEdit->SetWindowText(L"");
                 }
                 else 
                     OnUnsplit();
@@ -1046,7 +1178,7 @@ int COutputBar::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	
 	CRect rect;
     GetClientRect(&rect);
-    VERIFY(m_wndAnsi.Create(NULL, "", WS_CHILD | WS_VISIBLE, rect, this, 97));
+    VERIFY(m_wndAnsi.Create(NULL, L"", WS_CHILD | WS_VISIBLE, rect, this, 97));
 	
 	return 0;
 }
@@ -1158,13 +1290,13 @@ void CMainFrame::OnEditJmcobjects()
 LONG CMainFrame::OnTabAdded( UINT wParam, LONG lParam)
 {
     HGLOBAL hg = (HGLOBAL)lParam;
-    char* p = (char*)GlobalLock(hg);
+    wchar_t* p = (wchar_t*)GlobalLock(hg);
     CSmcDoc* pDoc = (CSmcDoc*) (((CMainFrame*)AfxGetMainWnd())->GetActiveDocument());
 
     POSITION pos = pDoc->m_lstTabWords.GetHeadPosition ();
     while (pos ) {
         CString str = pDoc->m_lstTabWords.GetAt(pos);
-        if ( !strcmpi(p, str) ){
+        if ( !wcsicmp(p, str) ){
             pDoc->m_lstTabWords.RemoveAt (pos);
             break;
         }
@@ -1181,13 +1313,13 @@ LONG CMainFrame::OnTabAdded( UINT wParam, LONG lParam)
 LONG CMainFrame::OnTabDeleted( UINT wParam, LONG lParam)
 {
     HGLOBAL hg = (HGLOBAL)lParam;
-    char* p = (char*)GlobalLock(hg);
+    wchar_t* p = (wchar_t*)GlobalLock(hg);
     CSmcDoc* pDoc = (CSmcDoc*) (((CMainFrame*)AfxGetMainWnd())->GetActiveDocument());
 
     POSITION pos = pDoc->m_lstTabWords.GetHeadPosition ();
     while (pos ) {
         CString str = pDoc->m_lstTabWords.GetAt(pos);
-        if ( !strcmpi(p, str) ){
+        if ( !wcsicmp(p, str) ){
             pDoc->m_lstTabWords.RemoveAt (pos);
             break;
         }
@@ -1237,7 +1369,7 @@ LONG CMainFrame::OnNameOutput(UINT wParam, LONG lParam)
     int wnd = (int)wParam;
     HGLOBAL hg = (HGLOBAL)lParam;
 
-    char* p = (char*)GlobalLock(hg);
+    wchar_t* p = (wchar_t*)GlobalLock(hg);
     CString cs;
     if (p && p[0]) {
         cs = p;
@@ -1271,44 +1403,90 @@ LONG CMainFrame::OnCleanInput(UINT wParam, LONG lParam)
 
 LONG CMainFrame::OnUpdStat1(UINT wParam, LONG lParam)
 {
-	char bf[BUFFER_SIZE];strcpy(bf,strInfo1);
-	strcpy(strInfo1,"?");CMainFrame::OnUpdateInfo1(NULL);
-	strcpy(strInfo1,bf); CMainFrame::OnUpdateInfo1(NULL);
+	CMainFrame::OnUpdateInfo1(NULL);
 
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat2(UINT wParam, LONG lParam)
 {
-	char bf[BUFFER_SIZE];strcpy(bf,strInfo2);
-	strcpy(strInfo2,"?");CMainFrame::OnUpdateInfo2(NULL);
-	strcpy(strInfo2,bf); CMainFrame::OnUpdateInfo2(NULL);
+	CMainFrame::OnUpdateInfo2(NULL);
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat3(UINT wParam, LONG lParam)
 {
-	char bf[BUFFER_SIZE];strcpy(bf,strInfo3);
-	strcpy(strInfo3,"?");CMainFrame::OnUpdateInfo3(NULL);
-	strcpy(strInfo3,bf); CMainFrame::OnUpdateInfo3(NULL);
+	CMainFrame::OnUpdateInfo3(NULL);
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat4(UINT wParam, LONG lParam)
 {
-	char bf[BUFFER_SIZE];strcpy(bf,strInfo4);
-	strcpy(strInfo4,"?");CMainFrame::OnUpdateInfo4(NULL);
-	strcpy(strInfo4,bf); CMainFrame::OnUpdateInfo4(NULL);
+	CMainFrame::OnUpdateInfo4(NULL);
 	return 1;
 }
 
 LONG CMainFrame::OnUpdStat5(UINT wParam, LONG lParam)
 {
-	char bf[BUFFER_SIZE];strcpy(bf,strInfo5);
-	strcpy(strInfo5,"?");CMainFrame::OnUpdateInfo5(NULL);
-	strcpy(strInfo5,bf); CMainFrame::OnUpdateInfo5(NULL);
+	CMainFrame::OnUpdateInfo5(NULL);
 	return 1;
 }
+
+LONG CMainFrame::OnUpdPing(UINT wParam, LONG lParam)
+{
+	int mud_ping = (int)wParam;
+	int proxy_ping = (int)lParam;
+	static wchar_t mud_buf[64], proxy_buf[64], msg_buf[128];
+
+	switch(mud_ping) {
+	case -4:
+		swprintf(mud_buf, L"");
+		break;
+	case -3:
+		swprintf(mud_buf, L"ping error");
+		break;
+	case -2:
+		swprintf(mud_buf, L"no connection");
+		break;
+	case -1:
+		swprintf(mud_buf, L"PING TIMEOUT");
+		break;
+	case 0:
+		swprintf(mud_buf, L"ping <1 ms");
+		break;
+	default:
+		swprintf(mud_buf, L"ping %d ms", mud_ping);
+		break;
+	}
+
+	switch(proxy_ping) {
+	case -4:
+		swprintf(proxy_buf, L"");
+		break;
+	case -3:
+		swprintf(proxy_buf, L" (proxy: error)");
+		break;
+	case -2:
+		swprintf(proxy_buf, L"");
+		break;
+	case -1:
+		swprintf(proxy_buf, L" (proxy: TIMEOUT)");
+		break;
+	case 0:
+		swprintf(proxy_buf, L" (proxy: <1 ms)");
+		break;
+	default:
+		swprintf(proxy_buf, L" (proxy: %d ms)", proxy_ping);
+		break;
+	}
+
+	swprintf(msg_buf, L"%ls%ls", mud_buf, proxy_buf);
+
+	m_wndStatusBar.SetPaneText(0, msg_buf);
+	
+	return 1;
+}
+
 
 LONG CMainFrame::OnDockOutput(UINT wParam, LONG lParam)
 {
@@ -1372,6 +1550,36 @@ LONG CMainFrame::OnPosWOutput(UINT wParam, LONG lParam)
 		m_coolBar[wnd].m_mX = p1;
 		m_coolBar[wnd].m_mY = p2;
     }
+  
+    return 0;
+}
+
+LONG CMainFrame::OnSizeWOutput(UINT wParam, LONG lParam)
+{
+    int p1,p2;
+    int wnd = (int)wParam;
+
+	p1 = lParam & 32767;
+	p2 = lParam>>16;
+
+	if (wnd >= 0 && wnd < MAX_OUTPUT) {
+		UINT nId = outputwindows[wnd];
+		CControlBar* pBar = GetControlBar(nId);
+
+		if ((pBar != NULL) && (m_coolBar[wnd])) {
+			m_coolBar[wnd].Resize(p1 * pDoc->m_nCharX, p2 * pDoc->m_nYsize);
+
+			if(m_coolBar[wnd].IsFloating()) {
+				FloatControlBar(&m_coolBar[wnd],CPoint(m_coolBar[wnd].m_mX,m_coolBar[wnd].m_mY),0);
+			} else {
+				CSmcView* pView = (CSmcView*)GetActiveView();
+				RecalcLayout();
+				pView->RedrawWindow();
+			}
+		}
+	} else {
+		//m_coolBar[wnd].Resize(p1 * pDoc->m_nCharX, p2 * pDoc->m_nYsize);
+	}
   
     return 0;
 }

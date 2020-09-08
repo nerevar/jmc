@@ -21,7 +21,7 @@ public:
 	CCharSubstPage();   
 	~CCharSubstPage();   
 
-    char m_charsSubst[SUBST_ARRAY_SIZE];
+    wchar_t m_charsSubst[SUBST_ARRAY_SIZE];
 
 // Dialog Data
 	//{{AFX_DATA(CCharSubstPage)

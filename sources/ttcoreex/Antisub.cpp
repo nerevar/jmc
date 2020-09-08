@@ -7,13 +7,12 @@ struct listnode *search_node_with_wild();
 /***************************/
 /* the #substitute command */
 /***************************/
-void parse_antisub(char *arg)
+void parse_antisub(wchar_t *arg)
 {
-  /* char left[BUFFER_SIZE], right[BUFFER_SIZE], result[BUFFER_SIZE]; */
-  char left[BUFFER_SIZE], result[BUFFER_SIZE];
+  wchar_t left[BUFFER_SIZE], result[BUFFER_SIZE];
   struct listnode *myantisubs, *ln;
   myantisubs=common_antisubs;
-  arg=get_arg_in_braces(arg, left, WITH_SPACES);
+  arg=get_arg_in_braces(arg,left,WITH_SPACES,sizeof(left)/sizeof(wchar_t)-1);
 
   if(!*left) {
     tintin_puts2(rs::rs(1020));
@@ -25,28 +24,28 @@ void parse_antisub(char *arg)
       deletenode_list(myantisubs, ln);
       antisubnum--;
     }
-    insertnode_list(myantisubs, left, left, "0", ALPHA);
+    insertnode_list(myantisubs, left, left, L"0", ALPHA);
     antisubnum++;
     if (mesvar[MSG_ANTISUB]) {
-      sprintf(result, rs::rs(1021), left);
+      swprintf(result, rs::rs(1021), left);
       tintin_puts2(result);
     }
   }
 }
 
 
-void unantisubstitute_command(char *arg)
+void unantisubstitute_command(wchar_t *arg)
 {
-  char left[BUFFER_SIZE] ,result[BUFFER_SIZE];
+  wchar_t left[BUFFER_SIZE] ,result[BUFFER_SIZE];
   struct listnode *myantisubs, *ln, *temp;
   int flag;
   flag=FALSE;
   myantisubs=common_antisubs;
   temp=myantisubs;
-  arg=get_arg_in_braces(arg, left, WITH_SPACES);
+  arg=get_arg_in_braces(arg,left,WITH_SPACES,sizeof(left)/sizeof(wchar_t)-1);
   while ((ln=search_node_with_wild(temp, left))!=NULL) {
     if (mesvar[MSG_ANTISUB]) {
-      sprintf(result, rs::rs(1022), ln->left);
+      swprintf(result, rs::rs(1022), ln->left);
       tintin_puts2(result);
     }
     deletenode_list(myantisubs, ln);
@@ -61,7 +60,7 @@ void unantisubstitute_command(char *arg)
 
 
 
-int do_one_antisub(char *line)
+int do_one_antisub(wchar_t *line)
 {
   struct listnode *ln;
   ln=common_antisubs;

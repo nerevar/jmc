@@ -16,7 +16,7 @@ class PS_ITEM
 public:
     HANDLE m_hRead;         // process output stream
     DWORD m_dwPID;          // Process ID
-    std::string m_strCmd;   // command line
+    std::wstring m_strCmd;   // command line
 
 public:
     PS_ITEM(): m_hRead(NULL), m_dwPID(0)
@@ -25,7 +25,7 @@ public:
     {}
     PS_ITEM(const PS_ITEM& psi): m_hRead(psi.m_hRead), m_dwPID(psi.m_dwPID), m_strCmd(psi.m_strCmd)
     {}
-    PS_ITEM(HANDLE hRead, DWORD dwPID, const char* sCmd): m_hRead(hRead), m_dwPID(dwPID), m_strCmd(sCmd)
+    PS_ITEM(HANDLE hRead, DWORD dwPID, const wchar_t* sCmd): m_hRead(hRead), m_dwPID(dwPID), m_strCmd(sCmd)
     {}
     ~PS_ITEM() {}
 
@@ -65,16 +65,16 @@ unsigned long __stdcall systemexec_thread(void * pParam)
 {
     PS_ITEM* psi = (PS_ITEM*)pParam;
     char buf[4096];
-    char msg[4096 + 1]; // +1 for '\0'
+    wchar_t msg[4096 + 1]; // +1 for '\0'
     DWORD nr = 1;
 
     while (ReadFile(psi->m_hRead, buf, sizeof(buf), &nr, NULL) && nr > 0)
     {
         OemToCharBuff(buf, msg, nr);
-        msg[nr] = '\0';
+        msg[nr] = L'\0';
 
         EnterCriticalSection(&secSystemExec);
-        DirectOutputFunction(msg, 0);
+		tintin_puts2(msg);
         LeaveCriticalSection(&secSystemExec);
     }
     CloseHandle(psi->m_hRead);
@@ -83,13 +83,13 @@ unsigned long __stdcall systemexec_thread(void * pParam)
     return 0;
 }
 
-void systemexec_command(char *arg)
+void systemexec_command(wchar_t *arg)
 {
-    char cmd[BUFFER_SIZE];
+    wchar_t cmd[BUFFER_SIZE];
 //* en
 //* due to an error in tintin.h (messed up STOP_SPACES and WITH_SPACES)
-//    get_arg_in_braces(arg, cmd, STOP_SPACES);
-    get_arg_in_braces(arg, cmd, WITH_SPACES);
+//    get_arg_in_braces(arg,cmd,STOP_SPACES,sizeof(cmd)/sizeof(wchar_t)-1);
+    get_arg_in_braces(arg,cmd,WITH_SPACES,sizeof(cmd)/sizeof(wchar_t)-1);
 //* /en
     if ( !*cmd ) {
         tintin_puts2(rs::rs(1224));
@@ -139,9 +139,15 @@ systemexec_error:
     si.hStdError = hErrWrite;
     si.hStdOutput = hOutWrite;
 
+
     if (!CreateProcess(NULL, cmd, NULL, NULL, TRUE,
-        CREATE_NO_WINDOW | DETACHED_PROCESS, NULL, NULL, &si, &pi))
+        CREATE_NO_WINDOW | DETACHED_PROCESS, NULL, NULL, &si, &pi)) {
+		DWORD err = GetLastError();
+		wchar_t buf[256];
+		swprintf(buf, L"GetLastError() = %d", err);
+		tintin_puts2(buf);
         goto systemexec_error;
+	}
 
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
@@ -167,7 +173,7 @@ systemexec_error:
     CloseHandle(hThread);
 }
 
-void systemlist_command(char *arg)
+void systemlist_command(wchar_t *arg)
 {
     tintin_puts2(rs::rs(1226));
 
@@ -177,8 +183,8 @@ void systemlist_command(char *arg)
         PS_ITEM* psi = *ind;
         HANDLE hp = OpenProcess(PROCESS_TERMINATE, FALSE, psi->m_dwPID);
         if (hp) {
-            char str[BUFFER_SIZE];
-            _snprintf(str, BUFFER_SIZE, rs::rs(1227), psi->m_dwPID, psi->m_strCmd.data());
+            wchar_t str[BUFFER_SIZE];
+            _snwprintf(str, BUFFER_SIZE, rs::rs(1227), psi->m_dwPID, psi->m_strCmd.data());
             tintin_puts2(str);
             CloseHandle(hp);
             ind++;
@@ -190,14 +196,14 @@ void systemlist_command(char *arg)
     LeaveCriticalSection(&secSystemList);
 }
 
-void systemkill_command(char *arg)
+void systemkill_command(wchar_t *arg)
 {
     DWORD pid = 0;
-    char word[BUFFER_SIZE];
+    wchar_t word[BUFFER_SIZE];
 //* en
 //* due to an error in tintin.h (messed up STOP_SPACES and WITH_SPACES)
-//    get_arg_in_braces(arg, word, WITH_SPACES);
-    get_arg_in_braces(arg, word, STOP_SPACES);
+//    get_arg_in_braces(arg,word,WITH_SPACES,sizeof(word)/sizeof(wchar_t)-1);
+    get_arg_in_braces(arg,word,STOP_SPACES,sizeof(word)/sizeof(wchar_t)-1);
 //* /en
     if ( !*word ) {
 systemkill_error:
@@ -205,13 +211,13 @@ systemkill_error:
         return;
     }
 
-    if (!strcmp(word, "all")) {
+    if (!wcscmp(word, L"all")) {
         // pid = 0;
-    } else if (!strcmp(word, "last")) {
+    } else if (!wcscmp(word, L"last")) {
         // pid = PsList.size() > 0 ? (*(PsList.begin()))->m_dwPID : 0;
         if (PsList.size() > 0) pid = (*(PsList.begin()))->m_dwPID;
     } else {
-        pid = atoi(word);
+        pid = _wtoi(word);
         if (pid == 0) goto systemkill_error;
     }
 

@@ -82,6 +82,1058 @@ END
 
 IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 230, 138
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "О программе..."
+FONT 8, "MS Sans Serif"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,7,7,20,20
+    LTEXT           "Product name",IDC_PRODUCT_NAME,40,7,63,8,SS_NOPREFIX
+    LTEXT           "Copyright",IDC_COPYRIGHT,40,18,186,50
+    DEFPUSHBUTTON   "OK",IDOK,167,119,58,14,WS_GROUP
+    LTEXT           "E-mail:",IDC_STATIC,135,74,22,8
+    LTEXT           "Ver",IDC_VERTION,107,7,90,8
+    LTEXT           "jmc@alfuken.net",IDC_EMAIL,135,95,54,8
+    LTEXT           "Сайты поддержки:",IDC_STATIC,5,74,87,8
+    LTEXT           "http://nerevar.github.io/jmc/",IDC_WWW,6,84,101,8
+    LTEXT           "http://jmc.mud.ru",IDC_WWW1,6,106,116,8
+    LTEXT           "http://jmc.kharkov.org/",IDC_WWW2,6,95,76,8
+    LTEXT           "mail@nerevar.ru",IDC_EMAIL2,135,84,52,8
+    LTEXT           "jmc4@zajac.ru",IDC_EMAIL3,135,106,48,8
+END
+
+IDD_ADD_GROUP DIALOG DISCARDABLE  0, 0, 186, 46
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Добавить группу"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Введите имя группы",IDC_STATIC,7,7,72,8
+    EDITTEXT        IDC_NAME,7,16,107,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Отмена",IDCANCEL,129,25,50,14
+END
+
+IDD_ANSI_COLOR DIALOG DISCARDABLE  0, 0, 241, 151
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Настройка цветов ANSI"
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "Темные цвета",IDC_STATIC,7,7,76,135
+    LTEXT           "Черный:",IDC_STATIC,12,18,30,8
+    CONTROL         "",1000,"Button",BS_OWNERDRAW | WS_TABSTOP,60,16,17,10
+    LTEXT           "(Обычный фон)",IDC_STATIC,12,27,52,8
+    LTEXT           "Красный:",IDC_STATIC,12,43,33,8
+    CONTROL         "",1001,"Button",BS_OWNERDRAW | WS_TABSTOP,60,41,17,10
+    LTEXT           "Зеленый:",IDC_STATIC,12,55,33,8
+    CONTROL         "",1002,"Button",BS_OWNERDRAW | WS_TABSTOP,60,53,17,10
+    LTEXT           "Коричневый:",IDC_STATIC,12,67,44,8
+    CONTROL         "",1003,"Button",BS_OWNERDRAW | WS_TABSTOP,60,65,17,10
+    LTEXT           "Синий:",IDC_STATIC,12,79,24,8
+    CONTROL         "",1004,"Button",BS_OWNERDRAW | WS_TABSTOP,60,77,17,10
+    LTEXT           "Малиновый:",IDC_STATIC,12,91,42,8
+    CONTROL         "",1005,"Button",BS_OWNERDRAW | WS_TABSTOP,60,89,17,10
+    LTEXT           "Голубой:",IDC_STATIC,12,103,30,8
+    CONTROL         "",1006,"Button",BS_OWNERDRAW | WS_TABSTOP,60,101,17,10
+    LTEXT           "Серый:",IDC_STATIC,12,119,25,8
+    CONTROL         "",1007,"Button",BS_OWNERDRAW | WS_TABSTOP,60,117,17,10
+    LTEXT           "(Обычный текст)",IDC_STATIC,12,129,57,8
+    GROUPBOX        "Светлые цвета",IDC_STATIC,96,7,81,111
+    LTEXT           "Угольный:",IDC_STATIC,101,18,37,8
+    CONTROL         "",1008,"Button",BS_OWNERDRAW | WS_TABSTOP,154,16,17,10
+    LTEXT           "Ярко-красный:",IDC_STATIC,101,30,52,8
+    CONTROL         "",1009,"Button",BS_OWNERDRAW | WS_TABSTOP,154,28,17,10
+    LTEXT           "Салатовый:",IDC_STATIC,101,42,40,8
+    CONTROL         "",1010,"Button",BS_OWNERDRAW | WS_TABSTOP,154,40,17,10
+    LTEXT           "Желтый:",IDC_STATIC,101,54,31,8
+    CONTROL         "",1011,"Button",BS_OWNERDRAW | WS_TABSTOP,154,52,17,10
+    LTEXT           "Ярко-синий:",IDC_STATIC,101,66,42,8
+    CONTROL         "",1012,"Button",BS_OWNERDRAW | WS_TABSTOP,154,64,17,10
+    LTEXT           "Розовый:",IDC_STATIC,101,78,33,8
+    CONTROL         "",1013,"Button",BS_OWNERDRAW | WS_TABSTOP,154,76,17,10
+    LTEXT           "Ярко-голубой:",IDC_STATIC,101,90,49,8
+    CONTROL         "",1014,"Button",BS_OWNERDRAW | WS_TABSTOP,154,88,17,10
+    LTEXT           "Белый:",IDC_STATIC,101,102,25,8
+    CONTROL         "",1015,"Button",BS_OWNERDRAW | WS_TABSTOP,154,100,17,10
+    DEFPUSHBUTTON   "OK",IDOK,184,7,50,14
+    PUSHBUTTON      "Отмена",IDCANCEL,184,24,50,14
+    CONTROL         "Использовать только темные цвета",IDC_DARK_ONLY,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,95,121,139,10
+    PUSHBUTTON      "По умолчанию",IDC_RESTORE_DEFAULT,184,42,50,14
+END
+
+IDD_COLORS_DLG DIALOG DISCARDABLE  0, 0, 172, 89
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Настройки цвета"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Обычный текст:",IDC_STATIC,7,7,55,8
+    CONTROL         "",IDC_FORE_COLOR,"Button",BS_OWNERDRAW | WS_TABSTOP,7,
+                    17,64,14
+    LTEXT           "Обычный фон:",IDC_STATIC,101,7,50,8
+    CONTROL         "",IDC_BACK_COLOR,"Button",BS_OWNERDRAW | WS_TABSTOP,101,
+                    17,64,14
+    LTEXT           "Цвета ANSI:",IDC_STATIC,7,35,42,8
+    CONTROL         "1",1000,"Button",BS_OWNERDRAW | WS_TABSTOP,7,46,17,14
+    CONTROL         "2",1001,"Button",BS_OWNERDRAW | WS_TABSTOP,27,46,17,14
+    CONTROL         "3",1002,"Button",BS_OWNERDRAW | WS_TABSTOP,47,46,17,14
+    CONTROL         "4",1003,"Button",BS_OWNERDRAW | WS_TABSTOP,67,46,17,14
+    CONTROL         "5",1004,"Button",BS_OWNERDRAW | WS_TABSTOP,87,46,17,14
+    CONTROL         "6",1005,"Button",BS_OWNERDRAW | WS_TABSTOP,107,46,17,14
+    CONTROL         "7",1006,"Button",BS_OWNERDRAW | WS_TABSTOP,127,46,17,14
+    CONTROL         "8",1007,"Button",BS_OWNERDRAW | WS_TABSTOP,147,46,17,14
+    DEFPUSHBUTTON   "OK",IDOK,27,68,50,14
+    PUSHBUTTON      "Отмена",IDCANCEL,94,68,50,14
+END
+
+IDD_JMC_ACTIONS DIALOG DISCARDABLE  0, 0, 359, 181
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Группы:",IDC_STATIC,8,11,28,8
+    COMBOBOX        IDC_GROUPS,39,7,71,60,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "List1",IDC_ACTIONS,"SysListView32",LVS_REPORT | 
+                    LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | 
+                    WS_TABSTOP,8,25,288,100
+    LTEXT           "Образец:",IDC_STATIC,12,135,32,8
+    EDITTEXT        IDC_NAME,44,131,310,12,ES_AUTOHSCROLL
+    LTEXT           "Команда:",IDC_STATIC,13,165,27,8
+    EDITTEXT        IDC_TEXT,43,162,311,12,ES_AUTOHSCROLL
+    LTEXT           "Приор.:",IDC_STATIC,13,150,42,8
+    COMBOBOX        IDC_PRIORITY,43,146,30,73,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    LTEXT           "Группа:",IDC_STATIC,93,150,26,8
+    COMBOBOX        IDC_GRP,128,146,84,89,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    PUSHBUTTON      "Добавить",IDC_ADD,305,25,50,14
+    PUSHBUTTON      "Удалить",IDC_REMOVE,305,42,50,14
+    LTEXT           "Тип:",IDC_STATIC,220,150,23,9
+    COMBOBOX        IDC_ACTION_TYPE,246,145,71,73,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_JMC_ALIAS DIALOG DISCARDABLE  0, 0, 359, 170
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Группы:",IDC_STATIC,8,11,28,8
+    COMBOBOX        IDC_GROUPS,37,7,71,60,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "List1",IDC_ALIAS,"SysListView32",LVS_REPORT | 
+                    LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | 
+                    WS_TABSTOP,8,25,288,100
+    LTEXT           "Имя:",IDC_STATIC,8,133,18,8
+    EDITTEXT        IDC_NAME,33,129,170,12,ES_AUTOHSCROLL
+    LTEXT           "Текст:",IDC_STATIC,8,154,23,8
+    EDITTEXT        IDC_TEXT,33,150,263,12,ES_AUTOHSCROLL
+    LTEXT           "Группа:",IDC_STATIC,209,133,26,8
+    COMBOBOX        IDC_GRP,236,129,60,89,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    PUSHBUTTON      "Добавить",IDC_ADD,305,25,50,14
+    PUSHBUTTON      "Удалить",IDC_REMOVE,305,42,50,14
+END
+
+IDD_JMC_GROUPS DIALOGEX 0, 0, 240, 170
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    CONTROL         "List2",IDC_GROUPS,"SysListView32",LVS_REPORT | 
+                    LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_SORTASCENDING | 
+                    LVS_NOCOLUMNHEADER | WS_BORDER | WS_TABSTOP,8,7,166,158,
+                    WS_EX_CLIENTEDGE
+    CONTROL         "Включена",IDC_ENABLED,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,177,7,49,10
+    CONTROL         "Глобальная",IDC_GLOBAL,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,177,20,56,10
+    PUSHBUTTON      "Добавить",IDC_ADD,177,134,50,14
+    PUSHBUTTON      "Удалить",IDC_REMOVE,177,151,50,14
+END
+
+IDD_JMC_HLIGHT DIALOG DISCARDABLE  0, 0, 359, 170
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Группы:",IDC_STATIC,8,11,28,8
+    COMBOBOX        IDC_GROUPS,39,7,69,60,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "List1",IDC_ALIAS,"SysListView32",LVS_REPORT | 
+                    LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_OWNERDRAWFIXED | 
+                    WS_BORDER | WS_TABSTOP,8,25,288,100
+    LTEXT           "Образец:",IDC_STATIC,8,133,32,8
+    EDITTEXT        IDC_NAME,43,129,162,12,ES_AUTOHSCROLL
+    LTEXT           "Текст:",IDC_STATIC,8,150,23,8
+    COMBOBOX        IDC_FORE_COLOR,49,146,60,126,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Цвет:",IDC_STATIC,120,150,18,8
+    COMBOBOX        IDC_BACK_COLOR,164,146,60,126,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Группа:",IDC_STATIC,208,133,26,8
+    COMBOBOX        IDC_GRP,236,129,60,89,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    PUSHBUTTON      "Добавить",IDC_ADD,305,25,50,14
+    PUSHBUTTON      "Удалить",IDC_REMOVE,305,42,50,14
+END
+
+IDD_JMC_HOTKEY DIALOG DISCARDABLE  0, 0, 359, 170
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Группы:",IDC_STATIC,8,11,28,8
+    COMBOBOX        IDC_GROUPS,40,7,60,60,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "List1",IDC_ALIAS,"SysListView32",LVS_REPORT | 
+                    LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | 
+                    WS_TABSTOP,8,25,288,100
+    LTEXT           "Клавиша:",IDC_STATIC,8,135,33,8
+    EDITTEXT        IDC_KEY,43,131,69,12,ES_AUTOHSCROLL
+    LTEXT           "Текст:",IDC_STATIC,8,156,23,8
+    EDITTEXT        IDC_TEXT,43,152,253,12,ES_AUTOHSCROLL
+    LTEXT           "Группа:",IDC_STATIC,208,133,26,8
+    COMBOBOX        IDC_GRP,236,129,60,89,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    PUSHBUTTON      "Добавить",IDC_ADD,305,25,50,14
+    PUSHBUTTON      "Удалить",IDC_REMOVE,305,42,50,14
+END
+
+IDD_JMC_SCRIPTFILES DIALOG DISCARDABLE  0, 0, 235, 170
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    LISTBOX         IDC_LIST,8,7,165,158,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
+                    WS_HSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Добавить...",IDC_ADD,177,7,50,14
+    PUSHBUTTON      "Удалить",IDC_REMOVE,177,23,50,14
+    PUSHBUTTON      "Предыдущий",IDC_UP,177,65,50,14
+    PUSHBUTTON      "Следующий",IDC_DOWN,177,81,50,14
+END
+
+IDD_JMC_SUBST DIALOG DISCARDABLE  0, 0, 359, 170
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "List1",IDC_ALIAS,"SysListView32",LVS_REPORT | 
+                    LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | 
+                    WS_TABSTOP,8,7,288,118
+    LTEXT           "Образец:",IDC_STATIC,8,133,32,8
+    EDITTEXT        IDC_NAME,43,129,252,12,ES_AUTOHSCROLL
+    LTEXT           "Текст:",IDC_STATIC,8,154,23,8
+    EDITTEXT        IDC_TEXT,43,150,252,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Добавить",IDC_ADD,305,25,50,14
+    PUSHBUTTON      "Удалить",IDC_REMOVE,305,42,50,14
+END
+
+IDD_KEYWORDS_DLG DIALOG DISCARDABLE  0, 0, 326, 198
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Ключевые слова"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Введите ключевые слова по одному на строчку:",
+                    IDC_STATIC,7,7,265,8
+    EDITTEXT        IDC_KEYS,7,16,258,175,ES_MULTILINE | ES_AUTOHSCROLL | 
+                    ES_WANTRETURN | WS_VSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,269,16,50,14
+    PUSHBUTTON      "Отмена",IDCANCEL,269,36,50,14
+END
+
+IDD_LOG_PARAMS_PAGE DIALOG DISCARDABLE  0, 0, 263, 126
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Перезаписать файл",IDC_OVERWRITE_LOG_MODE,"Button",
+                    BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,131,18,94,10
+    CONTROL         "Дописать в конец файла",IDC_APPEND_LOG_MODE,"Button",
+                    BS_AUTORADIOBUTTON,131,28,116,10
+    GROUPBOX        "Открытие лога по умолчанию",IDC_STATIC,125,7,133,35,
+                    WS_GROUP
+    GROUPBOX        "Формат",IDC_STATIC,10,7,112,86
+    CONTROL         "RMA (паузы)",IDC_RMA_SUPPORT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,37,72,59,10
+    CONTROL         "Текст",IDC_LOGTYPE_TEXT,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP,18,21,36,10
+    CONTROL         "HTML",IDC_LOGTYPE_HTML,"Button",BS_AUTORADIOBUTTON,18,
+                    35,36,10
+    CONTROL         "Цвета ANSI",IDC_LOGTYPE_ANSI,"Button",
+                    BS_AUTORADIOBUTTON,17,60,55,10
+    CONTROL         "Добавлять заголовок",IDC_LOG_TITLE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,130,57,99,10
+    GROUPBOX        "Содержимое лога",IDC_STATIC,125,47,133,46
+    CONTROL         "Как показал сервер",IDC_WRITE_LOG_AS_SHOWN_BY_SERVER,
+                    "Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,129,
+                    69,99,9
+    CONTROL         "Как увидел пользователь",IDC_WRITE_LOG_AS_SEEN_BY_USER,
+                    "Button",BS_AUTORADIOBUTTON,129,81,129,9
+    CONTROL         "Метки времени",IDC_HTML_TIMESTAMPS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,37,46,73,10
+    COMBOBOX        IDC_LOG_CODEPAGE,101,94,157,64,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Кодировка",IDC_STATIC,11,97,68,10
+END
+
+IDD_NEW_PROFILE DIALOG DISCARDABLE  0, 0, 166, 126
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Новый профиль"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Имя профиля:",IDC_STATIC,7,7,49,8
+    EDITTEXT        IDC_NAME,7,19,95,12,ES_AUTOHSCROLL
+    LTEXT           "Файл команд при загрузке:",IDC_STATIC,7,37,96,8
+    EDITTEXT        IDC_START_FILE,7,47,95,12,ES_AUTOHSCROLL
+    LTEXT           "Записывать команды в файл:",IDC_STATIC,7,65,123,8
+    EDITTEXT        IDC_SAVE_FILE,7,76,95,12,ES_AUTOHSCROLL
+    LTEXT           "Команда при выходе:",IDC_STATIC,7,94,74,8
+    EDITTEXT        IDC_COMMAND,7,105,95,12,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,109,18,50,14
+    PUSHBUTTON      "Отмена",IDCANCEL,109,36,50,14
+END
+
+IDD_PARAMS_PAGE DIALOG DISCARDABLE  0, 0, 325, 194
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "В начале строки",IDC_START_LINE,"Button",
+                    BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,17,19,71,10
+    CONTROL         "В конце строки",IDC_END_LINE,"Button",
+                    BS_AUTORADIOBUTTON,17,31,68,10
+    GROUPBOX        "Курсор при просмотре:",-1,13,10,99,33,WS_GROUP
+    LTEXT           "Мин. длина строки:",-1,117,11,61,17
+    EDITTEXT        IDC_MIN_LEN,180,10,30,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Размер:",-1,117,30,57,11
+    EDITTEXT        IDC_HISTORY_SIZE,180,29,30,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Задержка незавершенных строк:",-1,7,49,208,9
+    EDITTEXT        IDC_TRIG_DELAY,220,48,29,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Символ команд:",-1,11,88,75,11
+    EDITTEXT        IDC_COMMAND_CHAR,88,86,19,12,ES_AUTOHSCROLL
+    LTEXT           "Разделитель:",-1,11,103,74,11
+    EDITTEXT        IDC_COMMAND_DELIMITER,88,102,19,12,ES_AUTOHSCROLL
+    CONTROL         "Авто-очистка",IDC_CLEAR_INPUT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,226,134,88,10
+    CONTROL         "Разбивать при прокрутке",IDC_SPLIT_ONBACKSCROLL,"Button",
+                    BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,122,88,86,18
+    CONTROL         "Автоподключение",IDC_AUTO_RECONNECT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,219,7,77,10
+    CONTROL         "Бип при подключении",IDC_CONNECT_BEEP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,219,18,89,10
+    GROUPBOX        "История команд",-1,7,2,208,45
+    CONTROL         "Оставлять первое слово",IDC_TOKEN_INPUT,"Button",
+                    BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,226,143,88,
+                    16
+    CONTROL         "Удалять единственное слово",IDC_TOKEN_LAST,"Button",
+                    BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,226,159,88,
+                    14
+    CONTROL         "Курсор в конце",IDC_AUTO_END,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,226,173,87,10
+    CONTROL         "Отображать команды",IDC_DISPLAY_COMMANDS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,12,118,94,10
+    CONTROL         "Сворачивать в трей",IDC_MINIMIZE_TO_TRAY,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,219,28,83,10
+    GROUPBOX        "Команды",IDC_COMMANDS_FRAME,7,78,105,58
+    CONTROL         "Перенос строк",IDC_CHK_LINEWRAP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,122,113,88,10
+    CONTROL         "Прямоугольная область",IDC_CHK_SELECTRECT,"Button",
+                    BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,226,87,81,18
+    CONTROL         "Подсветка невидимого текста",IDC_CHK_SHOWHIDDEN,"Button",
+                    BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,122,129,88,
+                    18
+    GROUPBOX        "Обработка ввода",-1,220,123,98,62
+    GROUPBOX        "Отображение",-1,117,78,98,107
+    GROUPBOX        "Выделение текста",-1,220,78,96,45
+    CONTROL         "Удалять ESC-команды",IDC_CHK_REMOVEESC,"Button",
+                    BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,226,103,83,
+                    21
+    GROUPBOX        "Ввод пользователя",-1,7,137,104,50
+    CONTROL         "Не отображать",IDC_INPUT_DONT_DISPLAY,"Button",
+                    BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,13,147,95,10
+    CONTROL         "На строке приглашения",IDC_INPUT_ON_PROMPT,"Button",
+                    BS_AUTORADIOBUTTON | BS_MULTILINE,13,158,94,16
+    CONTROL         "На новой строке",IDC_INPUT_ON_NEW_LINE,"Button",
+                    BS_AUTORADIOBUTTON,13,176,91,8
+    CONTROL         "Показывать пинг",IDC_DISPLAY_PING,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,122,154,90,10
+    CONTROL         "Метки времени",IDC_DISPLAY_TIMESTAMPS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,122,172,90,10
+    LTEXT           "Кодировка соединения",-1,7,64,88,8
+    COMBOBOX        IDC_MUD_CODEPAGE,118,62,132,64,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_PROFILE_LIST DIALOG DISCARDABLE  0, 0, 186, 117
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Загрузка профиля"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Выберите профиль:",IDC_STATIC,7,7,68,8
+    LISTBOX         IDC_LIST,7,18,116,91,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
+                    WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,129,18,50,14
+    PUSHBUTTON      "Отмена",IDCANCEL,129,35,50,14
+END
+
+IDD_PROFILE_PAGE DIALOG DISCARDABLE  0, 0, 245, 98
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Файл команд при загрузке:",IDC_STATIC,7,8,96,8
+    EDITTEXT        IDC_START_FILE,7,19,95,12,ES_AUTOHSCROLL
+    LTEXT           "Файл ini с сообщениями tintin:",IDC_STATIC,120,8,114,8
+    EDITTEXT        IDC_LANG_FILE,120,19,118,12,ES_AUTOHSCROLL
+    LTEXT           "Секция в файле с сообщениями:",IDC_STATIC,120,36,112,8
+    EDITTEXT        IDC_LANG_SECT,120,47,117,12,ES_AUTOHSCROLL
+    LTEXT           "Записывать команды в файл:",IDC_STATIC,7,36,102,8
+    EDITTEXT        IDC_SAVE_FILE,7,47,95,12,ES_AUTOHSCROLL
+    LTEXT           "Команда при выходе:",IDC_STATIC,7,64,74,8
+    EDITTEXT        IDC_COMMAND,7,75,95,12,ES_AUTOHSCROLL
+END
+
+IDD_SCRIPT_PAGE DIALOG DISCARDABLE  0, 0, 209, 98
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Язык скрипта:",IDC_STATIC,7,7,51,8
+    COMBOBOX        IDC_LANG,7,16,123,62,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "Разрешить отладку",IDC_ALLOW_DEBUG,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,33,82,10
+    CONTROL         "Всплывающее окно",IDC_ERROR_MSGBOX,"Button",
+                    BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,13,60,83,10
+    CONTROL         "Основное окно",IDC_ERROR_WINDOW,"Button",
+                    BS_AUTORADIOBUTTON,13,71,83,10
+    CONTROL         "Окно вывода 0",IDC_ERROR_OUTPUT,"Button",
+                    BS_AUTORADIOBUTTON,13,81,83,10
+    GROUPBOX        "Отображение ошибок",IDC_STATIC,7,48,123,46,WS_GROUP
+END
+
+IDD_SCRIPT_PARSE DIALOG DISCARDABLE  0, 0, 376, 182
+STYLE WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "Ввод скриптов"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Текст скрипта:",IDC_STATIC,7,7,52,8
+    EDITTEXT        IDC_TEXT,7,18,305,157,ES_MULTILINE | ES_AUTOHSCROLL | 
+                    ES_WANTRETURN | WS_VSCROLL
+    PUSHBUTTON      "Предыдущий",IDC_PREV,319,18,50,14
+    PUSHBUTTON      "Следующий",IDC_NEXT,319,35,50,14
+    DEFPUSHBUTTON   "Ввод",IDOK,319,144,50,14
+    PUSHBUTTON      "Закрыть",IDCANCEL,319,161,50,14
+END
+
+IDD_SET_NAME DIALOG DISCARDABLE  0, 0, 186, 57
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Новый набор клавиш"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Введите название нового набора клавиш:",IDC_STATIC,7,7,
+                    144,8
+    EDITTEXT        IDC_NAME,7,17,172,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,37,36,50,14
+    PUSHBUTTON      "Отмена",IDCANCEL,97,36,50,14
+END
+
+IDD_SETSCROLL_SIZE DIALOG DISCARDABLE  0, 0, 186, 46
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Настройка прокрутки"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Число строк:",IDC_STATIC,7,7,46,8
+    EDITTEXT        IDC_COUNT,7,18,88,12,ES_AUTOHSCROLL | ES_NUMBER
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Отмена",IDCANCEL,129,25,50,14
+END
+
+IDD_SUBST_PAGE DIALOG DISCARDABLE  0, 0, 269, 98
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Разрешить замены",IDC_ALLOW_SUBST,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,7,82,10
+    LISTBOX         IDC_SUBST_LIST,7,22,70,68,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_OLD,83,22,21,12,ES_AUTOHSCROLL
+    LTEXT           "--->",IDC_STATIC,110,24,11,8
+    EDITTEXT        IDC_NEW,123,22,21,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "<< Добавить",IDC_ADD,83,43,61,14
+    PUSHBUTTON      "Удалить >>",IDC_REMOVE,83,61,61,14
+    CONTROL         "Одиночный",IDC_SEND_SINGLE,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP | WS_TABSTOP,161,27,54,10
+    CONTROL         "Двойной",IDC_SEND_DOWBLE,"Button",BS_AUTORADIOBUTTON,
+                    161,38,46,10
+    GROUPBOX        "Посылать IAC",IDC_STATIC,156,18,64,32,WS_GROUP
+    CONTROL         "Одиночный",IDC_RECIVE_SINGLE,"Button",
+                    BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,161,62,54,10
+    CONTROL         "Двойной",IDC_RECIVE_DOWBLE,"Button",BS_AUTORADIOBUTTON,
+                    161,73,46,10
+    GROUPBOX        "Получать IAC",IDC_STATIC,156,52,64,32,WS_GROUP
+END
+
+IDD_TESTTEXT DIALOG DISCARDABLE  0, 0, 416, 196
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Эмуляция MUD"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_TEXT,7,34,348,155,ES_MULTILINE | ES_AUTOVSCROLL | 
+                    ES_AUTOHSCROLL | ES_WANTRETURN
+    PUSHBUTTON      "Отправить",IDC_SEND,359,33,50,14
+    PUSHBUTTON      "Одна строка",IDC_SEND_LINE,359,50,50,14
+    PUSHBUTTON      "Закрыть",IDCANCEL,359,175,50,14
+    LTEXT           "Путь к файлу для чтения",IDC_STATIC,7,3,207,9
+    EDITTEXT        IDC_EDIT_EMUL_LOG_PATH,7,14,347,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "Пуск",IDC_BTN_STARTSTOP_EMUL_LOG,360,12,49,16
+    CONTROL         "Выполнять задержки (RMA)",IDC_CHK_EMULATE_RMA,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,235,3,126,10
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MAINFRAME MENU PRELOAD DISCARDABLE 
+BEGIN
+    POPUP "Файл"
+    BEGIN
+        MENUITEM "Новый профиль",               ID_FILE_NEW_PROFILE
+        MENUITEM "Загрузить профиль",           ID_FILE_LOADPROFILE
+        MENUITEM "Сохранить профиль",           ID_FILE_SAVEPROFILE
+        MENUITEM SEPARATOR
+        MENUITEM "Пауза",                       ID_PAUSE
+        MENUITEM SEPARATOR
+        MENUITEM "Выход",                       ID_APP_EXIT
+    END
+    POPUP "Вид"
+    BEGIN
+        MENUITEM "Панель инструментов",         ID_VIEW_TOOLBAR
+        MENUITEM "Строка состояния",            ID_VIEW_STATUS_BAR
+        POPUP "Окна вывода"
+        BEGIN
+            MENUITEM "Основное окно (0)\tAlt+0",    ID_VIEW_OUTPUTWINDOW
+            MENUITEM "Окно &1",                     ID_VIEW_OUTPUTWINDOW1
+            MENUITEM "Окно &2",                     ID_VIEW_OUTPUTWINDOW2
+            MENUITEM "Окно &3",                     ID_VIEW_OUTPUTWINDOW3
+            MENUITEM "Окно &4",                     ID_VIEW_OUTPUTWINDOW4
+            MENUITEM "Окно &5",                     ID_VIEW_OUTPUTWINDOW5
+            MENUITEM "Окно &6",                     ID_VIEW_OUTPUTWINDOW6
+            MENUITEM "Окно &7",                     ID_VIEW_OUTPUTWINDOW7
+            MENUITEM "Окно &8",                     ID_VIEW_OUTPUTWINDOW8
+            MENUITEM "Окно &9",                     ID_VIEW_OUTPUTWINDOW9
+        END
+        MENUITEM "Эмуляция MUD...",             ID_VIEW_MUDEMULATOR
+    END
+    POPUP "Опции"
+    BEGIN
+        MENUITEM "Объекты JMC...",              ID_EDIT_JMCOBJECTS
+        MENUITEM "Буфер прокрутки...",          ID_OPTIONS_SCROLLBUFFER
+        MENUITEM "Шрифт...",                    ID_OPTIONS_FONT
+        MENUITEM "Цвета...",                    ID_OPTIONS_COLORS
+        MENUITEM SEPARATOR
+        MENUITEM "Настройки...",                ID_OPTIONS_OPTIONS
+        MENUITEM SEPARATOR
+        MENUITEM "Ключевые слова...",           ID_OPTIONS_KEYWORDS
+    END
+    POPUP "Скрипты"
+    BEGIN
+        MENUITEM "Перезагрузить",               ID_SCRIPTING_RELOADSCRIPT
+        MENUITEM "Добавить...\tAlt+1",          ID_SCRIPTING_ADDSCRIPTLET
+        MENUITEM "Прервать",                    ID_SCRIPTING_BREAK
+        MENUITEM SEPARATOR
+        MENUITEM "Запустить отладчик",          ID_SCRIPTING_LUNCHDEBUGER
+    END
+    POPUP "Справка"
+    BEGIN
+        MENUITEM "О программе...",              ID_APP_ABOUT
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDR_MAINFRAME           BITMAP  MOVEABLE PURE   "res\\Toolbar.bmp"
+IDB_CONNECTED           BITMAP  DISCARDABLE     "res\\connecte.bmp"
+IDB_LOGGED              BITMAP  DISCARDABLE     "res\\logged.bmp"
+IDB_MARKED              BITMAP  DISCARDABLE     "res\\bmp00001.bmp"
+IDB_GROUP_ICONS         BITMAP  DISCARDABLE     "res\\bitmap1.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Toolbar
+//
+
+IDR_MAINFRAME TOOLBAR DISCARDABLE  16, 16
+BEGIN
+    BUTTON      ID_FILE_NEW_PROFILE
+    BUTTON      ID_FILE_LOADPROFILE
+    BUTTON      ID_FILE_SAVEPROFILE
+    SEPARATOR
+    BUTTON      ID_OPTIONS_COLORS
+    BUTTON      32772
+    BUTTON      ID_OPTIONS_OPTIONS
+    BUTTON      32793
+    SEPARATOR
+    BUTTON      ID_PAUSE
+    SEPARATOR
+    BUTTON      ID_VIEW_OUTPUTWINDOW
+    BUTTON      ID_SCRIPTING_ADDSCRIPTLET
+    BUTTON      ID_SCRIPTING_BREAK
+    BUTTON      ID_SCRIPTING_LUNCHDEBUGER
+    SEPARATOR
+    BUTTON      ID_APP_ABOUT
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 3,7,1,0
+ PRODUCTVERSION 3,7,1,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041904b0"
+        BEGIN
+            VALUE "Comments", "\0"
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "JMC MUD-клиент\0"
+            VALUE "FileVersion", "3, 7, 1, 0\0"
+            VALUE "InternalName", "JMC\0"
+            VALUE "LegalCopyright", "© Copyright Sergey Iliyn 1998\r\n© Likhtarov Anton 2002\r\n© Shchepansky Bohdan, Kim Yursen, Ennin 2006-2007\r\n© NeReVaR 2012-2013\r\nOpenov Sergey 2016\0"
+            VALUE "LegalTrademarks", "JMC\0"
+            VALUE "OriginalFilename", "JMC.EXE\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "JMC MUD Client\0"
+            VALUE "ProductVersion", "3.7\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x419, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAINFRAME ACCELERATORS PRELOAD MOVEABLE PURE 
+BEGIN
+    "0",            ID_VIEW_OUTPUTWINDOW,   VIRTKEY, ALT, NOINVERT
+    "1",            ID_SCRIPTING_ADDSCRIPTLET, VIRTKEY, ALT, NOINVERT
+    "R",            ID_UNSPLIT,             VIRTKEY, CONTROL, NOINVERT
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT, NOINVERT
+    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT, NOINVERT
+    VK_F1,          ID_HELP,                VIRTKEY, NOINVERT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT, NOINVERT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_JMC_ACTIONS DLGINIT
+BEGIN
+    IDC_PRIORITY, 0x403, 2, 0
+0x0030, 
+    IDC_PRIORITY, 0x403, 2, 0
+0x0031, 
+    IDC_PRIORITY, 0x403, 2, 0
+0x0032, 
+    IDC_PRIORITY, 0x403, 2, 0
+0x0033, 
+    IDC_PRIORITY, 0x403, 2, 0
+0x0034, 
+    IDC_PRIORITY, 0x403, 2, 0
+0x0035, 
+    IDC_PRIORITY, 0x403, 2, 0
+0x0036, 
+    IDC_PRIORITY, 0x403, 2, 0
+0x0037, 
+    IDC_PRIORITY, 0x403, 2, 0
+0x0038, 
+    IDC_PRIORITY, 0x403, 2, 0
+0x0039, 
+    IDC_ACTION_TYPE, 0x403, 10, 0
+0xe5f2, 0xf1ea, 0xeef2, 0xfbe2, 0x00e9, 
+    IDC_ACTION_TYPE, 0x403, 6, 0
+0xfbf1, 0xeef0, 0x00e9, 
+    IDC_ACTION_TYPE, 0x403, 8, 0
+0xe2f6, 0xf2e5, 0xeeed, 0x00e9, 
+    0
+END
+
+IDD_JMC_HLIGHT DLGINIT
+BEGIN
+    IDC_FORE_COLOR, 0x403, 6, 0
+0x6c62, 0x6361, 0x006b, 
+    IDC_FORE_COLOR, 0x403, 4, 0
+0x6572, 0x0064, 
+    IDC_FORE_COLOR, 0x403, 6, 0
+0x7267, 0x6565, 0x006e, 
+    IDC_FORE_COLOR, 0x403, 6, 0
+0x7262, 0x776f, 0x006e, 
+    IDC_FORE_COLOR, 0x403, 5, 0
+0x6c62, 0x6575, "\000" 
+    IDC_FORE_COLOR, 0x403, 8, 0
+0x616d, 0x6567, 0x746e, 0x0061, 
+    IDC_FORE_COLOR, 0x403, 5, 0
+0x7963, 0x6e61, "\000" 
+    IDC_FORE_COLOR, 0x403, 15, 0
+0x7267, 0x7965, 0x2820, 0x6564, 0x6166, 0x6c75, 0x2974, "\000" 
+    IDC_FORE_COLOR, 0x403, 9, 0
+0x6863, 0x7261, 0x6f63, 0x6c61, "\000" 
+    IDC_FORE_COLOR, 0x403, 10, 0
+0x696c, 0x6867, 0x2074, 0x6572, 0x0064, 
+    IDC_FORE_COLOR, 0x403, 12, 0
+0x696c, 0x6867, 0x2074, 0x7267, 0x6565, 0x006e, 
+    IDC_FORE_COLOR, 0x403, 7, 0
+0x6579, 0x6c6c, 0x776f, "\000" 
+    IDC_FORE_COLOR, 0x403, 11, 0
+0x696c, 0x6867, 0x2074, 0x6c62, 0x6575, "\000" 
+    IDC_FORE_COLOR, 0x403, 14, 0
+0x696c, 0x6867, 0x2074, 0x616d, 0x6567, 0x746e, 0x0061, 
+    IDC_FORE_COLOR, 0x403, 11, 0
+0x696c, 0x6867, 0x2074, 0x7963, 0x6e61, "\000" 
+    IDC_FORE_COLOR, 0x403, 6, 0
+0x6877, 0x7469, 0x0065, 
+    IDC_BACK_COLOR, 0x403, 18, 0
+0x2062, 0x6c62, 0x6361, 0x206b, 0x6428, 0x6665, 0x7561, 0x746c, 0x0029, 
+
+    IDC_BACK_COLOR, 0x403, 6, 0
+0x2062, 0x6572, 0x0064, 
+    IDC_BACK_COLOR, 0x403, 8, 0
+0x2062, 0x7267, 0x6565, 0x006e, 
+    IDC_BACK_COLOR, 0x403, 8, 0
+0x2062, 0x7262, 0x776f, 0x006e, 
+    IDC_BACK_COLOR, 0x403, 7, 0
+0x2062, 0x6c62, 0x6575, "\000" 
+    IDC_BACK_COLOR, 0x403, 10, 0
+0x2062, 0x616d, 0x6567, 0x746e, 0x0061, 
+    IDC_BACK_COLOR, 0x403, 7, 0
+0x2062, 0x7963, 0x6e61, "\000" 
+    IDC_BACK_COLOR, 0x403, 7, 0
+0x2062, 0x7267, 0x7965, "\000" 
+    IDC_BACK_COLOR, 0x403, 11, 0
+0x2062, 0x6863, 0x7261, 0x6f63, 0x6c61, "\000" 
+    IDC_BACK_COLOR, 0x403, 12, 0
+0x2062, 0x696c, 0x6867, 0x2074, 0x6572, 0x0064, 
+    IDC_BACK_COLOR, 0x403, 14, 0
+0x2062, 0x696c, 0x6867, 0x2074, 0x7267, 0x6565, 0x006e, 
+    IDC_BACK_COLOR, 0x403, 9, 0
+0x2062, 0x6579, 0x6c6c, 0x776f, "\000" 
+    IDC_BACK_COLOR, 0x403, 13, 0
+0x2062, 0x696c, 0x6867, 0x2074, 0x6c62, 0x6575, "\000" 
+    IDC_BACK_COLOR, 0x403, 16, 0
+0x2062, 0x696c, 0x6867, 0x2074, 0x616d, 0x6567, 0x746e, 0x0061, 
+    IDC_BACK_COLOR, 0x403, 13, 0
+0x2062, 0x696c, 0x6867, 0x2074, 0x7963, 0x6e61, "\000" 
+    IDC_BACK_COLOR, 0x403, 8, 0
+0x2062, 0x6877, 0x7469, 0x0065, 
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        RIGHTMARGIN, 217
+        BOTTOMMARGIN, 126
+    END
+
+    IDD_JMC_ACTIONS, DIALOG
+    BEGIN
+        BOTTOMMARGIN, 170
+    END
+
+    IDD_JMC_GROUPS, DIALOG
+    BEGIN
+        RIGHTMARGIN, 231
+    END
+
+    IDD_LOG_PARAMS_PAGE, DIALOG
+    BEGIN
+        RIGHTMARGIN, 258
+        BOTTOMMARGIN, 123
+    END
+
+    IDD_PARAMS_PAGE, DIALOG
+    BEGIN
+        RIGHTMARGIN, 323
+        BOTTOMMARGIN, 191
+    END
+
+    IDD_PROFILE_PAGE, DIALOG
+    BEGIN
+        RIGHTMARGIN, 244
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDP_SOCKETS_INIT_FAILED "Ошибка инициализации сокета Windows"
+END
+
+STRINGTABLE PRELOAD DISCARDABLE 
+BEGIN
+    IDR_MAINFRAME           "jmc\n\nJmc\n\n\nSmc.Document\nSmc Document"
+    IDS_COMMON_PARAMS_CAPTION "Общие"
+    IDS_SUBST_PARAMS_CAPTION "Замены"
+    IDS_PROFILE_PARAMS_CAPTION "Профиль"
+    IDS_LOG_PARAMS_CAPTION  "Логи"
+    IDS_SCRIPT_PAGE__CAPTION "Скрипты"
+    IDS_ALIAS_PAGE_CAPTION  "Алиасы"
+    IDS_GROUPS_PAGE_CAPTION "Группы"
+    IDS_ACTION_PAGE_CAPTION "Триггеры"
+    IDS_HLIGHT_PAGE_CAPTION "Подсветки"
+    IDS_HKEY_PAGE_CAPTION   "Горячие клавиши"
+    IDS_SUBST_PAGE_CAPTION  "Замены"
+    IDS_SCRIPTFILES_PAGE_CAPTION "Файлы скриптов"
+END
+
+STRINGTABLE PRELOAD DISCARDABLE 
+BEGIN
+    AFX_IDS_APP_TITLE       "JMC"
+    AFX_IDS_IDLEMESSAGE     "Готов"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_INDICATOR_EXT        "EXT"
+    ID_INDICATOR_CAPS       "CAP"
+    ID_INDICATOR_NUM        "NUM"
+    ID_INDICATOR_SCRL       "SCRL"
+    ID_INDICATOR_OVR        "OVR"
+    ID_INDICATOR_REC        "REC"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FILE_NEW             "Создать новый документ\nНовый"
+    ID_FILE_OPEN            "Открыть существующий документ\nОткрыть"
+    ID_FILE_CLOSE           "Закрыть активный документ\nЗакрыть"
+    ID_FILE_SAVE            "Сохранить активный документ\nСохранить"
+    ID_FILE_SAVE_AS         "Сохранить активный документ под новым именем\nСохранить как"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_APP_ABOUT            "Информация о программе\nО программе..."
+    ID_APP_EXIT             "Закрыть\nВыйти"
+    ID_HELP                 "Показать справку по JMC"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FILE_MRU_FILE1       "Открыть документ"
+    ID_FILE_MRU_FILE2       "Открыть документ"
+    ID_FILE_MRU_FILE3       "Открыть документ"
+    ID_FILE_MRU_FILE4       "Открыть документ"
+    ID_FILE_MRU_FILE5       "Открыть документ"
+    ID_FILE_MRU_FILE6       "Открыть документ"
+    ID_FILE_MRU_FILE7       "Открыть документ"
+    ID_FILE_MRU_FILE8       "Открыть документ"
+    ID_FILE_MRU_FILE9       "Открыть документ"
+    ID_FILE_MRU_FILE10      "Открыть документ"
+    ID_FILE_MRU_FILE11      "Открыть документ"
+    ID_FILE_MRU_FILE12      "Открыть документ"
+    ID_FILE_MRU_FILE13      "Открыть документ"
+    ID_FILE_MRU_FILE14      "Открыть документ"
+    ID_FILE_MRU_FILE15      "Открыть документ"
+    ID_FILE_MRU_FILE16      "Открыть документ"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_NEXT_PANE            "Перейти к следующему окну\nСледующее окно"
+    ID_PREV_PANE            "Перейти обратно к предыдущему окну\nПредыдущее окно"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_WINDOW_SPLIT         "Разделить окно на два\nРазделить"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_EDIT_CLEAR           "Удалить выделенное\nУдалить"
+    ID_EDIT_CLEAR_ALL       "Удалить все\nУдалить все"
+    ID_EDIT_COPY            "Копировать выделенное\nКопировать"
+    ID_EDIT_CUT             "Вырезать выделенное\nВырезать"
+    ID_EDIT_FIND            "Найти текст\nНайти"
+    ID_EDIT_PASTE           "Вставить текст\nВставить"
+    ID_EDIT_REPEAT          "Повторить последнее действие\nПовторить"
+    ID_EDIT_REPLACE         "Заменить текст на другой\nЗаменить"
+    ID_EDIT_SELECT_ALL      "Выбрать все\nВыбрать все"
+    ID_EDIT_UNDO            "Отменить последнее действие\nОтменить"
+    ID_EDIT_REDO            "Вернуть отмененное действие\nВернуть"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_VIEW_TOOLBAR         "Показать/скрыть тулбар\nТулбар"
+    ID_VIEW_STATUS_BAR      "Показать/скрыть статус\nСтатус"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    AFX_IDS_SCSIZE          "Изменить размер окна"
+    AFX_IDS_SCMOVE          "Изменить положение окна"
+    AFX_IDS_SCMINIMIZE      "Свернуть"
+    AFX_IDS_SCMAXIMIZE      "Развернуть"
+    AFX_IDS_SCNEXTWINDOW    "Перейти к следующему окну"
+    AFX_IDS_SCPREVWINDOW    "Перейти к предыдущему окну"
+    AFX_IDS_SCCLOSE         "Закрыть"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    AFX_IDS_SCRESTORE       "Восстановить размер"
+    AFX_IDS_SCTASKLIST      "Активировать список задач"
+    IDS_AP_ALIAS_COL        "Алиас"
+    IDS_AP_GROUP_COL        "Группа"
+    IDS_AP_TEXT_COL         "Текст"
+    IDS_AP_ERR_EXISTS       "Алиас с таким именем уже существует"
+    IDS_SP_ERR_MAX          "Вы определили максимально возможное количество замен!"
+    IDS_SP_ERROR            "Ошибка"
+    IDS_SP_ERR_EXIST        "Такая замена уже существует!"
+    IDS_ALL_GROUPS          "Все группы"
+    IDS_TP_PATTERN_COL      "Образец"
+    IDS_TP_COMMAND_COL      "Реакция"
+    IDS_TP_PRIORITY_COL     "Приоритет"
+    IDS_GP_DEL_QUES         "Уверены, что хотите удалить группу '%s'\nВсе алиасы, триггеры, подсветки, горячие клавиши в этой группе будут удалены!"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_OPTIONS_SCROLLBUFFER "Установить размер буффера"
+    ID_OPTIONS_FONT         "Настройка шрифта\nШрифт"
+    ID_OPTIONS_COLORS       "Настройка цветов\nЦвета"
+    ID_OPTIONS_OPTIONS      "Настройки JMC\nНастройки"
+    ID_PAUSE                "Пауза вкл/выкл\nПауза"
+    ID_FILE_LOADPROFILE     "Загрузить другой профиль\nЗагрузка профиля"
+    ID_FILE_SAVEPROFILE     "Сохранить настройки профиля\nСохранение профиля"
+    ID_FILE_SAVEPROFILEAS   "Копировать профиль с изменением названия"
+    ID_FILE_NEW_PROFILE     "Создать новый профиль\nСоздание профиля"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_INDICATOR_LOGGED     " "
+    ID_INDICATOR_CONNECTED  " "
+    ID_PATH_WRITING         " "
+    ID_TICKER               " "
+    ID_INDICATOR_INFO1      " "
+    ID_INDICATOR_INFO2      " "
+    ID_INDICATOR_INFO3      " "
+    ID_INDICATOR_INFO4      " "
+    ID_INDICATOR_INFO5      " "
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_SCRIPTING_RELOADSCRIPT 
+                            "Перечитать файлы скриптов и перезагрузить движок\nПерезагрузить скрипты"
+    ID_SCRIPTING_ADDSCRIPTLET "Добавить скрипт\nДобавление скрипта"
+    ID_VIEW_OUTPUTWINDOW    "Показать/скрыть окно вывода 0\nОкно вывода 0"
+    ID_SCRIPTING_BREAK      "Прервать выполнение скрипта\nПрервать скрипт"
+    ID_OPTIONS_KEYWORDS     "Редактировать список ключевых слов"
+    ID_SCRIPTING_LUNCHDEBUGER "Запустить отладчик\nОтладка"
+    ID_EDIT_JMCOBJECTS      "Редактировать алиасы, триггеры, горячие клавиши и т.п.\nРедактирование объектов JMC"
+    ID_VIEW_MUDEMULATOR     "Показать окно MUD-эмулятора"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_GP_ENABLED_COL      "Разрешено"
+    IDS_GP_NAME_COL         "Имя"
+    IDS_GP_ERR_EMPTY        "Пустые имена запрещены"
+    IDS_GP_ERR_EXIST        "Группа с таким именем уже существует"
+    IDS_HP_ERR_EXIST        "Подсветка с таким шаблоном уже существует"
+    IDS_KP_KEY_COL          "Горячая клавиша"
+    IDS_KP_NEW              "Новая горячая клавиша"
+    IDS_CLOSE               "Закрыть"
+    IDS_OUTPUT              "окно %d"
+    IDS_OPTIONS             "Опции"
+    IDS_JABA_TITLE          "Jaba MUD Client [%s]"
+    IDS_JMC_OBJECTS         "Объекты JMC"
+    IDS_ERR_DISCONNECT      "JMC подключен к серверу!\nОтключиться."
+    IDS_QUES_NEW_PROFILE    "Хотите копировать настройки профиля в новый профиль?"
+    IDS_PROFILE_SAVED       "Профиль сохранен."
+    IDS_SF_ALREADY_USED     "Файл уже используется."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_SF_ADD_CAPTION      "Добавить файл"
+    IDS_SF_ALREADY_USED_DEFAULT "Этот файл используется по умолчанию."
+    IDS_TP_INPUTTYPE_COL    "Цвет"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_VIEW_OUTPUTWINDOW1   "Показать/скрыть окно вывода 1\nОкно вывода 1"
+    ID_VIEW_OUTPUTWINDOW2   "Показать/скрыть окно вывода 2\nОкно вывода 2"
+    ID_VIEW_OUTPUTWINDOW3   "Показать/скрыть окно вывода 3\nОкно вывода 3"
+    ID_VIEW_OUTPUTWINDOW4   "Показать/скрыть окно вывода 4\nОкно вывода 4"
+    ID_VIEW_OUTPUTWINDOW5   "Показать/скрыть окно вывода 5\nОкно вывода 5"
+    ID_VIEW_OUTPUTWINDOW6   "Показать/скрыть окно вывода 6\nОкно вывода 6"
+    ID_VIEW_OUTPUTWINDOW7   "Показать/скрыть окно вывода 7\nОкно вывода 7"
+    ID_VIEW_OUTPUTWINDOW8   "Показать/скрыть окно вывода 8\nОкно вывода 8"
+    ID_VIEW_OUTPUTWINDOW9   "Показать/скрыть окно вывода 9\nОкно вывода 9"
+END
+
+#endif    // Russian resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 230, 138
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About..."
 FONT 8, "MS Sans Serif"
 BEGIN
@@ -146,7 +1198,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,94,68,50,14
 END
 
-IDD_PARAMS_PAGE DIALOG DISCARDABLE  0, 0, 297, 107
+IDD_PARAMS_PAGE DIALOG DISCARDABLE  0, 0, 325, 181
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
@@ -154,39 +1206,63 @@ BEGIN
                     BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,17,19,71,10
     CONTROL         "At line end",IDC_END_LINE,"Button",BS_AUTORADIOBUTTON,
                     17,31,68,10
-    GROUPBOX        "Cursor on view:",IDC_STATIC,13,10,91,33,WS_GROUP
-    LTEXT           "Min line length:",IDC_STATIC,110,11,69,11
+    GROUPBOX        "Cursor on view:",IDC_STATIC,13,10,99,33,WS_GROUP
+    LTEXT           "Min line length:",IDC_STATIC,117,11,61,11
     EDITTEXT        IDC_MIN_LEN,180,10,30,12,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "History size:",IDC_STATIC,110,29,38,11
+    LTEXT           "History size:",IDC_STATIC,117,30,57,11
     EDITTEXT        IDC_HISTORY_SIZE,180,29,30,12,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Uncompleted lines delay:",IDC_STATIC,223,4,66,25
-    EDITTEXT        IDC_TRIG_DELAY,223,31,30,12,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Command char:",IDC_STATIC,11,56,59,11
-    EDITTEXT        IDC_COMMAND_CHAR,78,55,15,12,ES_AUTOHSCROLL
-    LTEXT           "Command delimiter:",IDC_STATIC,11,71,62,11
-    EDITTEXT        IDC_COMMAND_DELIMITER,78,70,15,12,ES_AUTOHSCROLL
-    CONTROL         "Display input",IDC_DISPLAY_INPUT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,102,49,76,10
+    LTEXT           "Uncompleted lines delay (msecs to forcing end-of-line):",
+                    IDC_STATIC,7,49,208,9
+    EDITTEXT        IDC_TRIG_DELAY,220,48,29,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Command char:",IDC_STATIC,11,88,75,11
+    EDITTEXT        IDC_COMMAND_CHAR,88,86,19,12,ES_AUTOHSCROLL
+    LTEXT           "Command delimiter:",IDC_STATIC,11,103,74,11
+    EDITTEXT        IDC_COMMAND_DELIMITER,88,102,19,12,ES_AUTOHSCROLL
     CONTROL         "Clean input",IDC_CLEAR_INPUT,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,102,60,83,10
+                    WS_TABSTOP,213,122,88,10
     CONTROL         "Split on scroll",IDC_SPLIT_ONBACKSCROLL,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,197,71,99,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,122,88,77,10
     CONTROL         "Autoreconnect",IDC_AUTO_RECONNECT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,197,49,77,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,219,7,77,10
     CONTROL         "Beep on connect",IDC_CONNECT_BEEP,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,197,60,89,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,219,18,89,10
     GROUPBOX        "Commands history",IDC_STATIC,7,2,208,45
     CONTROL         "Leave one token",IDC_TOKEN_INPUT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,102,71,85,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,213,133,88,10
     CONTROL         "Clear last token",IDC_TOKEN_LAST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,102,82,87,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,213,143,88,10
     CONTROL         "Cursor in end",IDC_AUTO_END,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,197,82,93,10
+                    WS_TABSTOP,213,154,87,10
     CONTROL         "Display commands",IDC_DISPLAY_COMMANDS,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,12,84,76,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,12,116,94,10
     CONTROL         "Minimize to system tray",IDC_MINIMIZE_TO_TRAY,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,102,92,87,10
-    GROUPBOX        "Commands",IDC_COMMANDS_FRAME,7,46,90,52
+                    BS_AUTOCHECKBOX | WS_TABSTOP,219,28,87,10
+    GROUPBOX        "Commands",IDC_COMMANDS_FRAME,7,78,105,52
+    CONTROL         "Wrap lines",IDC_CHK_LINEWRAP,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,122,104,75,10
+    CONTROL         "Rectangular area",IDC_CHK_SELECTRECT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,210,88,101,10
+    CONTROL         "Show hidden text",IDC_CHK_SHOWHIDDEN,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,122,122,74,10
+    GROUPBOX        "Input handling",IDC_STATIC,207,113,108,57
+    GROUPBOX        "Display settings",IDC_STATIC,117,78,85,92
+    GROUPBOX        "Selection",IDC_STATIC,207,78,109,33
+    CONTROL         "Remove ESC-sequences",IDC_CHK_REMOVEESC,"Button",
+                    BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,210,96,99,14
+    GROUPBOX        "User's input",IDC_STATIC,7,130,105,41
+    CONTROL         "Don't display",IDC_INPUT_DONT_DISPLAY,"Button",
+                    BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,13,140,95,10
+    CONTROL         "On prompt line",IDC_INPUT_ON_PROMPT,"Button",
+                    BS_AUTORADIOBUTTON,13,150,95,10
+    CONTROL         "On new line",IDC_INPUT_ON_NEW_LINE,"Button",
+                    BS_AUTORADIOBUTTON,13,161,94,8
+    CONTROL         "Show ping",IDC_DISPLAY_PING,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,122,137,77,10
+    CONTROL         "Line timestamps",IDC_DISPLAY_TIMESTAMPS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,122,152,77,10
+    LTEXT           "Code page",IDC_STATIC,7,64,88,8
+    COMBOBOX        IDC_MUD_CODEPAGE,118,62,132,64,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_SUBST_PAGE DIALOG DISCARDABLE  0, 0, 269, 98
@@ -267,7 +1343,7 @@ BEGIN
     GROUPBOX        "Dark colors",IDC_STATIC,7,7,76,135
     LTEXT           "Black:",IDC_STATIC,12,18,30,8
     CONTROL         "",1000,"Button",BS_OWNERDRAW | WS_TABSTOP,60,16,17,10
-    LTEXT           "(Default background)",IDC_STATIC,12,27,52,8
+    LTEXT           "(Default background)",IDC_STATIC,12,27,67,12
     LTEXT           "Red:",IDC_STATIC,12,43,33,8
     CONTROL         "",1001,"Button",BS_OWNERDRAW | WS_TABSTOP,60,41,17,10
     LTEXT           "Green:",IDC_STATIC,12,55,33,8
@@ -282,7 +1358,7 @@ BEGIN
     CONTROL         "",1006,"Button",BS_OWNERDRAW | WS_TABSTOP,60,101,17,10
     LTEXT           "Gray:",IDC_STATIC,12,119,25,8
     CONTROL         "",1007,"Button",BS_OWNERDRAW | WS_TABSTOP,60,117,17,10
-    LTEXT           "(Default foreground)",IDC_STATIC,12,129,57,8
+    LTEXT           "(Default foreground)",IDC_STATIC,12,129,68,8
     GROUPBOX        "Light colors",IDC_STATIC,96,7,81,111
     LTEXT           "Charcoal:",IDC_STATIC,101,18,37,8
     CONTROL         "",1008,"Button",BS_OWNERDRAW | WS_TABSTOP,154,16,17,10
@@ -307,7 +1383,7 @@ BEGIN
     PUSHBUTTON      "Standard",IDC_RESTORE_DEFAULT,184,42,50,14
 END
 
-IDD_LOG_PARAMS_PAGE DIALOG DISCARDABLE  0, 0, 199, 98
+IDD_LOG_PARAMS_PAGE DIALOG DISCARDABLE  0, 0, 246, 126
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
@@ -315,18 +1391,29 @@ BEGIN
                     BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,131,18,57,10
     CONTROL         "Append",IDC_APPEND_LOG_MODE,"Button",BS_AUTORADIOBUTTON,
                     131,28,58,10
-    GROUPBOX        "Default writing",IDC_STATIC,125,8,65,35,WS_GROUP
-    GROUPBOX        "Log format",IDC_STATIC,10,7,89,75
+    GROUPBOX        "Default writing",IDC_STATIC,125,8,107,35,WS_GROUP
+    GROUPBOX        "Log format",IDC_STATIC,10,7,112,86
     CONTROL         "Write RMA",IDC_RMA_SUPPORT,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,41,64,49,10
+                    WS_TABSTOP,37,72,49,10
     CONTROL         "Text",IDC_LOGTYPE_TEXT,"Button",BS_AUTORADIOBUTTON | 
                     WS_GROUP,18,21,30,10
     CONTROL         "HTML",IDC_LOGTYPE_HTML,"Button",BS_AUTORADIOBUTTON,18,
                     35,36,10
     CONTROL         "ANSI (+Esc colors)",IDC_LOGTYPE_ANSI,"Button",
-                    BS_AUTORADIOBUTTON,18,50,75,10
+                    BS_AUTORADIOBUTTON,17,60,75,10
     CONTROL         "Append log title",IDC_LOG_TITLE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,125,47,65,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,130,57,99,10
+    GROUPBOX        "Log contents",IDC_STATIC,125,47,107,46
+    CONTROL         "As shown by Server",IDC_WRITE_LOG_AS_SHOWN_BY_SERVER,
+                    "Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,129,
+                    69,99,9
+    CONTROL         "As seen by User",IDC_WRITE_LOG_AS_SEEN_BY_USER,"Button",
+                    BS_AUTORADIOBUTTON,129,81,99,9
+    CONTROL         "Timestamps",IDC_HTML_TIMESTAMPS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,37,46,52,10
+    COMBOBOX        IDC_LOG_CODEPAGE,101,94,132,64,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Code page",IDC_STATIC,11,97,68,10
 END
 
 IDD_SCRIPT_PAGE DIALOG DISCARDABLE  0, 0, 209, 98
@@ -422,7 +1509,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,129,25,50,14
 END
 
-IDD_JMC_ACTIONS DIALOG DISCARDABLE  0, 0, 359, 170
+IDD_JMC_ACTIONS DIALOG DISCARDABLE  0, 0, 359, 181
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
@@ -432,18 +1519,21 @@ BEGIN
     CONTROL         "List1",IDC_ACTIONS,"SysListView32",LVS_REPORT | 
                     LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | 
                     WS_TABSTOP,8,25,288,100
-    LTEXT           "Pattern:",IDC_STATIC,8,135,32,8
-    EDITTEXT        IDC_NAME,44,131,160,12,ES_AUTOHSCROLL
-    LTEXT           "Action:",IDC_STATIC,8,154,33,8
-    EDITTEXT        IDC_TEXT,44,150,311,12,ES_AUTOHSCROLL
-    LTEXT           "Priority:",IDC_STATIC,208,134,28,8
-    COMBOBOX        IDC_PRIORITY,238,130,25,73,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    LTEXT           "Pattern:",IDC_STATIC,12,135,26,8
+    EDITTEXT        IDC_NAME,44,131,310,12,ES_AUTOHSCROLL
+    LTEXT           "Action:",IDC_STATIC,13,165,27,8
+    EDITTEXT        IDC_TEXT,43,162,311,12,ES_AUTOHSCROLL
+    LTEXT           "Priority:",IDC_STATIC,13,150,27,8
+    COMBOBOX        IDC_PRIORITY,43,146,25,73,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
-    LTEXT           "Group:",IDC_STATIC,268,134,26,8
-    COMBOBOX        IDC_GRP,295,130,60,89,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    LTEXT           "Group:",IDC_STATIC,73,150,26,8
+    COMBOBOX        IDC_GRP,101,146,84,89,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     PUSHBUTTON      "Add",IDC_ADD,305,25,50,14
     PUSHBUTTON      "Delete",IDC_REMOVE,305,42,50,14
+    LTEXT           "Type:",IDC_STATIC,189,150,23,9
+    COMBOBOX        IDC_ACTION_TYPE,212,146,57,73,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_JMC_HLIGHT DIALOG DISCARDABLE  0, 0, 359, 170
@@ -599,44 +1689,6 @@ BEGIN
 END
 
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDR_MAINFRAME           BITMAP  MOVEABLE PURE   "res\\Toolbar.bmp"
-IDB_CONNECTED           BITMAP  DISCARDABLE     "res\\connecte.bmp"
-IDB_LOGGED              BITMAP  DISCARDABLE     "res\\logged.bmp"
-IDB_MARKED              BITMAP  DISCARDABLE     "res\\bmp00001.bmp"
-IDB_GROUP_ICONS         BITMAP  DISCARDABLE     "res\\bitmap1.bmp"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Toolbar
-//
-
-IDR_MAINFRAME TOOLBAR DISCARDABLE  16, 16
-BEGIN
-    BUTTON      ID_FILE_NEW_PROFILE
-    BUTTON      ID_FILE_LOADPROFILE
-    BUTTON      ID_FILE_SAVEPROFILE
-    SEPARATOR
-    BUTTON      ID_OPTIONS_COLORS
-    BUTTON      32772
-    BUTTON      ID_OPTIONS_OPTIONS
-    BUTTON      32793
-    SEPARATOR
-    BUTTON      ID_PAUSE
-    SEPARATOR
-    BUTTON      ID_VIEW_OUTPUTWINDOW
-    BUTTON      ID_SCRIPTING_ADDSCRIPTLET
-    BUTTON      ID_SCRIPTING_BREAK
-    BUTTON      ID_SCRIPTING_LUNCHDEBUGER
-    SEPARATOR
-    BUTTON      ID_APP_ABOUT
-END
-
-
 #ifndef _MAC
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -644,8 +1696,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,6,0,0
- PRODUCTVERSION 3,6,0,0
+ FILEVERSION 3,7,1,0
+ PRODUCTVERSION 3,7,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -658,47 +1710,29 @@ VS_VERSION_INFO VERSIONINFO
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "041904b0"
+        BLOCK "040904b0"
         BEGIN
             VALUE "Comments", "\0"
             VALUE "CompanyName", "\0"
             VALUE "FileDescription", "JMC application\0"
-            VALUE "FileVersion", "3, 6, 0, 0\0"
+            VALUE "FileVersion", "3, 7, 1, 0\0"
             VALUE "InternalName", "JMC\0"
-            VALUE "LegalCopyright", "© Copyright Sergey Iliyn 1998\r\n© Likhtarov Anton 2002\r\n© Shchepansky Bohdan, Kim Yursen, Ennin 2006-2007\r\n© NeReVaR 2012-2013\0"
+            VALUE "LegalCopyright", "© Copyright Sergey Iliyn 1998\r\n© Likhtarov Anton 2002\r\n© Shchepansky Bohdan, Kim Yursen, Ennin 2006-2007\r\n© NeReVaR 2012-2013\r\nOpenov Sergey 2016\0"
             VALUE "LegalTrademarks", "JMC\0"
             VALUE "OriginalFilename", "JMC.EXE\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "JMC MUD Client\0"
-            VALUE "ProductVersion", "3.6\0"
+            VALUE "ProductVersion", "3.7\0"
             VALUE "SpecialBuild", "\0"
         END
     END
     BLOCK "VarFileInfo"
     BEGIN
-        VALUE "Translation", 0x419, 1200
+        VALUE "Translation", 0x409, 1200
     END
 END
 
 #endif    // !_MAC
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Accelerator
-//
-
-IDR_MAINFRAME ACCELERATORS PRELOAD MOVEABLE PURE 
-BEGIN
-    "0",            ID_VIEW_OUTPUTWINDOW,   VIRTKEY, ALT, NOINVERT
-    "1",            ID_SCRIPTING_ADDSCRIPTLET, VIRTKEY, ALT, NOINVERT
-    "R",            ID_UNSPLIT,             VIRTKEY, CONTROL, NOINVERT
-    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT, NOINVERT
-    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT, NOINVERT
-    VK_F1,          ID_HELP,                VIRTKEY, NOINVERT
-    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
-    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT, NOINVERT
-END
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -728,6 +1762,12 @@ BEGIN
 0x0038, 
     IDC_PRIORITY, 0x403, 2, 0
 0x0039, 
+    IDC_ACTION_TYPE, 0x403, 5, 0
+0x6574, 0x7478, "\000" 
+    IDC_ACTION_TYPE, 0x403, 4, 0
+0x6172, 0x0077, 
+    IDC_ACTION_TYPE, 0x403, 6, 0
+0x6f63, 0x6f6c, 0x0072, 
     0
 END
 
@@ -818,7 +1858,19 @@ BEGIN
 
     IDD_PARAMS_PAGE, DIALOG
     BEGIN
-        BOTTOMMARGIN, 104
+        RIGHTMARGIN, 323
+        BOTTOMMARGIN, 178
+    END
+
+    IDD_LOG_PARAMS_PAGE, DIALOG
+    BEGIN
+        RIGHTMARGIN, 241
+        BOTTOMMARGIN, 123
+    END
+
+    IDD_JMC_ACTIONS, DIALOG
+    BEGIN
+        BOTTOMMARGIN, 170
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -1027,6 +2079,7 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_SF_ADD_CAPTION      "Add file"
     IDS_SF_ALREADY_USED_DEFAULT "This file is used by default."
+    IDS_TP_INPUTTYPE_COL    "Color"
 END
 
 STRINGTABLE DISCARDABLE 
@@ -1042,7 +2095,7 @@ BEGIN
     ID_VIEW_OUTPUTWINDOW9   "Show/hide output window 9\nOutput window 9"
 END
 
-#endif    // Russian resources
+#endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

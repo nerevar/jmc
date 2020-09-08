@@ -85,8 +85,8 @@ BOOL CCharSubstPage::OnInitDialog()
     // Filling listbox
     for ( int i = 0 ; i <  *((int*)m_charsSubst) ; i++ ) {
         CString str;
-        str.Format("'%c' -> '%c'" , m_charsSubst[sizeof(int) + i*2], m_charsSubst[sizeof(int) + i*2+1]);
-        m_cSubstList.AddString((LPCSTR)str);
+        str.Format(L"'%c' -> '%c'" , m_charsSubst[sizeof(int) + i*2], m_charsSubst[sizeof(int) + i*2+1]);
+        m_cSubstList.AddString(str);
     }
     m_cSubstList.SetCurSel(0);
     InitControls();
@@ -180,7 +180,8 @@ void CCharSubstPage::OnAdd()
         return;
     }
 
-    for ( int i = 0 ; i <  *((int*)m_charsSubst) ; i++ ) {
+	int i;
+    for ( i = 0 ; i <  *((int*)m_charsSubst) ; i++ ) {
         if ( m_charsSubst[sizeof(int) + i*2] == m_strOldChar[0] && 
             m_charsSubst[sizeof(int) + i*2+1] == m_strNewChar[0] ) {
             CString t1,t2;
@@ -196,8 +197,8 @@ void CCharSubstPage::OnAdd()
     m_charsSubst[sizeof(int) + i*2] = m_strOldChar[0] ;
     m_charsSubst[sizeof(int) + i*2+1] = m_strNewChar[0];
     CString str;
-    str.Format("'%c' -> '%c'" , m_strOldChar[0], m_strNewChar[0]);
-    m_cSubstList.AddString((LPCSTR)str);
+    str.Format(L"'%c' -> '%c'" , m_strOldChar[0], m_strNewChar[0]);
+    m_cSubstList.AddString(str);
     num++;
     *((int*)m_charsSubst) = num;
     m_cSubstList.SetCurSel(num-1);

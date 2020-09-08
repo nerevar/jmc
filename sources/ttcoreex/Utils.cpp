@@ -13,74 +13,95 @@
 
 using namespace std;
 
-void syserr(char* msg);
+void syserr(wchar_t* msg);
+
+int is_all_digits(const wchar_t *number, bool sign)
+{
+	int i, ok = 1;
+	if (!number[0])
+		return 0;
+    for (i = 0; number[i]; i++) {
+        if (!iswdigit(number[i]) && !(sign && i == 0 && number[i] == L'-')) {
+            ok = 0;
+            break;
+        }
+    }
+	return ok;
+}
 
 /*********************************************/
 /* return: TRUE if s1 is an abrevation of s2 */
 /*********************************************/
-int is_abrev(char *s1, char *s2)
+int is_abrev(const wchar_t *s1, const wchar_t *s2)
 {
 //vls-begin// bugfix
 //    return(s1[0]==s2[0] && !strncmp(s2, s1, strlen(s1)));
-    return(s1[0]==s2[0] && !_strnicmp(s2, s1, strlen(s1)));
+    return(towlower(s1[0])==towlower(s2[0]) && !wcsnicmp(s2, s1, wcslen(s1)));
 //vls-end//
-}
-
-/********************************/
-/* strdup - duplicates a string */
-/* return: address of duplicate */
-/********************************/
-char *mystrdup(char *s)
-{
-  char *dup;
-
-  if((dup=(char *)malloc(strlen(s)+1))==NULL)
-    syserr(rs::rs(1210));
-  strcpy(dup, s);
-  return dup;
 }
 
 
 /*************************************************/
 /* print system call error message and terminate */
 /*************************************************/
-void syserr(char* msg)
+void syserr(wchar_t* msg)
 {
-  extern int errno, sys_nerr;
-  extern char *sys_errlist[];
-  char ErrMsg[256];
+  extern int errno;
+  wchar_t ErrMsg[256];
 
-  sprintf(ErrMsg,rs::rs(1211),msg, errno);
+  swprintf(ErrMsg,rs::rs(1211),msg, errno);
   ShowError(ErrMsg);
   // EndApplication();
 }
 
-string StrPrintfV(char* pszFormat, va_list marker)
+wstring StrPrintfV(wchar_t* pszFormat, va_list marker)
 {
-    vector<char> data;
+	/*
+	string data;
+	data.reserve(256);
+	while( _vsnprintf(&data[0], data.capacity(), pszFormat, marker) == -1 )
+           data.reserve(data.capacity() + 256);
+    return data;
+	*/
+	
+    vector<wchar_t> data;
         data.reserve(256);
-    while( _vsnprintf(data.begin(), data.capacity(), pszFormat, marker) == -1 )
+    while( _vsnwprintf(data.begin(), data.capacity(), pszFormat, marker) == -1 )
            data.reserve(data.capacity() + 256);
     return data.begin();
+	
 }
 
-string strprintf(char* pszFormat, ...)
+wstring strprintf(wchar_t* pszFormat, ...)
 {
     va_list marker;
     va_start(marker, pszFormat);
-    string str = StrPrintfV(pszFormat, marker);
+    wstring str = StrPrintfV(pszFormat, marker);
     va_end(marker);
     return str;
 }
 
 
-std::vector<int> split(const string &s, char delim) {
+std::vector<int> split(const wstring &s, wchar_t delim) {
     vector<int> elems;
-    stringstream ss(s);
-    string item;
+    wstringstream ss(s);
+    wstring item;
 
-    while(std::getline(ss, item, delim) && (item.length() > 0)) {
-         elems.push_back(atoi(item.c_str()));
+    while (std::getline(ss, item, delim)) {
+		if (item.length() > 0)
+         elems.push_back(_wtoi(item.c_str()));
+    }
+    return elems;
+}
+
+std::vector< wstring > split_str(const wstring &s, wchar_t delim) {
+	vector< wstring > elems;
+    wstringstream ss(s);
+    wstring item;
+
+    while (std::getline(ss, item, delim)) {
+		if (item.length() > 0)
+			elems.push_back(item);
     }
     return elems;
 }

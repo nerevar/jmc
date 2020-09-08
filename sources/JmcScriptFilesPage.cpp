@@ -90,7 +90,7 @@ void CJmcScriptFilesPage::SetControls()
 void CJmcScriptFilesPage::OnAdd() 
 {
     CString strFile;
-    char p[MAX_PATH+2];
+    wchar_t p[MAX_PATH+2];
     CString strCap;
     strCap.LoadString(IDS_SF_ADD_CAPTION);
 
@@ -98,14 +98,14 @@ void CJmcScriptFilesPage::OnAdd()
     ZeroMemory(&ofn, sizeof(OPENFILENAME));
     ofn.lStructSize = sizeof(OPENFILENAME);
     ofn.hwndOwner = this->m_hWnd;
-    ofn.lpstrFilter = "Script files (*.scr)\0*.scr\0All files (*.*)\0*.*\0";
-    ofn.lpstrFile = p; *p = '\0';
+    ofn.lpstrFilter = L"Script files (*.scr)\0*.scr\0All files (*.*)\0*.*\0";
+    ofn.lpstrFile = p; *p = L'\0';
     ofn.nMaxFile = MAX_PATH;
     ofn.lpstrInitialDir = szSETTINGS_DIR;
-    ofn.lpstrTitle = (LPSTR)(LPCSTR)strCap;
+    ofn.lpstrTitle = strCap;
     ofn.Flags = OFN_ENABLESIZING | OFN_HIDEREADONLY | OFN_NONETWORKBUTTON | OFN_FILEMUSTEXIST;
 
-    char dir[MAX_PATH+2];
+    wchar_t dir[MAX_PATH+2];
     GetCurrentDirectory(MAX_PATH, dir);
     BOOL bOk = GetOpenFileName(&ofn);
     SetCurrentDirectory(dir);
@@ -115,14 +115,14 @@ void CJmcScriptFilesPage::OnAdd()
     strFile = p;
     int i;
     if (bOk) {
-        switch (FindScriptFile((LPSTR)(LPCSTR)strFile)) {
+        switch (FindScriptFile(strFile)) {
         case -2:
         case -3:
             AfxMessageBox(IDS_SF_ALREADY_USED_DEFAULT);
             m_cFilesList.SelectString(-1, strFile);
             break;
         case -1:
-            AddScriptFile((LPSTR)(LPCSTR)strFile);
+            AddScriptFile(strFile);
             i = m_cFilesList.AddString(strFile);
             m_cFilesList.SetCurSel(i);
             bScriptFileListChanged = TRUE;
@@ -141,7 +141,7 @@ void CJmcScriptFilesPage::OnDown()
     if (i >= 0 && i + 1 < m_cFilesList.GetCount()) {
         CString strFile;
         m_cFilesList.GetText(i, strFile);
-        DownScriptFile((LPSTR)(LPCSTR)strFile);
+        DownScriptFile(strFile);
         m_cFilesList.DeleteString(i);
         m_cFilesList.InsertString(i + 1, strFile);
         m_cFilesList.SetCurSel(i + 1);
@@ -161,7 +161,7 @@ void CJmcScriptFilesPage::OnRemove()
     if (i >= 0) {
         CString strFile;
         m_cFilesList.GetText(i, strFile);
-        RemoveScriptFile((LPSTR)(LPCSTR)strFile);
+        RemoveScriptFile(strFile);
         i = m_cFilesList.DeleteString(i);
         if (i > 0) i--;
         else i = 0;
@@ -177,7 +177,7 @@ void CJmcScriptFilesPage::OnUp()
     if (i > 0) {
         CString strFile;
         m_cFilesList.GetText(i, strFile);
-        UpScriptFile((LPSTR)(LPCSTR)strFile);
+        UpScriptFile(strFile);
         m_cFilesList.DeleteString(i);
         m_cFilesList.InsertString(i - 1, strFile);
         m_cFilesList.SetCurSel(i - 1);

@@ -12,6 +12,8 @@
 
 #include "onechar.h"
 
+#include <vector>
+
 class CCommonParamsPage : public CPropertyPage
 {
 	DECLARE_DYNCREATE(CCommonParamsPage)
@@ -32,7 +34,6 @@ public:
 	CString	m_strCommandDelimiter;
 	UINT	m_nHistorySize;
 	BOOL	m_bDisplayCommands;
-	BOOL	m_bDisplayInput;
 	BOOL	m_bClearInput;
 	BOOL	m_bTokenInput;
 	BOOL	m_bKillOneToken;
@@ -42,8 +43,18 @@ public:
 	BOOL	m_bSplitOnBackscroll;
 	BOOL	m_bMinimizeToTray;
 	int		m_nTrigDelay;
+	CComboBox m_cCodePage;
+	BOOL	m_bLineWrap;
+	BOOL	m_bShowTimestamps;
+	BOOL	m_bSelectRect;
+	BOOL	m_bRemoveESC;
+	BOOL	m_bShowHidden;
+	BOOL	m_bShowPing;
+	int		m_nUserInputHide;
 	//}}AFX_DATA
 
+	std::vector<int> m_vIndexToCPID;
+	int m_nMudCodePage;
 
 // Overrides
 	// ClassWizard generate virtual function overrides
@@ -56,6 +67,8 @@ public:
 protected:
 	// Generated message map functions
 	//{{AFX_MSG(CCommonParamsPage)
+	virtual BOOL OnInitDialog();
+	afx_msg void OnSelchangeCodePage();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

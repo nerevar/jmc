@@ -54,8 +54,7 @@ static const GUID CATID_ActiveScript = {0xf0b7a1a1, 0x9847, 0x11cf, {0x8f, 0x20,
 
 BOOL CScriptPage::OnInitDialog() 
 {
-    USES_CONVERSION;
-	CPropertyPage::OnInitDialog();
+    CPropertyPage::OnInitDialog();
     // lets enum script engines 
 
     ICatRegister *	m_lpv = NULL;
@@ -84,7 +83,7 @@ BOOL CScriptPage::OnInitDialog()
     for ( ULONG i = 0; i < uModules ; i++ ) {
         LPOLESTR ProgId;
         ProgIDFromCLSID (m_clsIDs[i], &ProgId);
-        int ind = m_cLang.AddString (W2A(ProgId));
+        int ind = m_cLang.AddString (ProgId);
         if ( !memcmp(&m_clsIDs[i], &m_guidLang, sizeof(m_guidLang) ) )
             m_cLang.SetCurSel(ind);
     }

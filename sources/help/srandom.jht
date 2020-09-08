@@ -1,0 +1,4 @@
+#srandom [seed]
+  sets random seed for random numbers generator
+  if no seed is present, then current system time is taken
+  

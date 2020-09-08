@@ -132,6 +132,7 @@
 #define IDC_GLOBAL                      1073
 #define IDC_PRIORITY                    1076
 #define IDC_ACTIONS                     1077
+#define IDC_ACTION_TYPE                 1079
 #define IDC_SEND                        1083
 #define IDC_SEND_LINE                   1084
 #define IDC_TRIG_DELAY                  1085
@@ -155,6 +156,20 @@
 #define IDC_EDIT_EMUL_LOG_PATH          1118
 #define IDC_BTN_STARTSTOP_EMUL_LOG      1119
 #define IDC_CHK_EMULATE_RMA             1120
+#define IDC_WRITE_LOG_AS_SHOWN_BY_SERVER 1121
+#define IDC_WRITE_LOG_AS_SEEN_BY_USER   1122
+#define IDC_HTML_TIMESTAMPS             1123
+#define IDC_CHK_LINEWRAP                1127
+#define IDC_CHK_SELECTRECT              1128
+#define IDC_CHK_SHOWHIDDEN              1129
+#define IDC_CHK_REMOVEESC               1130
+#define IDC_INPUT_DONT_DISPLAY          1131
+#define IDC_INPUT_ON_PROMPT             1132
+#define IDC_INPUT_ON_NEW_LINE           1133
+#define IDC_DISPLAY_PING                1134
+#define IDC_DISPLAY_TIMESTAMPS          1135
+#define IDC_MUD_CODEPAGE                1136
+#define IDC_LOG_CODEPAGE                1137
 #define ID_OPTIONS_SCROLLBUFFER         32771
 #define ID_OPTIONS_FONT                 32772
 #define ID_OPTIONS_HOTKEYS              32774
@@ -215,6 +230,7 @@
 #define IDS_SF_ALREADY_USED             61231
 #define IDS_SF_ADD_CAPTION              61232
 #define IDS_SF_ALREADY_USED_DEFAULT     61233
+#define IDS_TP_INPUTTYPE_COL            61234
 
 // Next default values for new objects
 // 
@@ -223,7 +239,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        179
 #define _APS_NEXT_COMMAND_VALUE         32809
-#define _APS_NEXT_CONTROL_VALUE         1121
+#define _APS_NEXT_CONTROL_VALUE         1139
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

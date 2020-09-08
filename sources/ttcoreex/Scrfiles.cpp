@@ -2,15 +2,15 @@
 #include "stdafx.h"
 #include "tintin.h"
 
-char DLLEXPORT szPROFILESCRIPT[MAX_PATH];
+wchar_t DLLEXPORT szPROFILESCRIPT[MAX_PATH];
 
-void use_command(char *arg)
+void use_command(wchar_t *arg)
 {
-    char file[BUFFER_SIZE];
-    char msg[BUFFER_SIZE];
+    wchar_t file[BUFFER_SIZE];
+    wchar_t msg[BUFFER_SIZE];
 //* en
-//    arg = get_arg_in_braces(arg, file, STOP_SPACES);
-    arg = get_arg_in_braces(arg, file, WITH_SPACES);
+//    arg = get_arg_in_braces(arg,file,STOP_SPACES,sizeof(file)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,file,WITH_SPACES,sizeof(file)/sizeof(wchar_t)-1);
 //* /en
     if ( !*file ) {
         tintin_puts2(rs::rs(1233));
@@ -18,7 +18,7 @@ void use_command(char *arg)
         SCRIPTFILE_INDEX ind = ScriptFileList.begin();
         while (ind != ScriptFileList.end()) {
             CScriptFile *pScr = *ind;
-            sprintf(msg, rs::rs(1234), pScr->m_strName.data());
+            swprintf(msg, rs::rs(1234), pScr->m_strName.c_str());
             tintin_puts2(msg);
             ind++;
         }
@@ -28,7 +28,7 @@ void use_command(char *arg)
 
     switch (FindScriptFile(file)) {
     case -2: case -3:
-        strcpy(msg, rs::rs(1231));
+        wcscpy(msg, rs::rs(1231));
         break;
     case -1:
         AddScriptFile(file);
@@ -36,25 +36,25 @@ void use_command(char *arg)
             SetEvent(eventReadingHasUse);
         else
             PostMessage(hwndMAIN, WM_USER+300, 0, 0);
-        sprintf(msg, rs::rs(1235), file);
+        swprintf(msg, rs::rs(1235), file);
         break;
     default:
-        sprintf(msg, rs::rs(1232), file);
+        swprintf(msg, rs::rs(1232), file);
     }
     if (mesvar[MSG_SF])
         tintin_puts2(msg);
 }
 
-void unuse_command(char *arg)
+void unuse_command(wchar_t *arg)
 {
-    char file[BUFFER_SIZE];
-    char msg[BUFFER_SIZE];
+    wchar_t file[BUFFER_SIZE];
+    wchar_t msg[BUFFER_SIZE];
 //* en
-//    arg = get_arg_in_braces(arg, file, STOP_SPACES);
-    arg = get_arg_in_braces(arg, file, WITH_SPACES);
+//    arg = get_arg_in_braces(arg,file,STOP_SPACES,sizeof(file)/sizeof(wchar_t)-1);
+    arg = get_arg_in_braces(arg,file,WITH_SPACES,sizeof(file)/sizeof(wchar_t)-1);
 //* /en
     if ( !*file ) {
-        use_command("\0");
+        use_command(L"\0");
         return;
     }
 
@@ -66,7 +66,7 @@ void unuse_command(char *arg)
 
     RemoveScriptFile(file);
     if (mesvar[MSG_SF]) {
-        sprintf(msg, rs::rs(1237), file);
+        swprintf(msg, rs::rs(1237), file);
         tintin_puts2(msg);
     }
 }
@@ -76,6 +76,10 @@ PCScriptFile DLLEXPORT GetScriptFileList(int* size)
     EnterCriticalSection(&secScriptFiles);
     if (size)
         *size = ScriptFileList.size();
+	if(!ScriptFileList.size()) {
+		LeaveCriticalSection(&secScriptFiles);
+		return NULL;
+	}
     CScriptFile *pScr = ScriptFileList.front();
     LeaveCriticalSection(&secScriptFiles);
     return pScr;
@@ -98,19 +102,19 @@ PCScriptFile DLLEXPORT GetScriptFile(int pos)
     return NULL;
 }
 
-int DLLEXPORT FindScriptFile(char *filename)
+int DLLEXPORT FindScriptFile(const wchar_t *filename)
 {
     if (!filename) return -1;
 
-    if (!_stricmp("commonlib.scr", filename)) return -2;
-    if (!_stricmp(szPROFILESCRIPT, filename)) return -3;
+    if (!wcsicmp(L"commonlib.scr", filename)) return -2;
+    if (!wcsicmp(szPROFILESCRIPT, filename)) return -3;
 
     EnterCriticalSection(&secScriptFiles);
     int pos = 0;
     SCRIPTFILE_INDEX ind = ScriptFileList.begin();
     while (ind != ScriptFileList.end()) {
         CScriptFile *pScr = *ind;
-        if (!_stricmp(pScr->m_strName.data(), filename)) {
+        if (!wcsicmp(pScr->m_strName.c_str(), filename)) {
             LeaveCriticalSection(&secScriptFiles);
             return pos;
         }
@@ -121,20 +125,20 @@ int DLLEXPORT FindScriptFile(char *filename)
     return -1;
 }
 
-PCScriptFile AddScriptFile(char* filename)
+PCScriptFile AddScriptFile(const wchar_t* filename)
 {
     if (!filename) return NULL;
 
     CScriptFile *pScr;
 
-    if (!_stricmp("commonlib.scr", filename)) return NULL;
-    if (!_stricmp(szPROFILESCRIPT, filename)) return NULL;
+    if (!wcsicmp(L"commonlib.scr", filename)) return NULL;
+    if (!wcsicmp(szPROFILESCRIPT, filename)) return NULL;
 
     EnterCriticalSection(&secScriptFiles);
     SCRIPTFILE_INDEX ind = ScriptFileList.begin();
     while (ind != ScriptFileList.end()) {
         pScr = *ind;
-        if (!_stricmp(pScr->m_strName.data(), filename)) {
+        if (!wcsicmp(pScr->m_strName.data(), filename)) {
             LeaveCriticalSection(&secScriptFiles);
             return pScr;
         }
@@ -148,7 +152,7 @@ PCScriptFile AddScriptFile(char* filename)
     return pScr;
 }
 
-void UpScriptFile(char* filename)
+void UpScriptFile(const wchar_t* filename)
 {
     if (!filename) return;
 
@@ -156,7 +160,7 @@ void UpScriptFile(char* filename)
     SCRIPTFILE_INDEX ind = ScriptFileList.begin();
     while (ind != ScriptFileList.end()) {
         CScriptFile *pScr = *ind;
-        if (!_stricmp(pScr->m_strName.data(), filename)) {
+        if (!wcsicmp(pScr->m_strName.data(), filename)) {
             ind = ScriptFileList.erase(ind);
             if (ind != ScriptFileList.begin())
                 ind--;
@@ -169,7 +173,7 @@ void UpScriptFile(char* filename)
     LeaveCriticalSection(&secScriptFiles);
 }
 
-void DownScriptFile(char* filename)
+void DownScriptFile(const wchar_t* filename)
 {
     if (!filename) return;
 
@@ -177,7 +181,7 @@ void DownScriptFile(char* filename)
     SCRIPTFILE_INDEX ind = ScriptFileList.begin();
     while (ind != ScriptFileList.end()) {
         CScriptFile *pScr = *ind;
-        if (!_stricmp(pScr->m_strName.data(), filename)) {
+        if (!wcsicmp(pScr->m_strName.data(), filename)) {
             ind = ScriptFileList.erase(ind);
             if (ind != ScriptFileList.end())
                 ind++;
@@ -190,7 +194,7 @@ void DownScriptFile(char* filename)
     LeaveCriticalSection(&secScriptFiles);
 }
 
-void RemoveScriptFile(char* filename)
+void RemoveScriptFile(const wchar_t* filename)
 {
     if (!filename) return;
 
@@ -198,7 +202,7 @@ void RemoveScriptFile(char* filename)
     SCRIPTFILE_INDEX ind = ScriptFileList.begin();
     while (ind != ScriptFileList.end()) {
         CScriptFile *pScr = *ind;
-        if (!_stricmp(pScr->m_strName.data(), filename)) {
+        if (!wcsicmp(pScr->m_strName.data(), filename)) {
             delete pScr;
             ScriptFileList.erase(ind);
             LeaveCriticalSection(&secScriptFiles);

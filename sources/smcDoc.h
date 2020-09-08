@@ -67,12 +67,10 @@ public:
 	LOGFONT m_lfText;
 	CFont m_fntText;
 
-    char m_cCommandChar; // command char. default is '#'
+    wchar_t m_cCommandChar; // command char. default is '#'
 
     BOOL m_bFrozen;
 
-    inline int GetMaxLines() const {return m_nScrollSize;};
-    int m_nScrollSize;
 //vls-begin// multiple output
 //    int m_nWindowCharsSize, m_nOutWindowCharsSize;
     int m_nWindowCharsSize;
@@ -81,6 +79,11 @@ public:
 
 
     int m_nYsize, m_nCharX;
+	BOOL m_bRectangleSelection;
+	BOOL m_bRemoveESCSelection;
+	BOOL m_bLineWrap;
+	BOOL m_bShowTimestamps;
+	BOOL m_bShowHiddenText;
     void RecalcCharSize();
 
     // COLOR SUPPORT
@@ -89,7 +92,7 @@ public:
     COLORREF m_BackColors[16];
 
     CStringList m_lstTabWords;
-    void FillTabWords(LPCSTR strWords);
+    void FillTabWords(const wchar_t* strWords);
 
 
 //vls-begin// multiple output
@@ -110,7 +113,7 @@ public:
 
     CCriticalSection m_KeyListSection;
 
-    void DrawSome(LPSTR str);
+    void DrawSome(const wchar_t* str);
 
     BOOL m_bSplitOnBackscroll;
 

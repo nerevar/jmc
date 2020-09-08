@@ -29,7 +29,7 @@ void CScrollOptionDlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CScrollOptionDlg)
 	DDX_Text(pDX, IDC_COUNT, m_nCount);
-	DDV_MinMaxUInt(pDX, m_nCount, 1, 30000);
+	DDV_MinMaxUInt(pDX, m_nCount, MIN_SCROLL_SIZE, MAX_SCROLL_SIZE);
 	//}}AFX_DATA_MAP
 }
 

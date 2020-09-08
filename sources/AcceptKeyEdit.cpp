@@ -87,7 +87,7 @@ BOOL CAcceptKeyEdit::FormatKeyMapString(KEYMAP *key, CString &str)
 	else if(key->uKey >= VK_F1 && key->uKey <= VK_F24) {
 		str += _T("F");
 		CString strNum;
-		strNum.Format("%d", key->uKey - VK_F1 + 1);
+		strNum.Format(L"%d", key->uKey - VK_F1 + 1);
 		str += strNum;
         
 	}else 
@@ -101,7 +101,7 @@ void CAcceptKeyEdit::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)
 	// passes it up for processing
 	CString str;
 	KEYMAP key;
-    str.Format("VK = %d Scancode = %d Extended = %d\n", nChar , LOBYTE(nFlags), HIBYTE(nFlags) & 0x1 );
+    str.Format(L"VK = %d Scancode = %d Extended = %d\n", nChar , LOBYTE(nFlags), HIBYTE(nFlags) & 0x1 );
     TRACE (str);
     
 

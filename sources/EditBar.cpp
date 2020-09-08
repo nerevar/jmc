@@ -22,11 +22,11 @@ CEditBar::CEditBar()
 {
     m_nCurrItem = 0;
     m_nCurSelStart = m_nCurSelEnd = 0;
-    m_nHistorySize = ::GetPrivateProfileInt("Main", "History" , 20, szGLOBAL_PROFILE);
-    m_bClearInput = ::GetPrivateProfileInt("Main", "ClearInput" , 1, szGLOBAL_PROFILE);
-    m_bTokenInput = ::GetPrivateProfileInt("Main", "TokenInput" , 0, szGLOBAL_PROFILE);
-    m_bKillOneToken = ::GetPrivateProfileInt("Main", "KillOneToken" , 0, szGLOBAL_PROFILE);
-    m_bScrollEnd = ::GetPrivateProfileInt("Main", "ScrollEnd" , 1, szGLOBAL_PROFILE);
+    m_nHistorySize = ::GetPrivateProfileInt(L"Main", L"History" , 20, szGLOBAL_PROFILE);
+    m_bClearInput = ::GetPrivateProfileInt(L"Main", L"ClearInput" , 1, szGLOBAL_PROFILE);
+    m_bTokenInput = ::GetPrivateProfileInt(L"Main", L"TokenInput" , 0, szGLOBAL_PROFILE);
+    m_bKillOneToken = ::GetPrivateProfileInt(L"Main", L"KillOneToken" , 0, szGLOBAL_PROFILE);
+    m_bScrollEnd = ::GetPrivateProfileInt(L"Main", L"ScrollEnd" , 1, szGLOBAL_PROFILE);
     m_bScrollMode = FALSE;
 
     m_posCurPos = NULL;
@@ -36,11 +36,11 @@ CEditBar::CEditBar()
 
 CEditBar::~CEditBar()
 {
-    WritePrivateProfileInt("Main", "History" , m_nHistorySize, szGLOBAL_PROFILE);
-    WritePrivateProfileInt("Main", "ClearInput" , m_bClearInput, szGLOBAL_PROFILE);
-	WritePrivateProfileInt("Main", "TokenInput" , m_bTokenInput, szGLOBAL_PROFILE);
-	WritePrivateProfileInt("Main", "ScrollEnd" , m_bScrollEnd, szGLOBAL_PROFILE);
-	WritePrivateProfileInt("Main", "KillOneToken" , m_bKillOneToken, szGLOBAL_PROFILE);
+    WritePrivateProfileInt(L"Main", L"History" , m_nHistorySize, szGLOBAL_PROFILE);
+    WritePrivateProfileInt(L"Main", L"ClearInput" , m_bClearInput, szGLOBAL_PROFILE);
+	WritePrivateProfileInt(L"Main", L"TokenInput" , m_bTokenInput, szGLOBAL_PROFILE);
+	WritePrivateProfileInt(L"Main", L"ScrollEnd" , m_bScrollEnd, szGLOBAL_PROFILE);
+	WritePrivateProfileInt(L"Main", L"KillOneToken" , m_bKillOneToken, szGLOBAL_PROFILE);
 }
 
 
@@ -150,7 +150,7 @@ BOOL CEditBar::PreTranslateMessage(MSG* pMsg)
                 POSITION pos = pDoc->m_lstTabWords.GetHeadPosition ();
                 while ( pos ) {
                     CString str = pDoc->m_lstTabWords.GetNext(pos);
-                    if ( !strnicmp(str, strWord, strWord.GetLength()) ) {
+                    if ( !wcsnicmp(str, strWord, strWord.GetLength()) ) {
                         m_lstTabWords.AddTail (str);
                     }
                 }
@@ -263,17 +263,17 @@ CString& CEditBar::GetLine()
 	if(!tokenSetup)
 	{
 		if ( m_bClearInput) {
-		    pEdit->SetWindowText("");
+		    pEdit->SetWindowText(L"");
 	        pEdit->SetSel(0, str.GetLength());
 		}
 		else
 		if(m_bTokenInput)
 			{
-			int pos = str.Find(' ')+1;
+			int pos = str.Find(L' ')+1;
 			if(pos == 0 && !m_bKillOneToken)
 				 pos = str.GetLength();
 			stx = str.Left(pos);
-			if(stx[stx.GetLength()-1]!=' ' && !m_bKillOneToken)
+			if(stx[stx.GetLength()-1]!=L' ' && !m_bKillOneToken)
 				    stx = stx + ' ';
 			   pEdit->SetWindowText(stx);
 		       pEdit->SetSel(m_bScrollEnd?stx.GetLength():0, stx.GetLength());
@@ -284,7 +284,7 @@ CString& CEditBar::GetLine()
 			pEdit->SetSel(0, str.GetLength());
 		  else
 		  {
-		    pEdit->SetWindowText("");
+		    pEdit->SetWindowText(L"");
 	        pEdit->SetSel(0, str.GetLength());
 		  }
 
@@ -298,7 +298,7 @@ CString& CEditBar::CleanLine()
     static CString str;
     CEdit* pEdit = (CEdit*)GetDlgItem(IDC_EDIT);
     pEdit->GetWindowText(str);
-    pEdit->SetWindowText("");
+    pEdit->SetWindowText(L"");
     pEdit->SetSel(0, 0);
     return str;
 //*/en
@@ -322,7 +322,7 @@ void CEditBar::NextLine()
         POSITION pos;
         while ( m_nCurrItem < m_History.GetCount() && (pos = m_History.FindIndex(m_nCurrItem)) ) {
             CString str = m_History.GetAt(pos);
-            if ( !strcmp((LPCSTR)m_strSrollMask, str.Left(m_strSrollMask.GetLength()) ) ) { // matched
+            if ( !wcscmp(m_strSrollMask, str.Left(m_strSrollMask.GetLength()) ) ) { // matched
                 CEdit* pEdit = (CEdit*)GetDlgItem(IDC_EDIT);
                 int Curr = m_nCurrItem;
                 pEdit->SetWindowText(str);
@@ -367,7 +367,7 @@ void CEditBar::PrevLine()
         POSITION pos;
         while ( m_nCurrItem >= 0 && (pos = m_History.FindIndex(m_nCurrItem)) ) {
             CString str = m_History.GetAt(pos);
-            if ( !strcmp((LPCSTR)m_strSrollMask, str.Left(m_strSrollMask.GetLength()) ) ) { // matched
+            if ( !wcscmp(m_strSrollMask, str.Left(m_strSrollMask.GetLength()) ) ) { // matched
                 CEdit* pEdit = (CEdit*)GetDlgItem(IDC_EDIT);
                 int Curr = m_nCurrItem;
                 pEdit->SetWindowText(str);
@@ -443,7 +443,7 @@ void CEditBar::DoPaste()
 	if ( hData == NULL )
 		return;
 
-	LPSTR str;
+	LPWSTR str;
 
 	if (uFormat == CF_TEXT) {
 
@@ -451,38 +451,39 @@ void CEditBar::DoPaste()
 		GlobalUnlock(hData);
 		CloseClipboard();
 
-		int nLen = strlen( pwsz ) + 1;
-		str = new char[ nLen ];
-		memcpy(str, pwsz, nLen);
+		int nLen = MultiByteToWideChar(CP_ACP, 0, pwsz, -1, NULL, 0) + 1;
+		str = new wchar_t[ nLen + 1 ];
+		MultiByteToWideChar(CP_ACP, 0, pwsz, -1, str, nLen);
+		str[nLen] = L'\0';
+		
 		GlobalUnlock(hData);
-
 	} else if (uFormat == CF_UNICODETEXT) {
 
 		LPWSTR pwsz = (LPWSTR)GlobalLock(hData);
-		int nLenUnicode = wcslen( pwsz ) + 1; // Convert all UNICODE characters
-		int nLen = WideCharToMultiByte( CP_ACP,	0, pwsz, nLenUnicode, NULL, 0, NULL, NULL );
+		int nLen = wcslen( pwsz );
 
-		str = new char[ nLen ]; // nLen includes the NULL character
-		WideCharToMultiByte( CP_ACP, 0,	pwsz, nLenUnicode, str, nLen, NULL, NULL );
+		str = new wchar_t[ nLen + 1 ];
+		wcscpy(str, pwsz);
+
 		GlobalUnlock(hData);
 	}
 	CloseClipboard();
 
     CString strIns, strAdd;
     pEdit->GetWindowText(strIns);
-    char* src = (LPSTR)(LPCSTR)str;
+    wchar_t* src = str;
     int StartSel, EndSel;
     pEdit->GetSel(StartSel, EndSel);
     CWnd* pWnd = ((CMainFrame*)AfxGetMainWnd())->GetActiveView();
 
     do {
         switch (*src ) {
-        case '\n':
-            strIns = "";
+        case L'\n':
+            strIns = L"";
             pEdit->SetWindowText(strAdd);
             if ( pWnd ) 
                 pWnd->SendMessage(WM_USER+100 , 0 , 0 );
-            strAdd = "";
+            strAdd = L"";
             break;
         case '\r':
             break;
@@ -518,7 +519,7 @@ void CEditBar::OnTextChanged()
 {
     CEdit* pEdit = (CEdit*)GetDlgItem(IDC_EDIT);
 	pEdit->GetWindowText(m_editStr);
-	strcpy(editStr, m_editStr);
+	wcscpy(editStr, m_editStr);
     m_bScrollMode = FALSE;
     m_nCurrItem = m_History.GetCount();
     if ( !m_bExtendingChange ) {

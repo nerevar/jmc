@@ -348,5 +348,92 @@ public:
 	
 	}
 
+	BOOL Fire_Prompt()
+	{
+		T* pT = static_cast<T*>(this);
+
+        pT->m_bDropped = FALSE;
+        BOOL bRet = TRUE;
+
+        if ( pT->m_bstrEventsHandlers[ID_Prompt].Length()  ) {
+            ParseScriptlet2((BSTR)(pT->m_bstrEventsHandlers[ID_Prompt]));
+            if ( pT->m_bDropped || pT->m_pvarEventParams[0].vt != VT_BSTR) {
+                bRet = FALSE;
+            }
+            return bRet;
+        }
+
+        CComVariant varResult;
+		int nConnectionIndex;
+		CComVariant* pvars = new CComVariant[1];
+		int nConnections = m_vec.GetSize();
+		
+		for (nConnectionIndex = 0; nConnectionIndex < nConnections; nConnectionIndex++)
+		{
+			pT->Lock();
+			CComPtr<IUnknown> sp = m_vec.GetAt(nConnectionIndex);
+			pT->Unlock();
+			IDispatch* pDispatch = reinterpret_cast<IDispatch*>(sp.p);
+			if (pDispatch != NULL)
+			{
+                VariantClear(&varResult);
+				pvars[0] = pT->m_pvarEventParams[0].bstrVal;
+
+
+                DISPPARAMS disp = { pvars, NULL, 1, 0 };
+				pDispatch->Invoke(0xB, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_METHOD, &disp, &varResult, NULL, NULL);
+                if ( pT->m_bDropped || pT->m_pvarEventParams[0].vt != VT_BSTR) {
+                    bRet = FALSE;
+                }
+			}
+		}
+		delete[] pvars;
+		return bRet;
+	}
+
+	BOOL Fire_Telnet()
+	{
+		T* pT = static_cast<T*>(this);
+
+        pT->m_bDropped = FALSE;
+        BOOL bRet = TRUE;
+
+        if ( pT->m_bstrEventsHandlers[ID_Telnet].Length()  ) {
+            ParseScriptlet2((BSTR)(pT->m_bstrEventsHandlers[ID_Telnet]));
+            if ( pT->m_bDropped ) {
+                bRet = FALSE;
+            }
+            return bRet;
+        }
+
+        CComVariant varResult;
+		int nConnectionIndex;
+		CComVariant* pvars = new CComVariant[3];
+		int nConnections = m_vec.GetSize();
+		
+		for (nConnectionIndex = 0; nConnectionIndex < nConnections; nConnectionIndex++)
+		{
+			pT->Lock();
+			CComPtr<IUnknown> sp = m_vec.GetAt(nConnectionIndex);
+			pT->Unlock();
+			IDispatch* pDispatch = reinterpret_cast<IDispatch*>(sp.p);
+			if (pDispatch != NULL)
+			{
+                VariantClear(&varResult);
+				pvars[0] = pT->m_pvarEventParams[0].lVal;
+				pvars[1] = pT->m_pvarEventParams[1].lVal;
+				pvars[2] = pT->m_pvarEventParams[2];
+
+                DISPPARAMS disp = { pvars, NULL, 3, 0 };
+				pDispatch->Invoke(0xC, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_METHOD, &disp, &varResult, NULL, NULL);
+                if ( pT->m_bDropped ) {
+                    bRet = FALSE;
+                }
+			}
+		}
+		delete[] pvars;
+		return bRet;
+	}
+
 };
 #endif

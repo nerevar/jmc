@@ -38,6 +38,6 @@ void COneChar::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 	// CString str = nChar;
 	// SetWindowText(str);
 
-    SetWindowText("");
+    SetWindowText(L"");
     CEdit::OnChar(nChar, nRepCnt, nFlags);
 }

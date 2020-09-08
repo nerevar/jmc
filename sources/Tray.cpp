@@ -18,19 +18,19 @@ CTray::CTray(int nIconID, LPCTSTR szTip)
 	iconData.uCallbackMessage = WM_USER + 701;
 	iconData.hIcon = ::LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(nIconID));
 	iconData.hWnd = AfxGetMainWnd()->m_hWnd;
-	strcpy(iconData.szTip, szTip);
+	wcscpy(iconData.szTip, szTip);
 
 	isInSysTray = FALSE;
 }
 
-CTray::add()
+BOOL CTray::add()
 {
 	isInSysTray = TRUE;
 
 	return Shell_NotifyIcon(NIM_ADD, &iconData);
 }
 
-CTray::remove()
+BOOL CTray::remove()
 {
 	isInSysTray = FALSE;
 
