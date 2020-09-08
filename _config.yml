@@ -67,7 +67,7 @@ JB :
   #   /assets
   #
   ASSET_PATH : false
-  ASSET_PATH : /assets/themes/jmc
+  ASSET_PATH : /jmc/assets/themes/jmc
 
   # These paths are to the main pages Jekyll-Bootstrap ships with.
   # Some JB helpers refer to these paths; change them here if needed.
