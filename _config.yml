@@ -3,6 +3,7 @@
 permalink: /:categories/:title 
 
 baseurl: /jmc
+# baseurl: /
 
 exclude: [".rvmrc", ".rbenv-version", "README.md", "Rakefile", "changelog.md"]
 pygments: true
@@ -26,7 +27,7 @@ author :
 # Else if you are pushing to username.github.io, replace with your username.
 # Finally if you are pushing to a GitHub project page, include the project name at the end.
 #
-production_url : "http://nerevar.github.io/jmc/"
+production_url : "https://nerevar.github.io/jmc/"
 
 # All Jekyll-Bootstrap specific configurations are namespaced into this hash
 #
@@ -55,7 +56,7 @@ JB :
   #   - Only the following values are falsy: ["", null, false]
   #   - When setting BASE_PATH it must be a valid url.
   #     This means always setting the protocol (http|https) or prefixing with "/"
-  BASE_PATH : http://nerevar.github.io/jmc
+  BASE_PATH : https://nerevar.github.io/jmc
 
   # By default, the asset_path is automatically defined relative to BASE_PATH plus the enabled theme.
   # ex: [BASE_PATH]/assets/themes/[THEME-NAME]
@@ -66,6 +67,7 @@ JB :
   #   /assets
   #
   ASSET_PATH : false
+  ASSET_PATH : /assets/themes/jmc
 
   # These paths are to the main pages Jekyll-Bootstrap ships with.
   # Some JB helpers refer to these paths; change them here if needed.
