@@ -11,7 +11,7 @@ description: ""
 
 Автор: [Brullek](https://github.com/brullek)
 
-Данная статья основывается на статье [Скриптинг в JMC](http://nerevar.github.io/jmc/articles/jmc-scripts/).
+Данная статья основывается на статье [Скриптинг в JMC](https://nerevar.github.io/jmc/articles/jmc-scripts/).
 
 Мне всегда не хватало глобальных триггеров в JMC (встроенные в версии 3.27 работали мега криво) , поэтому я вынужден был их написать сам через скриптинг.
 

@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Jaba Mud Client 3.6.1.0"
+title: "Jaba Mud Client 3.7.1.4"
 ---
 {% include JB/setup %}
 
@@ -24,7 +24,7 @@ title: "Jaba Mud Client 3.6.1.0"
 2. Запустите файл Jmc.exe.
 
 <section id="downloads">
-  <a href="http://nerevar.github.io/jmc/releases/jmc3610.zip" class="btn btn-jmc"><span class="icon"></span>Скачать последнюю версию 3.6.1.0</a>
+  <a href="https://github.com/nerevar/jmc/releases/download/3.7.1.4/jmc3714.zip" class="btn btn-jmc"><span class="icon"></span>Скачать последнюю версию 3.7.1.4</a>
   <a href="https://github.com/nerevar/jmc" class="btn btn-github"><span class="icon"></span>Исходный код - GitHub</a>
 </section>
 
